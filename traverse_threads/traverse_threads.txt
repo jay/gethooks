@@ -1,0 +1,398 @@
+This is the documentation for traverse_threads().
+
+Copyright (C) 2011 Jay Satiro <raysatiro@yahoo.com>
+All rights reserved. License GPLv3+: GNU GPL version 3 or later
+<http://www.gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+###############################################################################
+int traverse_threads( 
+	int ( __cdecl *callback )( 
+		void *cb_param,   // in, out, optional
+		SYSTEM_PROCESS_INFORMATION *const spi,   // in
+		SYSTEM_THREAD_INFORMATION *const sti,   // in, optional
+		const ULONG remaining,   // in
+		const DWORD flags   // in, optional
+	),   // in, optional
+	void *cb_param,   // in, out, optional
+	void *buffer,   // in, out, optional
+	size_t buffer_bcount,   // in, optional
+	const DWORD flags,   // in, optional
+	LONG *status   // out, optional
+)
+###############################################################################
+
+
+
+======
+OVERVIEW:
+======
+
+This function can call a callback function for every SYSTEM_THREAD_INFORMATION 
+struct (every thread in the system), and/or every SYSTEM_PROCESS_INFORMATION 
+struct (every process in the system) depending on the callback's return value.
+
+If a pointer to an output buffer is passed in to this function, regardless of 
+if a callback function is passed in, the buffer will receive an array of 
+SYSTEM_PROCESS_INFORMATION structs.
+
+If there is no callback and no output buffer (either no buffer or the buffer 
+is being used as input because TRAVERSE_FLAG_RECYCLE was specified), this 
+function will use the default callback, callback_print_thread_state(), which 
+will be called to printf each thread's state and creation time. All numbers 
+will be printed in decimal format unless 0x prefixed. 
+
+Follow the directions in BUILD.txt to build traverse_threads.lib.
+
+To call traverse_threads() in your project include traverse_threads.h.
+Optionally include nt_independent_sysprocinfo_structs.h before 
+traverse_threads.h if your project does not already have definitions for 
+SYSTEM_THREAD_INFORMATION, 
+SYSTEM_EXTENDED_THREAD_INFORMATION, 
+SYSTEM_PROCESS_INFORMATION.
+
+There are traverse_threads() usage examples in example{1,2,3,4}.c
+
+
+
+======
+PARAMETERS:
+======
+
+# [IN OPTIONAL]
+# 
+# int ( __cdecl *callback )( 
+# 	void *cb_param,   // in, out, optional
+# 	SYSTEM_PROCESS_INFORMATION *const spi,   // in
+# 	SYSTEM_THREAD_INFORMATION *const sti,   // in, optional
+# 	const ULONG remaining,   // in
+# 	const DWORD flags   // in, optional
+# )
+#
+A pointer to a callback function that will be called for each sti found.
+
+'cb_param' is the same value as the #cb_param passed in to traverse_threads().
+It is an optional void pointer exclusively for passing data to your callback.
+
+'sti' is a pointer to thread info, and 'spi' to the thread's associated 
+process info. 'spi' will never be NULL. 'sti' may be NULL only if 
+TRAVERSE_FLAG_ZERO_THREADS_OK was passed in to traverse_threads().
+
+'remaining' is how many thread infos in the current process info (spi) have 
+yet to be passed to the callback. for example if some process info has three 
+thread infos, 'remaining' would be 2 when passed with the first thread info, 
+then 1 when passed with the second, and then 0 when passed with the third.
+
+'flags' is the same value as the #flags passed in to traverse_threads().
+Do not use the flags parameter to pass callback data to your callback.
+
+-
+TRAVERSE_FLAG_EXTENDED:
+
+As documented in #flags, this flag alters the request to 
+NtQuerySystemInformation().
+
+If specified and your callback needs access to the extended thread info 
+members then you would cast 'sti' as SYSTEM_EXTENDED_THREAD_INFORMATION.
+
+If specified and your callback does not need access to the extended members 
+then you do not need to cast.
+
+An example is in callback_print_thread_state() in traverse_threads__support.c
+-
+
+
+The behavior of traverse_threads() depends on your callback's return:
+-
+TRAVERSE_CALLBACK_ABORT:
+
+abort.
+causes traverse_threads() to return TRAVERSE_ERROR_CALLBACK.
+-
+
+-
+TRAVERSE_CALLBACK_CONTINUE:
+
+continue normally. 
+continues to next thread info and its associated process info.
+if always returned your callback ends up being called once for each thread.
+
+threads are traversed in process order. if your callback continues normally 
+all the thread infos of a process info will have been passed to your 
+callback before traverse_threads() starts passing the next process' threads.
+-
+
+-
+TRAVERSE_CALLBACK_SKIP:
+
+skip to next process' threads.
+if any remaining threads for the associated process skip them.
+if always returned your callback ends up being called once for each process.
+-
+
+
+# [IN OUT OPTIONAL]
+# 
+# void *const cb_param
+#
+A pointer that is exclusively for the callback function and passed to it on 
+every call. This is optional regardless of if a callback function is specified.
+
+
+# [IN OUT OPTIONAL]
+# 
+# void *buffer
+#
+pointer to an aligned buffer (eg one returned by malloc) to receive an array 
+of SYSTEM_PROCESS_INFORMATION structs.
+
+if( !buffer ) then a temporary buffer is used. a consequence of this is if you 
+are calling this function multiple times in a loop it will reserve (malloc) 
+and release (free) a temporary buffer each call. therefore even if you don't 
+need to receive the array in a buffer it may be worthwhile if you are looping 
+to malloc a big buffer once beforehand and on each call pass it in.
+
+-
+TRAVERSE_ERROR_BUFFER_TOO_SMALL:
+
+Regardless of if the buffer was passed in or a temporary one was created by 
+this function, if it is not big enough to hold the SYSTEM_PROCESS_INFORMATION 
+array at the time the NtQuerySystemInformation() call is made then this 
+function returns TRAVERSE_ERROR_BUFFER_TOO_SMALL. 
+
+if( !buffer ) whatever reported size is needed by NtQuerySystemInformation() 
+has been doubled to ensure that error is highly unlikely to happen when the 
+information is actually requested. But it could. It is impossible to know 
+precisely how much memory is needed until the call is made, due to the number 
+of processes and threads on a system constantly changing.
+
+if( buffer ) the chances of that error happening depend on the buffer size. 
+To avoid that error when passing in a buffer go with a huge size like 6MB, 
+which can hold at least 18,000 thread and process info structs and is more 
+than adequate for most all systems, making that error highly unlikely.
+An example of this is in main() in example4.c
+-
+
+-
+TRAVERSE_FLAG_RECYCLE:
+
+As documented in #flags, this flag should only be used if you are passing in 
+as input an output buffer from a previous call. In this case none of the above 
+documentation for buffer applies, and this function will not change the 
+contents of buffer.
+-
+
+-
+TRAVERSE_FLAG_EXTENDED:
+
+As documented in #flags, this flag alters the request to 
+NtQuerySystemInformation(). Although the buffer still receives an array of 
+SYSTEM_PROCESS_INFORMATION structs, the 'Threads' member is not an array of 
+SYSTEM_THREAD_INFORMATION, but instead SYSTEM_EXTENDED_THREAD_INFORMATION.
+
+In this case to access any process info's thread info array special care must 
+be taken to increment using a SYSTEM_EXTENDED_THREAD_INFORMATION pointer.
+An example of this is in your_processing() in example4.c
+-
+
+
+# [IN OPTIONAL]
+# 
+# size_t buffer_bcount
+#
+The size of the buffer, above, in bytes.
+
+if( !buffer ) then buffer_bcount is ignored.
+if( buffer ) then buffer_bcount is a required parameter.
+
+
+# [IN OPTIONAL]
+# 
+# DWORD flags
+#
+Any or none of the following:
+
+-
+TRAVERSE_FLAG_IGNORE_CALCULATION_ERRORS:
+
+Warning: Use of this flag can cause program instability.
+
+Continue on error when parsing structures. Useful if debugging.
+Some calculation errors are fatal regardless and will cause premature return.
+
+By default on a calculation error TRAVERSE_ERROR_CALCULATION is returned.
+If calculation errors are ignored this function can attempt to recover, but 
+that usually means bad data will be passed to your callback (and it may crash).
+
+The return value is not meaningful if this flag is specified.
+-
+
+-
+TRAVERSE_FLAG_DEBUG:
+
+Warning: Use of this flag can cause program instability.
+
+Print debug info to stdout.
+
+All numbers output are in decimal format unless 0x prefixed.
+-
+
+-
+TRAVERSE_FLAG_EXTENDED:
+
+'SystemExtendedProcessInformation' is requested from 
+NtQuerySystemInformation(), instead of the default 'SystemProcessInformation'.
+
+Only if this flag is specified will the extended thread info members be valid:
+XP+: StackBase, StackLimit, Win32StartAddress
+Vista+: TebAddress
+
+If this flag is not specified do not read or write to the extended members.
+-
+
+-
+TRAVERSE_FLAG_ZERO_THREADS_OK:
+
+Also call the callback for any process info reporting zero threads.
+
+A process with zero threads is technically not a process, and by default any 
+process info (spi) reporting zero threads is not passed to the callback.
+-
+
+-
+TRAVERSE_FLAG_RECYCLE:
+
+Use as input an output buffer from a previous call, rather than calling 
+NtQuerySystemInformation() again. The orignal call that output to buffer must 
+have returned either TRAVERSE_SUCCESS or TRAVERSE_ERROR_CALLBACK.
+
+If the flag TRAVERSE_FLAG_EXTENDED was passed in for the original call it 
+must also be passed in on a recycle call. Also both buffer and buffer_bcount 
+must be the same as passed in the original call.
+
+This function does not modify the buffer on a recycle call.
+
+If any of these required conditions are not met parameter validation fails.
+-
+
+-
+TRAVERSE_FLAG_TEST_MEMORY:
+
+Warning: Use of this flag can cause program instability.
+
+If this flag was passed in and this library was compiled using Microsoft's 
+compiler then pointers are checked for access violations. It could make the 
+application less reliable to continue after testing invalid pointers.
+Note the warning in test_memory()'s overview in traverse_threads__support.c.
+
+If test_memory() fails then either TRAVERSE_ERROR_PARAMETER or 
+TRAVERSE_ERROR_ACCESS_VIOLATION is returned, depending on the circumstances.
+-
+
+
+# [OUT OPTIONAL]
+# 
+# LONG *status
+#
+pointer to a variable to receive the NTSTATUS code returned by 
+NtQuerySystemInformation(). The status code is only useful when the following 
+error codes are returned, and may otherwise be invalid:
+TRAVERSE_ERROR_ALIGNMENT
+TRAVERSE_ERROR_BUFFER_TOO_SMALL
+TRAVERSE_ERROR_QUERY
+
+
+
+======
+REMARKS:
+======
+
+Pointer arithmetic in this function is done using size_t, not uintptr_t. 
+Although the two are the same in Windows, uintptr_t isn't always defined.
+
+-
+Sanity checks:
+
+A sanity check done by this function calculates the thread info array size for 
+each process info and compares that to the number of threads it reported. 
+If the comparison fails, TRAVERSE_ERROR_CALCULATION is returned.
+
+Another sanity check is done to make sure memory isn't accessed out of bounds 
+when processing the buffer returned by NtQuerySystemInformation(). That 
+function is undocumented and there is no guarantee that the next entry offsets 
+are correct. If the check fails, TRAVERSE_ERROR_CALCULATION is returned.
+
+Another sanity check is done on parameters using structured exception handling 
+(SEH) to check for access violations. This is an additional check that is only 
+enabled if this library was compiled using Microsoft's compiler *and* 
+TRAVERSE_FLAG_TEST_MEMORY is passed in. This function may or may not continue, 
+depending on whether it can recover. See TEST_MEMORY in #flags for more info.
+-
+
+-
+Advanced:
+
+Once a callback has been called with a particular process info (spi) all 
+sanity checks have been done for that process info, and only the callback's 
+return can prevent the traversing of the remaining threads for that process. 
+What this means is that certain assumptions can be made. For example 
+'remaining' will always decrease sequentially to 0 unless the callback isn't  
+continuing normally. This means your callback could, for example, 
+open a handle to a process the first time the process is encountered{1}, 
+store that handle in pre-allocated storage pointed to by 'cb_param', 
+use it on any subsequent calls if there are other thread infos remaining, 
+and then close it on the call when remaining is 0 or if the callback is not 
+continuing normally (skipping to the next process or forcing an abort).
+
+Footnotes
+{1} Detecting the first time the process info is passed to the callback can be 
+confirmed by checking to see if the callback was passed the first thread info 
+for that process. if( !sti || ( sti == (void *)&spi->Threads ) ) // new spi
+-
+
+
+
+======
+RETURN:
+======
+
+This function returns 0 (TRAVERSE_SUCCESS) on success, or a negative number on 
+error. Any buffer output should be considered invalid on error except as noted.
+
+A return code can be converted to a user-readable literal string by calling 
+traverse_threads_retcode_to_cstr() in traverse_threads__support.c
+
+TRAVERSE_ERROR_GENERAL:
+some general error in traverse_threads() other than those defined below.
+
+TRAVERSE_ERROR_MEMORY:
+malloc() failed to allocate memory for a temporary buffer.
+
+TRAVERSE_ERROR_ALIGNMENT:
+NtQuerySystemInformation() misalignment error.
+usually this means the passed in buffer is unaligned.
+
+TRAVERSE_ERROR_BUFFER_TOO_SMALL:
+NtQuerySystemInformation() length mismatch.
+usually this means the passed in buffer is too small.
+
+TRAVERSE_ERROR_QUERY:
+NtQuerySystemInformation() some other problem. 
+I have not had this occur but it could. Check the status code for more info.
+
+TRAVERSE_ERROR_CALLBACK:
+callback function returned abort.
+buffer output is valid (NtQuerySystemInformation() returned STATUS_SUCCESS), 
+but has not been checked by traverse_threads() beyond the abort point.
+
+TRAVERSE_ERROR_CALCULATION:
+calculation error determining number of threads in a process, or memory out of 
+bounds, etc. returning on a calculation error is a safeguard to prevent 
+against parsing corruption.
+
+TRAVERSE_ERROR_PARAMETER:
+parameter check failed during initialization. invalid variable, pointer, etc.
+
+TRAVERSE_ERROR_ACCESS_VIOLATION:
+an access violation occurred while accessing pointed to memory. invalid pointer.

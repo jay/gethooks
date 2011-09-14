@@ -1,0 +1,269 @@
+/*
+Copyright (C) 2011 Jay Satiro <raysatiro@yahoo.com>
+All rights reserved.
+
+This file is part of GetHooks.
+
+GetHooks is free software: you can redistribute it and/or modify 
+it under the terms of the GNU General Public License as published by 
+the Free Software Foundation, either version 3 of the License, or 
+(at your option) any later version.
+
+GetHooks is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License 
+along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/** 
+This file contains functions for a program store (command line arguments, system info, etc).
+Each function is documented in the comment block above its definition.
+
+For now there is only one program store implemented and it's a global store (G->prog).
+
+-
+create_prog_store()
+
+Create a program store and its descendants or die.
+-
+
+-
+init_global_prog_store()
+
+Initialize the global program store by storing command line arguments, OS version, etc.
+-
+
+-
+free_prog_store()
+
+Free a program store and all its descendants.
+-
+
+*/
+
+#include <stdio.h>
+
+#include "util.h"
+
+#include "prog.h"
+
+/* the global stores */
+#include "global.h"
+
+
+
+/* create_prog_store()
+Create a program store and its descendants or die.
+
+The program store holds some basic program and system info.
+*/
+static void create_prog_store( 
+	struct prog **const out   // out deref
+)
+{
+	struct prog *prog = NULL;
+	
+	FAIL_IF( !out );
+	FAIL_IF( *out );
+	
+	
+	/* allocate a prog store */
+	prog = must_calloc( 1, sizeof( *prog ) );
+	
+	
+	*out = prog;
+	return;
+}
+
+
+
+/* get_SharedInfo()
+Get the address of Microsoft's SHAREDINFO structure (aka gSharedInfo).
+
+returns nonzero on success.
+if success then '*SharedInfo' has received a pointer to the SHAREDINFO struct.
+if fail then '*SharedInfo' has received NULL.
+
+x86 only.
+*/
+SHAREDINFO *get_SharedInfo( 
+)
+{
+	static void *SharedInfo;
+	
+	int i = 0;
+	char *p = NULL;
+	void *User32InitializeImmEntryTable = NULL;
+	
+	
+	if( SharedInfo )
+		return SharedInfo;
+	
+	User32InitializeImmEntryTable = 
+		(void *)GetProcAddress( LoadLibraryA( "user32" ), "User32InitializeImmEntryTable" );
+	
+	if( !User32InitializeImmEntryTable )
+	{
+		printf( 
+			"FATAL: get_SharedInfo(): failed to get address of User32InitializeImmEntryTable()\n" 
+		);
+		exit( 1 );
+	}
+	
+	/* This is my C implementation of the algorithm to find SharedInfo created by 
+	(alex ntinternals org), originally implemented in asm in EnumWindowsHooks.c
+	http://www.ntinternals.org/
+	
+	This works on XP, Vista, Win7. If you have to be sure an alternate way 
+	would be to check the win32k pdb files and find the addresses there.
+	*/
+	p = (char *)User32InitializeImmEntryTable;
+	for( i = 0; i < 127; ++i )
+	{
+		if( ( *p++ == 0x50 ) && ( *p == 0x68 ) )
+		{
+			*( (char *)&SharedInfo + 0 ) = *++p;
+			*( (char *)&SharedInfo + 1 ) = *++p;
+			*( (char *)&SharedInfo + 2 ) = *++p;
+			*( (char *)&SharedInfo + 3 ) = *++p;
+			break;
+		}
+	}
+	
+	return SharedInfo;
+}
+
+
+
+/* init_global_prog_store()
+Initialize the global program store by storing command line arguments, OS version, etc.
+
+For now there is only one program store implemented and it's a global store (G->prog).
+*/
+void init_global_prog_store( 
+	int argc,   // in
+	char **argv   // in deref
+)
+{
+	FAIL_IF( !G );   // The global store must have already been created.
+	
+	
+	G->prog->argc = argc;
+	G->prog->argv = argv;
+	
+	/* point pszBaseName to this program's basename */
+	if( argc && argv[ 0 ][ 0 ] )
+	{
+		char *clip = NULL;
+		
+		clip = strrchr( argv[ 0 ], '\\' );
+		if( clip )
+			++clip;
+		
+		G->prog->pszBaseName = ( clip && *clip ) ? clip : argv[ 0 ];
+	}
+	else
+		G->prog->pszBaseName = "<unknown>";
+	
+	/* main thread id */
+	G->prog->dwMainThreadId = GetCurrentThreadId();
+	
+	/* operating system version and platform */
+	G->prog->dwOSVersion = GetVersion();
+	G->prog->dwOSMajorVersion = (BYTE)G->prog->dwOSVersion;
+	G->prog->dwOSMinorVersion = (BYTE)( G->prog->dwOSVersion >> 8 );
+	G->prog->dwOSBuild = 
+		( G->prog->dwOSVersion < 0x80000000 ) ? ( G->prog->dwOSVersion >> 16 ) : 0;
+	
+	/* the name of this program's window station */
+	SetLastError( 0 );  //gle may or may not be set on error
+	G->prog->pwszWinstaName = get_user_obj_name( GetProcessWindowStation() );
+	if( !G->prog->pwszWinstaName )
+	{
+		MSG_FATAL_GLE( "get_user_obj_name() failed." );
+		printf( "Failed to get this program's window station name.\n" );
+		exit( 1 );
+	}
+	
+	
+	
+	G->prog->initialized = TRUE;
+	
+	/* G->prog has been initialized */
+	return;
+}
+
+
+
+/* print_prog_store()
+Print a program store and all its descendants.
+*/
+static void print_prog_store( 
+	struct prog *store   // in
+)
+{
+	const char *const objname = "Program Store";
+	int i = 0;
+	
+	if( !store )
+		return;
+	
+	PRINT_DBLSEP_BEGIN( objname );
+	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	
+	printf( "store->argc: %d\n", store->argc );
+	for( i = 0; i < store->argc; ++i )
+		printf( "store->argv[ %d ]: %s\n", i, store->argv[ i ] );
+	
+	printf( "store->pszBasename: %s\n", store->pszBasename );
+	printf( "store->dwMainThreadId: %lu\n", store->dwMainThreadId );
+	printf( "store->dwOSVersion: %lu\n", store->dwOSVersion );
+	printf( "store->dwOSMajorVersion: %lu\n", store->dwOSMajorVersion );
+	printf( "store->dwOSMinorVersion: %lu\n", store->dwOSMinorVersion );
+	printf( "store->dwOSBuild: %lu\n", store->dwOSBuild );
+	printf( "store->pwszWinstaName: %ls\n", store->pwszWinstaName );
+	
+	PRINT_DBLSEP_END( objname );
+	
+	return;
+}
+
+
+
+/* print_global_prog_store()
+Print the global program store and all its descendants.
+*/
+void print_global_prog_store( void )
+{
+	print_prog_store( G->prog );
+	return;
+}
+
+
+
+/* free_prog_store()
+Free a program store and all its descendants.
+
+this function then sets the prog store pointer to NULL and returns
+
+'in' is a pointer to a pointer to the prog store, which contains the program information.
+if( !in || !*in ) then this function returns.
+*/
+static void free_prog_store( 
+	struct prog **const in   // in deref
+)
+{
+	if( !in || !*in )
+		return;
+	
+	if( (*in)->pwszWinstaName )
+		free( (*in)->pwszWinstaName );
+	
+	free( (*in) );
+	*in = NULL;
+	
+	return;
+}
