@@ -23,32 +23,45 @@ This file contains supporting functions for traverse_threads().
 Each function is documented in the comment block above its definition.
 
 -
+get_teb()
+
+Get a thread's TEB.
+-
+
+-
 callback_print_thread_state()
 
-A default callback function that is used if no callback was supplied by the 
-caller.
+A default callback used by traverse_threads() if no callback was supplied by the caller.
 -
 
 -
 print_filetime_as_local()
 
-A function that will print a FILETIME as local time.
+Print a FILETIME as local time.
 -
 
 -
 traverse_threads_retcode_to_cstr()
+
+Return the traverse_threads() retcode as its associated user-readable literal single byte string.
+-
+
+-
 ThreadState_to_cstr()
+
+Return the ThreadState as its associated user-readable literal single byte string.
+-
+
+-
 WaitReason_to_cstr()
 
-Functions used to convert specific type codes to their associated 
-user-readable literal single byte string.
+Return the WaitReason as its associated user-readable literal single byte string.
 -
 
 -
 test_memory()
 
-A function that uses structured exception handling (SEH) to test for memory 
-access violations. Enabled only for Microsoft compilers.
+Test memory for read and/or write access violations using structured exception handling (SEH).
 -
 
 */
@@ -63,8 +76,96 @@ access violations. Enabled only for Microsoft compilers.
 
 
 
-/* this is the default callback that's called if no callback was passed to 
-traverse_threads().
+/* get_teb()
+Get a thread's TEB.
+
+'tid' is the thread id
+'flags' is the optional flags parameter that was passed to traverse_threads() or a callback
+
+returns the TEB address on success
+*/
+void *get_teb( 
+	const DWORD tid,   // in
+	const DWORD flags   // in, optional
+)
+{
+	struct /* THREAD_BASIC_INFORMATION */
+	{
+		LONG ExitStatus;
+		PVOID TebBaseAddress;
+		struct
+		{
+			HANDLE UniqueProcess;
+			HANDLE UniqueThread;
+		} ClientId;
+		ULONG_PTR AffinityMask;
+		LONG Priority;
+		LONG BasePriority;
+	} tbi;
+	
+	LONG status = 0;
+	HANDLE thread = NULL;
+	void *return_code = NULL;
+	
+	
+	thread = OpenThread( THREAD_QUERY_INFORMATION, FALSE, tid );
+	
+	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+	{
+		printf( "OpenThread() %s. GLE: %I32u, Handle: 0x%IX.\n", 
+			( thread ? "success" : "error" ), 
+			GetLastError(), 
+			thread 
+		);
+	}
+	
+	if( !thread )
+		goto cleanup;
+	
+	/* request ThreadBasicInformation */
+	status = NtQueryInformationThread( thread, 0, &tbi, sizeof( tbi ), NULL );
+	
+	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+	{
+		printf( "NtQueryInformationThread() %s. status: 0x%08X.\n", 
+			( ( status != STATUS_SUCCESS ) ? "!= STATUS_SUCCESS" : "== STATUS_SUCCESS" ),
+			status 
+		);
+	}
+	
+	if( status ) // || ( tbi.ExitStatus != STATUS_PENDING ) )
+		goto cleanup;
+	
+	return_code = tbi.TebBaseAddress;
+	
+cleanup:
+	
+	if( thread )
+	{
+		BOOL ret = 0;
+		
+		SetLastError( 0 );
+		ret = CloseHandle( thread );
+		
+		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+		{
+			printf( "CloseHandle(0x%IX) %s. GLE: %I32u.\n", 
+				thread, 
+				( ret ? "success" : "error" ), 
+				GetLastError() 
+			);
+		}
+		
+		thread = NULL;
+	}
+	
+	return return_code;
+}
+
+
+
+/* callback_print_thread_state()
+A default callback used by traverse_threads() if no callback was supplied by the caller.
 
 this function prints the thread state, thread create time, and also if 
 TRAVERSE_FLAG_EXTENDED then any available extended members.
@@ -193,8 +294,14 @@ int callback_print_thread_state(
 
 
 
-/* this function takes a pointer to a FILETIME and prints it as local time
-returns 0 on success or -1 on fail
+/* print_filetime_as_local()
+Print a FILETIME as local time.
+
+This function takes a pointer to a utc system time FILETIME ('ft') and prints it as local time.
+No newline is printed.
+
+returns nonzero if the conversion succeeded and printed the local time.
+returns zero if the conversion failed and printed "<conversion to local time failed>".
 */
 int print_filetime_as_local( 
 	const FILETIME *const ft   // in
@@ -208,15 +315,15 @@ int print_filetime_as_local(
 	ZeroMemory( &utc, sizeof( utc ) );
 	ZeroMemory( &local, sizeof( local ) );
 	
-	if( !FileTimeToSystemTime( ft, &utc ) 
+	if( !ft
+		|| !FileTimeToSystemTime( ft, &utc ) 
 		|| !SystemTimeToTzSpecificLocalTime( NULL, &utc, &local ) 
 		|| ( local.wHour >= 24 ) 
 	)
 	{
-		printf( "<conversion failed>" );
-		return -1; //fail
+		printf( "<conversion to local time failed>" );
+		return FALSE;
 	}
-	
 	
 	if( local.wHour == 0 )
 	{
@@ -245,7 +352,7 @@ int print_filetime_as_local(
 		local.wMonth, local.wDay, local.wYear
 	);
 	
-	return 0; //success
+	return TRUE;
 	
 	
 	/* Notes regarding the validity of member CreateTime.
@@ -261,10 +368,10 @@ int print_filetime_as_local(
 
 
 
-/* this function takes the return code returned by traverse_threads() 
-and returns a pointer to the associated user-readable literal single byte string.
+/* traverse_threads_retcode_to_cstr()
+Return the traverse_threads() retcode as its associated user-readable literal single byte string.
 
-if the code is unknown "TRAVERSE_ERROR_UNKNOWN" is returned.
+if 'retcode' is unknown "TRAVERSE_ERROR_UNKNOWN" is returned.
 */
 char *traverse_threads_retcode_to_cstr( 
 	const int retcode   // in
@@ -288,10 +395,10 @@ char *traverse_threads_retcode_to_cstr(
 
 
 
-/* this function takes the ThreadState member from SYSTEM_THREAD_INFORMATION 
-and returns a pointer to the associated user-readable literal single byte string.
+/* ThreadState_to_cstr()
+Return the ThreadState as its associated user-readable literal single byte string.
 
-If the ThreadState is unknown "Unknown" is returned.
+if 'ThreadState' is unknown "Unknown" is returned.
 
 http://processhacker.sourceforge.net/doc/phlib_2include_2ntkeapi_8h.html#a89cf35e06b66523904596d9dbdd93af4
 */
@@ -316,13 +423,13 @@ char *ThreadState_to_cstr(
 
 
 
-/* this function takes the WaitReason member from SYSTEM_THREAD_INFORMATION 
-and returns a pointer to the associated user-readable literal single byte string.
+/* WaitReason_to_cstr()
+Return the WaitReason as its associated user-readable literal single byte string.
 
 MS: "Thread Wait Reason is only applicable when the thread is in the Wait state."
 http://support.microsoft.com/?kbid=837372
 
-If the WaitReason is unknown "Unknown" is returned.
+if 'WaitReason' is unknown "Unknown" is returned.
 
 http://processhacker.sourceforge.net/doc/phlib_2include_2ntkeapi_8h.html#a32f8868bc010efa7da787526013b93fb
 */
@@ -377,22 +484,20 @@ char *WaitReason_to_cstr(
 
 #ifdef TRAVERSE_SUPPORT_TEST_MEMORY
 /* test_memory()
+Test memory for read and/or write access violations using structured exception handling (SEH).
 
 ======
 OVERVIEW:
 ======
 
-this function checks the pointed to memory for read and/or write access 
-violations using microsoft's structured exception handling (SEH). its behavior 
-is similar to IsBadWritePtr()/IsBadReadPtr().
+test_memory()'s behavior is similar to IsBadWritePtr()/IsBadReadPtr().
 
-a function like this to catch bad pointers can make a program unreliable, 
-and should not be used.
+a function like this to catch bad pointers can make a program unreliable, and should not be used.
 http://blogs.msdn.com/b/larryosterman/archive/2004/05/18/134471.aspx
 http://blogs.msdn.com/b/oldnewthing/archive/2006/09/27/773741.aspx
 
-in traverse_threads(), and its default callback callback_print_thread_state(), 
-I call this function to test pointers only if TRAVERSE_FLAG_TEST_MEMORY.
+in traverse_threads(), and its default callback callback_print_thread_state(), this function is 
+called to test pointers only in the special case of TRAVERSE_FLAG_TEST_MEMORY.
 
 
 
