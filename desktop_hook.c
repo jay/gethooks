@@ -103,77 +103,68 @@ void create_desktop_hook_store(
 
 
 
-/* init_global_desktop_store()
-Initialize the global desktop store by attaching to the user-specified or default desktop(s).
-Calls add_all_desktops(), or calls add_desktop_item() for each desktop if not adding all.
-
-For now there is only one desktop store implemented and it's a global store (G->desktops).
-'G->desktops' depends on the global program (G->prog) and configuration (G->config) stores.
+/* add_desktop_hook_item()
+Create a desktop hook item and append it to the desktop hook store's linked list.
 */
-void init_global_desktop_store( void )
+void add_desktop_hook_item(
+	struct desktop_hook_list *store,   // in
+	struct desktop_item *desktop   // in
+)
 {
-	FAIL_IF( !G->prog->initialized );   // The program store must already be initialized.
-	FAIL_IF( !G->config->initialized );   //  The configuration store must already be initialized.
+	
+}
+
+
+
+/* init_desktop_hook_store()
+Initialize the desktop hook store by recording the hooks for each desktop.
+
+The desktop hook store depends on the spi and gui info in its parent snapshot store and all global 
+stores except other snapshot stores.
+*/
+void init_desktop_hook_store( 
+	struct snapshot *parent   // in
+)
+{
+	struct desktop_hook_list *store = NULL;
+	
+	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must already be initialized.
+	FAIL_IF( !G->desktops->init_time );   // The desktop store must already be initialized.
+	
+	FAIL_IF( !parent );   // The snapshot parent of the desktop_hook store must always be passed in
+	FAIL_IF( !parent->init_time_spi );   // The snapshot's spi array must already be initialized
+	FAIL_IF( !parent->init_time_gui );   // The snapshot's gui array must already be initialized
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
 	
-	/* if the user's list of desktop names is not initialized then the user did not specify the 'd' 
-	option. in this case attempt to attach to all desktops in the current window station.
-	*/
-	if( !G->config->desklist->initialized )
+	store = parent->desktop_hooks;
+	
+	/* this store is reused. do a soft reset */
+	store->init_time = 0;
+	
+	if( !store->head ) // create the desktop hook list
 	{
-		G->desktops->type = DESKTOP_ALL;
+		struct desktop_item *current = NULL;
 		
-		/* Add all desktops returns the number of accessible desktops now in the list.
-		This may or may not be the total number of desktops in the process' window station.
-		It's unlikely we'll be able to add *all* desktops in a window station but we should 
-		have access to at least one.
-		*/
-		if( !add_all_desktops( G->desktops ) )
-		{
-			MSG_FATAL( "add_all_desktops() failed." );
-			printf( "Couldn't add any desktops.\n" );
-			exit( 1 );
-		}
+		/* add the desktops from the global desktop store */
+		for( current = G->desktops->head; current; current = current->next )
+			add_desktop_hook_item( store->desktop_hooks, current );
 	}
-	/* 
-	else if the user's list of desktop names is not initialized then the user specified the 'd' 
-	option but did not specify any desktop names. in this case use only the current desktop.
-	*/
-	else if( !G->config->desklist->head )
+	else // the desktop hook list already exists. reuse it.
 	{
-		G->desktops->type = DESKTOP_CURRENT;
+		struct desktop_hook_item *current = NULL;
 		
-		if( !add_desktop_item( G->desktops, NULL ) )
-		{
-			MSG_FATAL( "add_desktop_item() failed." );
-			printf( "Couldn't add the main thread's desktop." );
-			exit( 1 );
-		}
-	}
-	else // the user specified desktop names with the 'd' option
-	{
-		struct list_item *current = NULL;
-		
-		
-		G->desktops->type = DESKTOP_SPECIFIED;
-		
-		/* for each of the user specified desktop names add to the desktop heap list */
-		for( current = G->config->desklist->head; current; current = current->next )
-		{
-			if( current->name && !add_desktop_item( G->desktops, current->name ) )
-			{
-				MSG_FATAL( "add_desktop_item() failed." );
-				printf( "Couldn't add desktop: %ls\n", current->name );
-				exit( 1 );
-			}
-		}
+		/* soft reset on each desktop hook item's array of hooks */
+		for( current = store->head; current; current = current->next )
+			current->hook_count = 0;
 	}
 	
-	G->desktops->initialized = TRUE;
 	
-	/* G->desktops has been initialized */
+	
+	/* G->desktop_hooks has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&G->desktop_hooks->init_time );
 	return;
 }
 
@@ -314,7 +305,7 @@ static void print_desktop_hook_store(
 		return;
 	
 	PRINT_DBLSEP_BEGIN( objname );
-	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	print_init_time( "store->init_time", store->init_time );
 	
 	PRINT_PTR( store->head );
 	
