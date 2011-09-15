@@ -84,8 +84,10 @@ struct list
 	/* the list type */
 	enum list_type type;
 	
-	/* nonzero when this store has been initialized */
-	unsigned initialized;
+	/* the system utc time in FILETIME format immediately after this store has been initialized.
+	this is nonzero when this store has been initialized.
+	*/
+	__int64 init_time;
 };
 
 

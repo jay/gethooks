@@ -131,7 +131,7 @@ Print the program's usage and exit(1).
 */
 void print_usage_and_exit( void )
 {
-	FAIL_IF( !G->prog->initialized );   // This function depends on G->prog
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	
 	printf( 
@@ -169,7 +169,7 @@ Print more usage examples and exit(1).
 */
 void print_more_examples_and_exit( void )
 {
-	FAIL_IF( !G->prog->initialized );   // This function depends on G->prog
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	
 	printf( "\nMore examples:\n" );
@@ -250,7 +250,7 @@ unsigned get_next_arg(
 	FAIL_IF( *index < 0 );
 	FAIL_IF( expected_types & ~( OPT | OPTARG ) );
 	
-	FAIL_IF( !G->prog->initialized );   // This function depends on G->prog
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	
 	for( ;; )
@@ -336,6 +336,7 @@ unsigned get_next_arg(
 Initialize the global configuration store by parsing command line arguments.
 Calls get_next_arg().
 
+This function must only be called from the main thread.
 For now there is only one configuration store implemented and it's a global store (G->config).
 'G->config' depends on the global program (G->prog) store.
 */
@@ -344,7 +345,11 @@ void init_global_config_store( void )
 	int i = 0;
 	unsigned arf = 0;
 	
-	FAIL_IF( !G->prog->initialized );   // The program store must already be initialized.
+	FAIL_IF( G->config->init_time );   // Fail if this store has already been initialized.
+	
+	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
+	
+	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
 	
 	/* set polling to a negative number if not taking more than one snapshot */
@@ -669,19 +674,19 @@ void init_global_config_store( void )
 	if( ( G->config->proglist->type == LIST_INCLUDE_PROG )
 		|| ( G->config->proglist->type == LIST_EXCLUDE_PROG )
 	)
-		G->config->proglist->initialized = TRUE;
+		GetSystemTimeAsFileTime( (FILETIME *)&G->config->proglist->init_time );
 	
 	if( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
 		|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
 	)
-		G->config->hooklist->initialized = TRUE;
+		GetSystemTimeAsFileTime( (FILETIME *)&G->config->hooklist->init_time );
 	
 	if( ( G->config->desklist->type == LIST_INCLUDE_DESK ) )
-		G->config->desklist->initialized = TRUE;
+		GetSystemTimeAsFileTime( (FILETIME *)&G->config->desklist->init_time );
 	
-	G->config->initialized = TRUE;
 	
 	/* G->config has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&G->config->init_time );
 	return;
 }
 
@@ -701,7 +706,7 @@ static void print_config_store(
 		return;
 	
 	PRINT_DBLSEP_BEGIN( objname );
-	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	print_init_time( "store->init_time", store->init_time );
 	
 	printf( "store->polling: %d", store->polling );
 	if( store->polling >= 0 )

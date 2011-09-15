@@ -160,7 +160,7 @@ static int attach(
 	
 	FAIL_IF( !d );
 	
-	FAIL_IF( !G->prog->initialized );   // This function depends on G->prog
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	
 	if( d->pwszDesktopName )
@@ -266,11 +266,15 @@ fail:
 
 
 
-/* stuff to be passed to thread */
+/* stuff to be passed to thread()
+this struct members' annotations are similar to those of function parameters
+"actual" is used if the structure member will be modified by the function, regardless of if what it 
+points to will be modified ("out").
+*/
 struct stuff
 {
 	/* a new desktop item, calloc'd. only d->pwszDesktopName is expected to be valid. */
-	struct destkop_item *d;   // in
+	struct destkop_item *d;   // in, out
 	
 	/* this event is signaled when the thread's initialization has completed.
 	whether or not it was successful is determined by checking if( d->hEventTerminate )
@@ -399,7 +403,7 @@ static struct desktop_item *add_desktop_item(
 	struct desktop_item *current = NULL;
 	struct desktop_item *d = NULL;
 	
-	FAIL_IF( !G->prog->initialized );   // This function depends on G->prog
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -597,7 +601,7 @@ static int add_all_desktops(
 	
 	FAIL_IF( !store );
 	
-	FAIL_IF( !G->prog->initialized );   // This function depends on G->prog
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	FAIL_IF( GetdThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -669,13 +673,16 @@ static int add_all_desktops(
 Initialize the global desktop store by attaching to the user-specified or default desktop(s).
 Calls add_all_desktops(), or calls add_desktop_item() for each desktop if not adding all.
 
+This function must only be called from the main thread.
 For now there is only one desktop store implemented and it's a global store (G->desktops).
 'G->desktops' depends on the global program (G->prog) and configuration (G->config) stores.
 */
 void init_global_desktop_store( void )
 {
-	FAIL_IF( !G->prog->initialized );   // The program store must already be initialized.
-	FAIL_IF( !G->config->initialized );   //  The configuration store must already be initialized.
+	FAIL_IF( G->desktop->init_time );   // Fail if this store has already been initialized.
+	
+	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must already be initialized.
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -683,7 +690,7 @@ void init_global_desktop_store( void )
 	/* if the user's list of desktop names is not initialized then the user did not specify the 'd' 
 	option. in this case attempt to attach to all desktops in the current window station.
 	*/
-	if( !G->config->desklist->initialized )
+	if( !G->config->desklist->init_time )
 	{
 		G->desktops->type = DESKTOP_ALL;
 		
@@ -733,9 +740,9 @@ void init_global_desktop_store( void )
 		}
 	}
 	
-	G->desktops->initialized = TRUE;
 	
 	/* G->desktops has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&G->desktops->init_time );
 	return;
 }
 
@@ -794,7 +801,7 @@ static void print_desktop_store(
 		return;
 	
 	PRINT_DBLSEP_BEGIN( objname );
-	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	print_init_time( "store->init_time", store->init_time );
 	
 	printf( "store->type: " );
 	switch( store->type )

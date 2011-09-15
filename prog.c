@@ -107,9 +107,7 @@ SHAREDINFO *get_SharedInfo(
 	
 	if( !User32InitializeImmEntryTable )
 	{
-		printf( 
-			"FATAL: get_SharedInfo(): failed to get address of User32InitializeImmEntryTable()\n" 
-		);
+		MSG_FATAL( "Failed to get address of User32InitializeImmEntryTable()" );
 		exit( 1 );
 	}
 	
@@ -133,6 +131,8 @@ SHAREDINFO *get_SharedInfo(
 		}
 	}
 	
+	FAIL_IF( !SharedInfo )
+	
 	return SharedInfo;
 }
 
@@ -141,6 +141,7 @@ SHAREDINFO *get_SharedInfo(
 /* init_global_prog_store()
 Initialize the global program store by storing command line arguments, OS version, etc.
 
+This function must only be called from the main thread.
 For now there is only one program store implemented and it's a global store (G->prog).
 */
 void init_global_prog_store( 
@@ -149,6 +150,8 @@ void init_global_prog_store(
 )
 {
 	FAIL_IF( !G );   // The global store must have already been created.
+	
+	FAIL_IF( G->prog->init_time );   // Fail if this store has already been initialized.
 	
 	
 	G->prog->argc = argc;
@@ -189,10 +192,8 @@ void init_global_prog_store(
 	}
 	
 	
-	
-	G->prog->initialized = TRUE;
-	
 	/* G->prog has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&G->prog->init_time );
 	return;
 }
 
@@ -212,7 +213,7 @@ static void print_prog_store(
 		return;
 	
 	PRINT_DBLSEP_BEGIN( objname );
-	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	print_init_time( "store->init_time", store->init_time );
 	
 	printf( "store->argc: %d\n", store->argc );
 	for( i = 0; i < store->argc; ++i )

@@ -321,7 +321,7 @@ void print_list_store(
 		return;
 	
 	PRINT_DBLSEP_BEGIN( objname );
-	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	print_init_time( "store->init_time", store->init_time );
 	
 	printf( "store->type: " );
 	switch( store->type )
