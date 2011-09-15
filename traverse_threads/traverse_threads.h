@@ -80,6 +80,12 @@ int traverse_threads(
 these supporting functions are documented in the comment block above their 
 definitions in traverse_threads__support.c
 */
+
+void *get_teb( 
+	const DWORD tid,   // in
+	const DWORD flags   // in, optional
+);
+
 int callback_print_thread_state( 
 	void *cb_param,   // in, out, optional
 	SYSTEM_PROCESS_INFORMATION *const spi,   // in

@@ -21,8 +21,8 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 /**
 various stuff I need for traverse_threads.c. 
 you don't need to use this include in your project.
-the declaration for NtQuerySystemInformation() and related structures and 
-enumerations pulled from various sources on the internet, as noted in comments
+the declaration for NtQuerySystemInformation() and related structures and enumerations pulled from 
+various sources on the internet, as noted in comments
 */
 
 #ifndef _NT_STUFF_H
@@ -31,10 +31,10 @@ enumerations pulled from various sources on the internet, as noted in comments
 #include <windows.h>
 
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 
 #ifndef _MSC_VER
@@ -255,6 +255,15 @@ NTSTATUS WINAPI NtQuerySystemInformation(
 	PULONG ReturnLength
 );
 
+
+/* microsoft */
+NTSTATUS WINAPI NtQueryInformationThread(
+	HANDLE ThreadHandle,
+	int ThreadInformationClass,
+	PVOID ThreadInformation,
+	ULONG ThreadInformationLength,
+	PULONG ReturnLength
+);
 
 
 #ifdef __cplusplus
