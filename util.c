@@ -64,10 +64,18 @@ get_user_obj_name()
 Get the name of a user object.
 -
 
+-
+print_init_time()
+
+Print an initialization utc time as local time.
+-
+
 */
 
 #include <stdio.h>
 #include <limits.h>
+
+#include "traverse_threads.h"
 
 #include "util.h"
 
@@ -385,3 +393,38 @@ int get_user_obj_name(
 	
 	return TRUE;
 }
+
+
+
+/* print_init_time()
+Print an initialization utc time as local time.
+
+'msg' is an optional message to print before printing the time
+'utc' is the utc time
+
+eg print_init_time( "store->init_time", store->init_time );
+store->init_time: 12:35:38 PM  9/14/2011
+*/
+void print_init_time(
+	char *msg   // in, optional
+	__int64 *utc   // in
+)
+{
+	if( !utc )
+		return;
+	
+	if( msg )
+		printf( "%s: ", msg );
+	
+	if( *utc )
+		print_filetime_as_local( (FILETIME *)utc );
+	else
+		printf( "<uninitialized>" );
+	
+	printf( "\n" );
+	
+	return;
+}
+
+
+

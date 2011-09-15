@@ -34,9 +34,14 @@ extern "C" {
 #define MSG_LOCATION(type,msg)   \
 	do \
 	{ \
+		__int64 utc = 0; \
+		 \
+		GetSystemTimeAsFileTime( (FILETIME *)&utc ); \
 		fflush( stdout ); \
+		printf( "\n" ); \
+		print_init_time( NULL, &utc ); \
 		printf( \
-			"\n%s: %s line %d, %s(): %s\n", \
+			"%s: %s line %d, %s(): %s\n", \
 			( type ), __FILE__, __LINE__, __FUNCTION__, ( msg ) \
 		); \
 	} while( 0 )
@@ -133,6 +138,11 @@ int get_hook_id_from_name(
 int get_user_obj_name( 
 	WCHAR **const name,   // out deref
 	HANDLE object   // in
+);
+
+void print_init_time(
+	char *msg   // in, optional
+	__int64 *utc   // in
 );
 
 
