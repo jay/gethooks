@@ -19,7 +19,7 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /** 
-This file contains functions for a snapshot store (system process info, gui threads and hooks).
+This file contains functions for a snapshot store (system process info, gui threads, desktop hooks).
 Each function is documented in the comment block above its definition.
 
 The snapshot store(s) depend on all the other global stores.
@@ -120,6 +120,350 @@ void create_snapshot_store(
 }
 
 
+
+/* stuff to be passed to callback_add_gui().
+this struct members' annotations are similar to those of function parameters
+"actual" is used if the structure member will be modified by the function, regardless of if what it 
+points to will be modified ("out").
+*/
+struct callback_info
+{
+	/* The store which holds the gui array to add to. */
+	struct snapshot *store;   // in, out
+	
+	/* Temporary process handle opened in a prior call to the callback function.
+	If traverse_threads() did not terminate successfully this handle must be closed.
+	*/
+	HANDLE process;   // in, out, actual, optional
+};
+
+/* callback_add_gui()
+If the passed in thread info is for a GUI thread add it to the passed in snapshot's gui array.
+
+traverse_threads() callback: this function is called for every SYSTEM_THREAD_INFORMATION.
+This function uses x86 offsets only, it will have to be fixed for x64.
+
+The behavior of a traverse_threads() callback is documented in traverse_threads.txt.
+*/
+static int callback_add_gui( 
+	void *cb_param,   // in, out
+	SYSTEM_PROCESS_INFORMATION *const spi,   // in
+	SYSTEM_THREAD_INFORMATION *const sti,   // in
+	const ULONG remaining,   // in
+	const DWORD flags   // in, optional
+)
+{
+	/** Init
+	*/
+	#define dbg_printf   if( ( flags & TRAVERSE_FLAG_DEBUG ) )printf
+	
+	// address of thread environment block (TEB)
+	void *pvTeb = NULL;
+	
+	// address of Win32ThreadInfo
+	void *pvWin32ThreadInfo = NULL;
+	
+	// the return code of this function
+	int return_code = TRAVERSE_CALLBACK_ABORT;
+	
+	// callback data
+	struct callback_info *const ci = (struct callback_info *)cb_param; 
+	
+	// whether or not the process has already been passed to the callback. 1 if true, 0 if false.
+	const unsigned process_is_new = ( !sti || ( sti == (void *)&spi->Threads ) ); // new spi
+	
+	
+	if( !sti || !ci || !ci->store )
+	{
+		/* a parameter required by this callback is missing. 
+		this shouldn't happen. abort 
+		*/
+		dbg_printf( "Parameter validation failed:\n" );
+		dbg_printf( "sti: %IX\n", sti );
+		dbg_printf( "ci: %IX\n", ci );
+		dbg_printf( "ci->store: %IX\n", ci->store );
+		return_code = TRAVERSE_CALLBACK_ABORT;
+		goto cleanup;
+	}
+	
+	/*	traverse_threads() writes the spi array before the first time it calls a callback function.
+	the first time this callback is called is the earliest time that the spi init can be recorded.
+	*/
+	if( !ci->store->init_time_spi )
+	{
+		/* ci->store->spi array was just initialized. record init time. */
+		GetSystemTimeAsFileTime( (FILETIME *)&ci->store->init_time_spi );
+	}
+	
+	
+	
+	/** 
+	Open the process if it isn't open already
+	*/
+	dbg_printf( "PID: %Iu, ImageName: %ls\n", spi->UniqueProcessId, spi->ImageName.Buffer );
+	
+	/* if there's no process id then skip traversing its threads */
+	if( !spi->UniqueProcessId )
+	{
+		dbg_printf( "Ignoring process with id 0.\n" );
+		
+		return_code = TRAVERSE_CALLBACK_SKIP;
+		goto cleanup;
+	}
+	
+	if( process_is_new )
+	{
+		if( ci->process ) // there is a process handle already open
+		{
+			/* the last opened process' handle should have already been closed.
+			this shouldn't happen. abort 
+			*/
+			dbg_printf( "There is a process handle already open. Aborting!\n" );
+			return_code = TRAVERSE_CALLBACK_ABORT;
+			goto cleanup;
+		}
+		
+		SetLastError( 0 ); // set because error code may not be set on success
+		ci->process = OpenProcess( PROCESS_VM_READ, FALSE, (DWORD)spi->UniqueProcessId );
+		
+		dbg_printf( "OpenProcess() %s. GLE: %I32u, Handle: 0x%IX.\n", 
+			( ci->process ? "success" : "error" ), 
+			GetLastError(), 
+			ci->process 
+		);
+		
+		/* if the process couldn't be opened then skip traversing its threads */
+		if( !ci->process )
+		{
+			return_code = TRAVERSE_CALLBACK_SKIP;
+			goto cleanup;
+		}
+	}
+	
+	
+	
+	/** 
+	Get the thread's environment block (TEB)
+	*/
+	dbg_printf( "TID: %Iu\n", sti->ClientId.UniqueThread );
+	
+	/* if there's no thread id then continue to the next thread */
+	if( !sti->ClientId.UniqueThread )
+	{
+		dbg_printf( "Ignoring thread with id 0.\n" );
+		
+		return_code = TRAVERSE_CALLBACK_CONTINUE;
+		goto cleanup;
+	}
+	
+	/* check to see if we already have this thread's TEB address.
+	if TRAVERSE_FLAG_EXTENDED was passed in then traverse_threads()
+	called NtQuerySystemInformation() with SystemExtendedProcessInformation.
+	On Vista+ (major >= 6) that should have yielded the TEB address.
+	*/
+	if( ( flags & TRAVERSE_FLAG_EXTENDED ) && ( G->prog->dwOSMajorVersion >= 6 ) )
+	{
+		dbg_printf( "Getting TEB address from SYSTEM_EXTENDED_THREAD_INFORMATION\n" );
+		pvTeb = ( (SYSTEM_EXTENDED_THREAD_INFORMATION *)sti )->TebAddress;
+	}
+	else
+	{
+		dbg_printf( "Getting TEB address from get_teb()\n" );
+		pvTeb = get_teb( (DWORD)sti->ClientId.UniqueThread, flags );
+	}
+	
+	dbg_printf( "TEB: 0x%IX\n", pvTeb );
+	
+	/* if there's no TEB associated with the thread then continue to the next thread. */
+	if( !pvTeb )
+	{
+		return_code = TRAVERSE_CALLBACK_CONTINUE;
+		goto cleanup;
+	}
+	
+	
+	/** 
+	Get Win32ThreadInfo from the TEB
+	*/
+	{
+		BOOL ret = 0;
+		
+		ret = ReadProcessMemory( 
+			ci->process, 
+			(char *)pvTeb + 0x040, /* pvTeb + offsetof W32ThreadInfo. 0x40 TEB32, 0x78 TEB64 */
+			&pvWin32ThreadInfo, 
+			sizeof( pvWin32ThreadInfo ), 
+			NULL 
+		);
+		
+		dbg_printf( "ReadProcessMemory() %s. GLE: %I32u, Handle: 0x%IX.\n", 
+			( ret ? "success" : "error" ), 
+			GetLastError(), 
+			ci->process 
+		);
+		
+		if( !ret )
+			pvWin32ThreadInfo = 0;
+	}
+	
+	dbg_printf( "Win32ThreadInfo: 0x%IX\n", pvWin32ThreadInfo );
+	
+	/* if there's no Win32ThreadInfo then this thread is not a GUI thread.
+	continue to the next thread
+	*/
+	if( !pvWin32ThreadInfo )
+	{
+		return_code = TRAVERSE_CALLBACK_CONTINUE;
+		goto cleanup;
+	}
+	
+	/* if the number of gui threads found is more than can be held in the array 
+	then abort. this is a high number like 10,000 - 100,000 so this shouldn't happen.
+	*/
+	if( ci->store->gui_count >= ci->store->gui_max ) // all array elements filled
+	{
+		dbg_printf( "ci->store->gui_count >= ci->store->gui_max\n" );
+		dbg_printf( "ci->store->gui_count: %u\n", ci->store->gui_count );
+		dbg_printf( "ci->store->gui_max: %u\n", ci->store->gui_max );
+		return_code = TRAVERSE_CALLBACK_ABORT;
+		goto cleanup;
+	}
+	
+	
+	
+	/** add the GUI thread's info to the array of gui thread infos.
+	*/
+	ci->store->gui[ ci->store->gui_count ].pvWin32ThreadInfo = pvWin32ThreadInfo;
+	ci->store->gui[ ci->store->gui_count ].pvTeb = pvTeb;
+	ci->store->gui[ ci->store->gui_count ].spi = spi;
+	ci->store->gui[ ci->store->gui_count ].sti = sti;
+	
+	// increment the number of gui threads found
+	ci->store->gui_count++;
+	
+	return_code = TRAVERSE_CALLBACK_CONTINUE;
+	
+cleanup:
+	
+	/* if there's a handle to a process and either there's no more remaining 
+	threads in the process to be traversed or the callback isn't continuing to 
+	traverse the process' threads then close the process handle
+	*/
+	if( ci && ci->process && ( !remaining || ( return_code != TRAVERSE_CALLBACK_CONTINUE ) ) ) 
+	{
+		BOOL ret = 0;
+		
+		SetLastError( 0 ); // set because error code may not be set on success
+		ret = CloseHandle( ci->process ); // it's ok if the handle is already closed/invalid
+		
+		dbg_printf( "CloseHandle(0x%IX) %s. GLE: %I32u.\n", 
+			ci->process, 
+			( ret ? "success" : "error" ), 
+			GetLastError() 
+		);
+		
+		ci->process = NULL;
+	}
+	
+	return return_code;
+}
+
+
+
+/* init_snapshot_store()
+Take a snapshot of the system state. This initializes a snapshot store.
+
+A snapshot store depends on all global stores, but does not depend on any other snapshot stores.
+
+The following info in the snapshot store is recorded consecutively:
+system process info (spi)
+gui thread info (gui). this depends on spi.
+desktop hook info (desktop_hooks). this depends on gui.
+
+All of that information makes a snapshot of the state of the system.
+
+Unlike other stores the snapshot stores are reused/reinitialized rather than freeing and 
+recreating the stores, to avoid delay when taking continuous snapshots.
+
+This function must only be called from the main thread.
+
+returns nonzero on success
+*/
+int init_snapshot_store( 
+	struct snapshot *store   // in
+)
+{
+	int ret = 0;
+	LONG nt_status = 0;
+	struct callback_info ci;
+	
+	FAIL_IF( !G->prog->initialized );   // The program store must already be initialized.
+	FAIL_IF( !G->config->initialized );   // The configuration store must already be initialized.
+	FAIL_IF( !G->desktops->initialized );   // The desktop store must already be initialized.
+	
+	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
+	
+	FAIL_IF( !store );   // a store must always be passed in
+	
+	
+	/* snapshot stores are reused. do a soft reset to reuse arrays. */
+	store->init_time = 0;
+	
+	store->gui_count = 0;
+	store->init_time_gui = 0;
+	
+	store->spi_count = 0;
+	store->init_time_spi = 0;
+	
+	/* store->desktop_hooks is soft reset by init_desktop_hook_store() */
+	
+	
+	ZeroMemory( &ci, sizeof( ci ) );
+	ci.store = store;
+	
+	/* call traverse_threads() to write the array of spi and gui.
+	traverse_threads() calls callback_add_gui() which writes to the store's array of gui and sets 
+	the spi init time.
+	*/
+	ret = traverse_threads( 
+		callback_add_gui, /* callback */
+		&ci, /* pointer to callback data */
+		ci.store->spi, /* buffer that will receive the array of spi */
+		ci.store->spi_max_bytes, /* buffer's byte count */
+		TRAVERSE_FLAG_EXTENDED, /* flags. callback_add_gui() gets TEBs faster with EXTENDED */
+		&nt_status /* pointer to receive status */
+	);
+	
+	if( ret != TRAVERSE_SUCCESS )
+	{
+		MSG_ERROR( "traverse_threads() failed." );
+		printf( "traverse_threads() returned: %s\n", traverse_threads_retcode_to_cstr( ret ) );
+		
+		if( ( ret == TRAVERSE_ERROR_ALIGNMENT )
+			|| ( ret == TRAVERSE_ERROR_BUFFER_TOO_SMALL )
+			|| ( ret == TRAVERSE_ERROR_QUERY )
+		)
+			printf( "nt_status: 0x%08lX\n", nt_status );
+		
+		return FALSE;
+	}
+	
+	/* the gui array has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time_gui );
+	
+	
+	/* init the desktop hook store. depends on spi and gui */
+	if( !init_desktop_hook_store( store ) )
+		return FALSE;
+	
+	
+	/* the snapshot store has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time );
+	return TRUE;
+}
+
+
+
 /* print_gui()
 Print a gui struct.
 
@@ -170,13 +514,13 @@ static void print_snapshot_store(
 	const char *const objname = "Snapshot Store";
 	DWORD flags = 0;
 	int i = 0, ret = 0;
-	///asdf
+	
 	
 	if( !store )
 		return;
 	
 	PRINT_DBLSEP_BEGIN( objname );
-	printf( "store->initialized: %s\n", ( store->initialized ? "TRUE" : "FALSE" ) );
+	print_init_time( "store->init_time", store->init_time );
 	
 	
 	/* traverse_threads() should use as input the output buffer from a previous call (store->spi) */
@@ -186,7 +530,7 @@ static void print_snapshot_store(
 	flags |= TRAVERSE_FLAG_ZERO_THREADS_OK;
 	
 	/* If the flag TRAVERSE_FLAG_EXTENDED was passed in for the original call it must also be 
-	passed in on a recycle call.
+	passed in on a recycle call. Basically this has to track with the call in init_snapshot().
 	*/
 	if( store->spi_extended )
 		flags |= TRAVERSE_FLAG_EXTENDED;

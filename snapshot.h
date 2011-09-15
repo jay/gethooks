@@ -82,7 +82,8 @@ struct gui
 
 
 /** The snapshot store. 
-The snapshot store holds system process info (spi), gui thread info (gui) and hook info (hook).
+The snapshot store holds system process info (spi), gui thread info (gui) and desktop hook info 
+(desktop_hooks).
 The info is recorded consecutively at a point in time, and is effectively a snapshot of the system.
 */
 struct snapshot 
@@ -137,8 +138,20 @@ struct snapshot
 	
 	
 	
-	/* nonzero when this store has been initialized */
-	unsigned initialized;
+	/* the system utc time in FILETIME format immediately after spi has been initialized.
+	this is nonzero when the spi array has been initialized.
+	*/
+	__int64 init_time_spi;
+	
+	/* the system utc time in FILETIME format immediately after gui has been initialized.
+	this is nonzero when the gui array has been initialized.
+	*/
+	__int64 init_time_gui;
+	
+	/* the system utc time in FILETIME format immediately after this store has been initialized.
+	this is nonzero when this store has been initialized.
+	*/
+	__int64 init_time;
 };
 
 
