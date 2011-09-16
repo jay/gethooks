@@ -69,7 +69,7 @@ struct desktop_hook_item
 	
 	
 	
-	/** an array of hook structs.
+	/** an array of hook structs. these are the hooks on desktop.
 	*/
 	/* the hook array */
 	struct hook *hook;   // calloc(), free()
@@ -81,6 +81,11 @@ struct desktop_hook_item
 	this is also the number of elements written to in the hook array.
 	*/
 	unsigned hook_count;
+	
+	
+	
+	/* The next item in the list */
+	struct desktop_hook_item *next;
 };
 
 
@@ -114,6 +119,44 @@ these functions are documented in the comment block above their definitions in d
 */
 void create_desktop_hook_store( 
 	struct desktop_hook_list **const out   // out deref
+);
+
+static struct desktop_hook_item *add_desktop_hook_item(
+	struct desktop_hook_list *const store,   // in
+	struct desktop_item *const desktop   // in
+);
+
+static int compare_hook( 
+	const void *const p1,   // in
+	const void *const p2   // in
+);
+
+int init_desktop_hook_store( 
+	struct snapshot *const parent   // in
+);
+
+void print_HANDLEENTRY(
+	const HANDLEENTRY *const entry   // in
+);
+
+void print_HOOK(
+	const HOOK *const object   // in
+);
+
+void print_hook(
+	const struct hook *const hook   // in
+);
+
+void print_desktop_hook_item( 
+	const struct desktop_hook_item *const item   // in
+);
+
+void print_desktop_hook_store( 
+	const struct desktop_hook_list *const store   // in
+);
+
+static void free_desktop_hook_item( 
+	struct desktop_hook_item **const in   // in deref
 );
 
 void free_desktop_hook_store( 

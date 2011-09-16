@@ -32,6 +32,42 @@ Create a desktop hook store and its descendants or die.
 -
 
 -
+add_desktop_hook_item()
+
+Create a desktop hook item and append it to the desktop hook store's linked list.
+-
+
+-
+compare_hook()
+
+Compare two hook structs according to the kernel address of the associated HOOK struct.
+-
+
+-
+init_desktop_hook_store()
+
+Initialize the desktop hook store by recording the hooks for each desktop.
+-
+
+-
+print_HANDLEENTRY()
+
+Print a HANDLEENTRY struct.
+-
+
+-
+print_HOOK()
+
+Print a HOOK struct.
+-
+
+-
+print_hook()
+
+Print a hook struct.
+-
+
+-
 print_desktop_hook_item()
 
 Print an item from a desktop hook store's linked list.
@@ -85,18 +121,6 @@ void create_desktop_hook_store(
 	desktop_hooks = must_calloc( 1, sizeof( *desktop_hooks ) );
 	
 	
-	/* the allocated/maximum number of elements in the array pointed to by hook.
-	
-	65535 is the maximum number of user objects
-	http://blogs.technet.com/b/markrussinovich/archive/2010/02/24/3315174.aspx
-	*/
-	desktop_hooks->hook_max = 65535;
-	
-	/* allocate an array of hook structs */
-	desktop_hooks->hook = 
-		must_calloc( desktop_hooks->hook_max, sizeof( *desktop_hooks->hook );
-	
-	
 	*out = desktop_hooks;
 	return;
 }
@@ -105,13 +129,78 @@ void create_desktop_hook_store(
 
 /* add_desktop_hook_item()
 Create a desktop hook item and append it to the desktop hook store's linked list.
+
+returns on success a pointer to the desktop hook item that was added to the list.
+if there is already an existing item with the same desktop a pointer to it is returned.
+returns NULL on fail
 */
-void add_desktop_hook_item(
-	struct desktop_hook_list *store,   // in
-	struct desktop_item *desktop   // in
+static struct desktop_hook_item *add_desktop_hook_item(
+	struct desktop_hook_list *const store,   // in
+	struct desktop_item *const desktop   // in
 )
 {
+	struct desktop_hook_item *item = NULL;
 	
+	FAIL_IF( !store );
+	FAIL_IF( !desktop );
+	
+	
+	/* check if there is already an entry for this desktop */
+	for( item = store->head; item; item = item->next )
+	{
+		if( item->desktop == desktop )
+			return item;
+	}
+	
+	
+	/* create a new item and add it to the list */
+	
+	item = must_calloc( 1, sizeof( *item ) );
+	
+	item->desktop = desktop;
+	
+	/* the allocated/maximum number of elements in the array pointed to by hook.
+	
+	65535 is the maximum number of user objects
+	http://blogs.technet.com/b/markrussinovich/archive/2010/02/24/3315174.aspx
+	*/
+	item->hook_max = 65535;
+	
+	/* allocate an array of hook structs */
+	item->hook = must_calloc( item->hook_max, sizeof( *item->hook ) );
+	
+	
+	return item;
+}
+
+
+
+/* compare_hook()
+Compare two hook structs according to the kernel address of the associated HOOK struct.
+
+Compare the pHead in two hook structs.
+
+qsort() callback: this function is called to sort the hook array according to pHead
+
+returns -1 if 'p1' pHead < 'p2' pHead
+returns 1 if 'p1' pHead > 'p2' pHead
+returns 0 if 'p1' pHead == 'p2' pHead
+*/
+static int compare_hook( 
+	const void *const p1,   // in
+	const void *const p2   // in
+)
+{
+	const struct hook *const a = p1;
+	const struct hook *const b = p2;
+	
+	
+	if( a->entry.pHead < b->entry.pHead )
+		return -1;
+	else if( a->entry.pHead > b->entry.pHead )
+		return 1;
+	else
+		return 0;
 }
 
 
@@ -121,20 +210,23 @@ Initialize the desktop hook store by recording the hooks for each desktop.
 
 The desktop hook store depends on the spi and gui info in its parent snapshot store and all global 
 stores except other snapshot stores.
+
+returns nonzero on success
 */
-void init_desktop_hook_store( 
-	struct snapshot *parent   // in
+int init_desktop_hook_store( 
+	struct snapshot *const parent   // in
 )
 {
 	struct desktop_hook_list *store = NULL;
+	struct desktop_hook_item *item = NULL;
 	
 	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
 	FAIL_IF( !G->config->init_time );   // The configuration store must already be initialized.
 	FAIL_IF( !G->desktops->init_time );   // The desktop store must already be initialized.
 	
-	FAIL_IF( !parent );   // The snapshot parent of the desktop_hook store must always be passed in
-	FAIL_IF( !parent->init_time_spi );   // The snapshot's spi array must already be initialized
-	FAIL_IF( !parent->init_time_gui );   // The snapshot's gui array must already be initialized
+	FAIL_IF( !parent );   // The snapshot parent of the desktop_hook store must always be passed in.
+	FAIL_IF( !parent->init_time_spi );   // The snapshot's spi array must already be initialized.
+	FAIL_IF( !parent->init_time_gui );   // The snapshot's gui array must already be initialized.
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -144,7 +236,8 @@ void init_desktop_hook_store(
 	/* this store is reused. do a soft reset */
 	store->init_time = 0;
 	
-	if( !store->head ) // create the desktop hook list
+	/* if the desktop hook store does not have a list of desktops yet create it */
+	if( !store->head )
 	{
 		struct desktop_item *current = NULL;
 		
@@ -158,14 +251,105 @@ void init_desktop_hook_store(
 		
 		/* soft reset on each desktop hook item's array of hooks */
 		for( current = store->head; current; current = current->next )
-			current->hook_count = 0;
+			current->hook_count = 0; // soft reset of hook array
 	}
 	
 	
+	SwitchToThread();
+	/* for every handle if it is a HOOK then add it to the desktop's hook array */
+	for( i = 0; i < *G->prog->pcHandleEntries; ++i )
+	{
+		/* copy the HANDLEENTRY struct from the list of entries in the shared info section.
+		the info may change so it can't just be pointed to.
+		*/
+		HANDLEENTRY entry = aheList[ i ];
+		
+		
+		if( entry.bType != TYPE_HOOK ) /* not for a HOOK object */
+			continue;
+		
+		/* Check to see if the HOOK is located on a desktop we're attached to */
+		for( item = store->head; item; item->next )
+		{
+			if( ( (void *)entry.pHead >= item->desktop->pvDesktopBase )
+				&& ( (void *)entry.pHead < item->desktop->pvDesktopLimit )
+			) /* The HOOK is on an accessible desktop */
+				break;
+		}
+		
+		if( !item ) /* The HOOK is on an inaccessible desktop */
+			continue;
+		
+		hook = &item->hook[ item->hook_count ];
+		
+		/* copy the HOOK struct from the desktop heap.
+		the info may change so it can't just be pointed to.
+		*/
+		hook->object = 
+			*(HOOK *)( (size_t)hook->entry.pHead - (size_t)item->desktop->pvClientDelta );
+		
+		/* search the gui threads to find the owner origin and target of the HOOK */
+		hook->owner = find_Win32ThreadInfo( store, hook->handle->pOwner );
+		hook->origin = find_Win32ThreadInfo( store, hook->object->pti );
+		hook->target = find_Win32ThreadInfo( store, hook->object->ptiHooked );
+		
+		item->hook_count++;
+		if( item->hook_count >= item->hook_max )
+		{
+			MSG_FATAL( "Too many HOOK objects!" );
+			printf( "item->hook_count: %u\n", item->hook_count );
+			printf( "item->hook_max: %u\n", item->hook_max );
+			exit( 1 );
+		}
+	}
 	
-	/* G->desktop_hooks has been initialized */
-	GetSystemTimeAsFileTime( (FILETIME *)&G->desktop_hooks->init_time );
-	return;
+	
+	/* sort the hook array for each desktop according to its position in the heap */
+	for( item = store->head; item; item->next )
+	{
+		/* sort according to HANDLEENTRY's entry.pHead */
+		qsort( 
+			item->hook, 
+			item->hook_count, 
+			sizeof( *item->hook ), 
+			compare_hook
+		);
+		
+		/* search for invalid or duplicate entry.pHead */
+		for( i = 1; i < item->hook_count; ++i )
+		{
+			struct hook *a = &item->hook[ i  - 1 ];
+			struct hook *b = &item->hook[ i ];
+			
+			
+			if( a->entry.pHead == b->entry.pHead )
+			{
+				MSG_FATAL( "Duplicate pHead." );
+				print_hook( a );
+				print_hook( b );
+				exit( 1 );
+			}
+			
+			if( !a->entry.pHead )
+			{
+				MSG_FATAL( "Invalid pHead." );
+				print_hook( a );
+				exit( 1 );
+			}
+			
+			if( !b->entry.pHead )
+			{
+				MSG_FATAL( "Invalid pHead." );
+				print_hook( b );
+				exit( 1 );
+			}
+		}
+	}
+	
+	
+	/* the desktop hook store has been initialized */
+	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time );
+	return TRUE;
 }
 
 
@@ -248,6 +432,29 @@ void print_HOOK(
 
 
 
+/* print_hook()
+Print a hook struct.
+
+if the hook struct pointer is != NULL then print the hook struct
+*/
+void print_hook(
+	const struct hook *const hook   // in
+)
+{
+	if( !hook )
+		return;
+	
+	print_HANDLEENTRY( &hook.entry );
+	print_HOOK( &hook.object );
+	print_gui( hook.owner );
+	print_gui( hook.origin );
+	print_gui( hook.target );
+	
+	return;
+}
+
+
+
 /* print_desktop_hook_item()
 Print an item from a desktop hook store's linked list.
 
@@ -273,13 +480,7 @@ void print_desktop_hook_item(
 	printf( "item->hook_max: %u\n", item->hook_max );
 	printf( "item->hook_count: %u\n", item->hook_count );
 	for( i = 0; i < item->hook_count; ++i )
-	{
-		print_HANDLEENTRY( &item->hook[ i ].handle );
-		print_HOOK( &item->hook[ i ].object );
-		print_gui( item->hook[ i ].owner );
-		print_gui( item->hook[ i ].origin );
-		print_gui( item->hook[ i ].target );
-	}
+		print_hook( item->hook );
 	
 	PRINT_SEP_END( objname );
 	
@@ -293,7 +494,7 @@ Print a desktop hook store and all its descendants.
 
 if the desktop hook store pointer != NULL print the store
 */
-static void print_desktop_hook_store( 
+void print_desktop_hook_store( 
 	const struct desktop_hook_list *const store   // in
 )
 {
