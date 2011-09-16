@@ -31,6 +31,42 @@ Create a snapshot store and its descendants or die.
 -
 
 -
+callback_add_gui()
+
+If the passed in thread info is for a GUI thread add it to the passed in snapshot's gui array.
+-
+
+-
+compare_gui()
+
+Compare two gui structs according to the kernel address of the associated Win32ThreadInfo struct.
+-
+
+-
+find_Win32ThreadInfo()
+
+Search a store's array of gui threads for a Win32ThreadInfo address.
+-
+
+-
+init_snapshot_store()
+
+Take a snapshot of the system state. This initializes a snapshot store.
+-
+
+-
+print_gui()
+
+Print a gui struct.
+-
+
+-
+print_snapshot_store()
+
+Print a snapshot store and all its descendants.
+-
+
+-
 free_snapshot_store()
 
 Free a snapshot store and all its descendants.
@@ -370,6 +406,64 @@ cleanup:
 
 
 
+/* compare_gui()
+Compare two gui structs according to the kernel address of the associated Win32ThreadInfo struct.
+
+qsort() callback: this function is called to sort the gui array according to Win32ThreadInfo
+
+returns -1 if 'p1' Win32ThreadInfo < 'p2' Win32ThreadInfo
+returns 1 if 'p1' Win32ThreadInfo > 'p2' Win32ThreadInfo
+returns 0 if 'p1' Win32ThreadInfo == 'p2' Win32ThreadInfo
+*/
+static int compare_gui( 
+	const void *const p1,   // in
+	const void *const p2   // in
+)
+{
+	const struct gui *const a = p1;
+	const struct gui *const b = p2;
+	
+	
+	if( a->pvWin32ThreadInfo < b->pvWin32ThreadInfo )
+		return -1;
+	else if( a->pvWin32ThreadInfo > b->pvWin32ThreadInfo )
+		return 1;
+	else
+		return 0;
+}
+
+
+
+/* find_Win32ThreadInfo()
+Search a store's array of gui threads for a Win32ThreadInfo address.
+
+returns the gui struct that contains the matching pvWin32ThreadInfo
+*/
+static struct gui *find_Win32ThreadInfo( 
+	struct snapshot *const store,   // in
+	void *const pvWin32ThreadInfo   // in
+)
+{
+	struct gui findme;
+	
+	
+	ZeroMemory( &findme, sizeof( findme ) );
+	
+	/* only the pvWin32ThreadInfo member is compared */
+	findme.pvWin32ThreadInfo = pvWin32ThreadInfo;
+	
+	return 
+		bsearch( 
+			findme, 
+			store->gui, 
+			store->gui_count, 
+			sizeof( *store->gui ), 
+			compare_gui 
+		);
+}
+
+
+
 /* init_snapshot_store()
 Take a snapshot of the system state. This initializes a snapshot store.
 
@@ -390,7 +484,7 @@ This function must only be called from the main thread.
 returns nonzero on success
 */
 int init_snapshot_store( 
-	struct snapshot *store   // in
+	struct snapshot *const store   // in
 )
 {
 	int ret = 0;
@@ -406,16 +500,14 @@ int init_snapshot_store(
 	FAIL_IF( !store );   // a store must always be passed in
 	
 	
-	/* snapshot stores are reused. do a soft reset to reuse arrays. */
-	store->init_time = 0;
-	
+	/* snapshot stores are reused. do a soft reset to reuse gui array. spi doesn't need a reset */
 	store->gui_count = 0;
-	store->init_time_gui = 0;
-	
-	store->spi_count = 0;
-	store->init_time_spi = 0;
-	
 	/* store->desktop_hooks is soft reset by init_desktop_hook_store() */
+	
+	/* reset init times */
+	store->init_time = 0;
+	store->init_time_gui = 0;
+	store->init_time_spi = 0;
 	
 	
 	ZeroMemory( &ci, sizeof( ci ) );
@@ -434,6 +526,12 @@ int init_snapshot_store(
 		&nt_status /* pointer to receive status */
 	);
 	
+	if( ci.process )
+	{
+		CloseHandle( ci.process );
+		ci.process = NULL;
+	}
+	
 	if( ret != TRAVERSE_SUCCESS )
 	{
 		MSG_ERROR( "traverse_threads() failed." );
@@ -445,14 +543,59 @@ int init_snapshot_store(
 		)
 			printf( "nt_status: 0x%08lX\n", nt_status );
 		
+		/* the callback sets the initialization time of spi, however if traverse_threads() failed 
+		the data may not be valid so clear the init
+		*/
+		store->init_time_spi = 0;
+		
 		return FALSE;
+	}
+	
+	/* sort the gui array according to Win32ThreadInfo.
+	the desktop hook initialization searches the array using bsearch()
+	*/
+	qsort( 
+		store->gui, 
+		store->gui_count,
+		sizeof( *store->gui ),
+		compare_gui
+	);
+	
+	/* search for invalid or duplicate Win32ThreadInfo */
+	for( i = 1; i < store->gui_count; ++i )
+	{
+		struct gui *a = &store->gui[ i - 1 ];
+		struct gui *b = &store->gui[ i ];
+		
+		
+		if( a->pvWin32ThreadInfo == b->pvWin32ThreadInfo )
+		{
+			MSG_FATAL( "Duplicate pvWin32ThreadInfo." );
+			print_gui( a );
+			print_gui( b );
+			exit( 1 );
+		}
+		
+		if( !a->pvWin32ThreadInfo )
+		{
+			MSG_FATAL( "Invalid pvWin32ThreadInfo." );
+			print_gui( a );
+			exit( 1 );
+		}
+		
+		if( !b->pvWin32ThreadInfo )
+		{
+			MSG_FATAL( "Invalid pvWin32ThreadInfo." );
+			print_gui( b );
+			exit( 1 );
+		}
 	}
 	
 	/* the gui array has been initialized */
 	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time_gui );
 	
 	
-	/* init the desktop hook store. depends on spi and gui */
+	/* init the desktop hook store. depends on spi and gui arrays */
 	if( !init_desktop_hook_store( store ) )
 		return FALSE;
 	
