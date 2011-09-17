@@ -262,7 +262,7 @@ int init_desktop_hook_store(
 		/* copy the HANDLEENTRY struct from the list of entries in the shared info section.
 		the info may change so it can't just be pointed to.
 		*/
-		HANDLEENTRY entry = aheList[ i ];
+		HANDLEENTRY entry = G->prog->aheList[ i ];
 		
 		
 		if( entry.bType != TYPE_HOOK ) /* not for a HOOK object */
@@ -282,6 +282,8 @@ int init_desktop_hook_store(
 		
 		hook = &item->hook[ item->hook_count ];
 		
+		hook->entry = entry;
+		
 		/* copy the HOOK struct from the desktop heap.
 		the info may change so it can't just be pointed to.
 		*/
@@ -289,9 +291,9 @@ int init_desktop_hook_store(
 			*(HOOK *)( (size_t)hook->entry.pHead - (size_t)item->desktop->pvClientDelta );
 		
 		/* search the gui threads to find the owner origin and target of the HOOK */
-		hook->owner = find_Win32ThreadInfo( store, hook->handle->pOwner );
-		hook->origin = find_Win32ThreadInfo( store, hook->object->pti );
-		hook->target = find_Win32ThreadInfo( store, hook->object->ptiHooked );
+		hook->owner = find_Win32ThreadInfo( store, hook->entry.pOwner );
+		hook->origin = find_Win32ThreadInfo( store, hook->object.pti );
+		hook->target = find_Win32ThreadInfo( store, hook->object.ptiHooked );
 		
 		item->hook_count++;
 		if( item->hook_count >= item->hook_max )
@@ -363,7 +365,7 @@ void print_HANDLEENTRY(
 	const HANDLEENTRY *const entry   // in
 )
 {
-	const char *const objname = "Handle Entry";
+	const char *const objname = "HANDLEENTRY struct";
 	
 	
 	if( !entry )
@@ -403,7 +405,7 @@ void print_HOOK(
 	const HOOK *const object   // in
 )
 {
-	const char *const objname = "Hook Object";
+	const char *const objname = "HOOK struct";
 	
 	
 	if( !object )
@@ -441,14 +443,21 @@ void print_hook(
 	const struct hook *const hook   // in
 )
 {
+	const char *const objname = "hook struct";
+	
+	
 	if( !hook )
 		return;
 	
-	print_HANDLEENTRY( &hook.entry );
-	print_HOOK( &hook.object );
-	print_gui( hook.owner );
-	print_gui( hook.origin );
-	print_gui( hook.target );
+	PRINT_SEP_BEGIN( objname );
+	
+	print_HANDLEENTRY( &hook->entry );
+	print_HOOK( &hook->object );
+	print_gui( hook->owner );
+	print_gui( hook->origin );
+	print_gui( hook->target );
+	
+	PRINT_SEP_END( objname );
 	
 	return;
 }

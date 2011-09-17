@@ -45,7 +45,7 @@ Compare two gui structs according to the kernel address of the associated Win32T
 -
 find_Win32ThreadInfo()
 
-Search a store's array of gui threads for a Win32ThreadInfo address.
+Search a snapshot store's array of gui threads for a Win32ThreadInfo address.
 -
 
 -
@@ -389,6 +389,7 @@ cleanup:
 	{
 		BOOL ret = 0;
 		
+		
 		SetLastError( 0 ); // set because error code may not be set on success
 		ret = CloseHandle( ci->process ); // it's ok if the handle is already closed/invalid
 		
@@ -409,7 +410,8 @@ cleanup:
 /* compare_gui()
 Compare two gui structs according to the kernel address of the associated Win32ThreadInfo struct.
 
-qsort() callback: this function is called to sort the gui array according to Win32ThreadInfo
+qsort() callback: this function is called when sorting the gui array according to Win32ThreadInfo
+bsearch() callback: this function is called when searching the gui array for a Win32ThreadInfo
 
 returns -1 if 'p1' Win32ThreadInfo < 'p2' Win32ThreadInfo
 returns 1 if 'p1' Win32ThreadInfo > 'p2' Win32ThreadInfo
@@ -435,7 +437,7 @@ static int compare_gui(
 
 
 /* find_Win32ThreadInfo()
-Search a store's array of gui threads for a Win32ThreadInfo address.
+Search a snapshot store's array of gui threads for a Win32ThreadInfo address.
 
 returns the gui struct that contains the matching pvWin32ThreadInfo
 */
@@ -497,11 +499,12 @@ int init_snapshot_store(
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
-	FAIL_IF( !store );   // a store must always be passed in
+	FAIL_IF( !store );   // a snapshot store must always be passed in
 	
 	
-	/* snapshot stores are reused. do a soft reset to reuse gui array. spi doesn't need a reset */
+	/* snapshot stores are reused. do a soft reset to reuse gui array */
 	store->gui_count = 0;
+	/* the spi array doesn't have a count. traverse_threads() overwrites the spi regardless */
 	/* store->desktop_hooks is soft reset by init_desktop_hook_store() */
 	
 	/* reset init times */
@@ -526,12 +529,6 @@ int init_snapshot_store(
 		&nt_status /* pointer to receive status */
 	);
 	
-	if( ci.process )
-	{
-		CloseHandle( ci.process );
-		ci.process = NULL;
-	}
-	
 	if( ret != TRAVERSE_SUCCESS )
 	{
 		MSG_ERROR( "traverse_threads() failed." );
@@ -555,7 +552,7 @@ int init_snapshot_store(
 	the desktop hook initialization searches the array using bsearch()
 	*/
 	qsort( 
-		store->gui, 
+		store->gui,
 		store->gui_count,
 		sizeof( *store->gui ),
 		compare_gui
@@ -616,7 +613,7 @@ void print_gui(
 	const struct gui *const gui   // in
 )
 {
-	const char *const objname = "GUI Thread Info";
+	const char *const objname = "gui struct";
 	
 	
 	if( !gui )
