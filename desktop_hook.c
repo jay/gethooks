@@ -38,6 +38,24 @@ Create a desktop hook item and append it to the desktop hook store's linked list
 -
 
 -
+is_hook_wanted()
+
+Check the user-specified configuration to determine if the hook struct should be processed.
+-
+
+-
+match_hook_process_pid()
+
+Match a hook struct's associated GUI threads' process pids to the passed in pid.
+-
+
+-
+match_hook_process_name()
+
+Match a hook struct's associated GUI threads' process names to the passed in name.
+-
+
+-
 compare_hook()
 
 Compare two hook structs according to the kernel address of the associated HOOK struct.
@@ -175,6 +193,119 @@ static struct desktop_hook_item *add_desktop_hook_item(
 
 
 
+/* is_hook_wanted()
+Check the user-specified configuration to determine if the hook struct should be processed.
+
+The user can filter hooks (eg WH_MOUSE) and programs (eg notepad.exe).
+
+returns nonzero if the hook struct should be processed
+*/
+int is_hook_wanted( 
+	const struct hook *const hook   // in
+)
+{
+	FAIL_IF( !hook );
+	
+	
+	/* if there is a list of programs to include/exclude */
+	if( G->config->proglist->init_time 
+		&& ( ( G->config->proglist->type == LIST_INCLUDE_PROG )
+			|| ( G->config->proglist->type == LIST_EXCLUDE_PROG )
+		)
+	)
+	{
+		unsigned yes = 0;
+		const struct list_item *item = NULL;
+		
+		
+		for( item = G->config->proglist->head; ( item && !yes ); item = item->next )
+		{
+			if( item->name ) // match program name
+				yes = !!match_hook_process_name( hook, item->name );
+			else // match program id
+				yes = !!match_hook_process_pid( hook, item->id );
+		}
+		
+		if( ( yes && ( G->config->proglist->type == LIST_EXCLUDE_PROG ) )
+			|| ( !yes && ( G->config->proglist->type == LIST_INCLUDE_PROG ) )
+				return FALSE; // the hook is not wanted
+	}
+	
+	
+	/* if there is a list of hooks to include/exclude */
+	if( G->config->hooklist->init_time 
+		&& ( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
+			|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
+		)
+	)
+	{
+		unsigned yes = 0;
+		const struct list_item *item = NULL;
+		
+		
+		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
+			yes = ( item->id == hook->object->iHook );
+		
+		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
+			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
+				return FALSE; // the hook is not wanted
+	}
+	
+	return TRUE; // the hook is wanted
+}
+
+
+
+/* match_hook_process_pid()
+Match a hook struct's associated GUI threads' process pids to the passed in pid.
+
+returns nonzero on success ('pid' matched one of the hook struct's GUI thread process pids)
+*/
+int match_hook_process_pid(
+	const struct hook *const hook,   // in
+	const int pid   // in
+)
+{
+	FAIL_IF( !hook );
+	FAIL_IF( !name );
+	
+	
+	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
+		|| ( hook->origin && match_gui_process_pid( hook->origin, pid ) )
+		|| ( hook->target && match_gui_process_pid( hook->target, pid ) )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* match_hook_process_name()
+Match a hook struct's associated GUI threads' process names to the passed in name.
+
+returns nonzero on success ('name' matched one of the hook struct's GUI thread process names)
+*/
+int match_hook_process_name(
+	const struct hook *const hook,   // in
+	const WCHAR *const name   // in
+)
+{
+	FAIL_IF( !hook );
+	FAIL_IF( !name );
+	
+	
+	if( ( hook->owner && match_gui_process_name( hook->owner, name ) )
+		|| ( hook->origin && match_gui_process_name( hook->origin, name ) )
+		|| ( hook->target && match_gui_process_name( hook->target, name ) )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
 /* compare_hook()
 Compare two hook structs according to the kernel address of the associated HOOK struct.
 
@@ -186,7 +317,7 @@ returns -1 if 'p1' pHead < 'p2' pHead
 returns 1 if 'p1' pHead > 'p2' pHead
 returns 0 if 'p1' pHead == 'p2' pHead
 */
-static int compare_hook( 
+int compare_hook( 
 	const void *const p1,   // in
 	const void *const p2   // in
 )

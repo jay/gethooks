@@ -34,51 +34,107 @@ It is documented in the comment block above its definition.
 #include "gethooks.h"
 
 
-void init_server_info()
+
+static void diff( 
+	struct desktop_hook_item *a,
+	struct desktop_hook_item *b
+)
 {
+	unsigned a_hi = 0, b_hi = 0;
 	
-}
-
-/* This needs to be done once per thread */
-
-/*
-some comment here
-*/
-gethooks()
-{
+	FAIL_IF( !a );
+	FAIL_IF( !b );
+	FAIL_IF( a->desktop != b->desktop );
+	FAIL_IF( a->hook_max != b->hook_max );
 	
-	get a list of hooks//
 	
-}
-
-	/** call gethooks
-	*/
-	for( ;; )
+	a_hi = 0, b_hi = 0;
+	while( ( a_hi < a->hook_count ) && ( b_hi < b->hook_count ) )
 	{
-		retcode = ;
+		int ret = compare_hook( &a->hook[ a_hi ], &b->hook[ b_hi ] );
 		
-		if( !make_snapshot() )
-			break;
-		
-		compare_snapshots();
-		
-		if( !G->config->polling ) // only taking one snapshot
-			break;
-		
-		Sleep( G->config->polling * 1000 );
-		
-		/* swap pointers to previous and current snapshot stores.
-		this is better than constantly freeing and allocating memory.
-		the current snapshot becomes the previous, and the former previous is set 
-		to be overwritten with new info and become the current.
-		*/
-		G->snapshots.current ^= G->snapshots.previous, 
-		G->snapshots.previous ^= G->snapshots.current, 
-		G->snapshots.current ^= G->snapshots.previous;
+		if( ret < 0 ) // hook removed
+		{
+			if( match( &a->hook[ a_hi ] ) )
+			{
+				printf( "HOOK removed from desktop %ls.\n", a->desktop->pwszDesktopName );
+				print_hook_simple( &a->hook[ a_hi ] );
+			}
+			
+			++a_hi;
+		}
+		else if( ret > 0 ) // hook added
+		{
+			if( match( &b->hook[ b_hi ] ) )
+			{
+				printf( "HOOK added to desktop %ls.\n", b->desktop->pwszDesktopName );
+				print_hook_simple( &b->hook[ b_hi ] );
+			}
+			
+			++b_hi;
+		}
+		else // hook same
+		{
+			++a_hi;
+			++b_hi;
+		}
 	}
 	
+	while( a_hi < a->hook_count ) // hooks removed
+	{
+		printf( "HOOK removed from desktop %ls.\n", a->desktop->pwszDesktopName );
+		print_hook_simple( &a->hook[ a_hi ] );
+		
+		++a_hi;
+	}
 	
+	while( b_hi < b->hook_count ) // hooks added
+	{
+		printf( "HOOK added to desktop %ls.\n", b->desktop->pwszDesktopName );
+		print_hook_simple( &b->hook[ b_hi ] );
+		
+		++b_hi;
+	}
 	
-	return !!retcode;
+	return;
 }
+
+
+
+void compare_hooks( 
+	struct desktop_hook_list *dh_list1,   // in
+	struct desktop_hook_list *dh_list2   // in
+)
+{
+	struct desktop_hook_item *dh_item1 = NULL;
+	struct desktop_hook_item *dh_item2 = NULL;
+	
+	
+	/* make sure both desktop hook stores have a list of the same desktops */
+	dh_item1 = dh_list1->head;
+	dh_item2 = dh_list2->head;
+	while( 
+		( dh_item1 && dh_item2 ) 
+		&& ( dh_item1->desktop == dh_item2->desktop ) 
+		&& ( dh_item
+	)
+	{
+		dh_item1 = dh_item1->next;
+		dh_item2 = dh_item2->next;
+	}
+	
+	if( dh_item1 || dh_item2 )
+		MSG_FATAL( "The desktop hook stores cannot be compared." );
+	
+	
+	dh_item1 = dh_list1->head;
+	dh_item2 = dh_list2->head;
+	while( dh_item1 && dh_item2 )
+	{
+		hookdiff( dh_item1, dh_item2 );
+	}
+	
+	return;
+}
+
 

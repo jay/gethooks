@@ -126,7 +126,21 @@ static struct desktop_hook_item *add_desktop_hook_item(
 	struct desktop_item *const desktop   // in
 );
 
-static int compare_hook( 
+int is_hook_wanted( 
+	const struct hook *const hook   // in
+);
+
+int match_hook_process_pid(
+	const struct hook *const hook,   // in
+	const int pid   // in
+);
+
+int match_hook_process_name(
+	const struct hook *const hook,   // in
+	const WCHAR *const name   // in
+);
+
+int compare_hook( 
 	const void *const p1,   // in
 	const void *const p2   // in
 );

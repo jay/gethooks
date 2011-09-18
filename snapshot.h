@@ -171,6 +171,16 @@ static int callback_add_gui(
 	const DWORD flags   // in, optional
 );
 
+int match_gui_process_name(
+	const struct gui *const gui,   // in
+	const WCHAR *const name   // in
+);
+
+int match_gui_process_pid(
+	const struct gui *const gui,   // in
+	const int pid   // in
+);
+
 static int compare_gui( 
 	const void *const p1,   // in
 	const void *const p2   // in

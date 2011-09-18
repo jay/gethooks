@@ -159,16 +159,43 @@ int main( int argc, char **argv )
 	/* G->desktops has been initialized */
 	
 	
-	/* Call gethooks() to initialize and process the global snapshot store(s). 
+	/* Initialize and process the global snapshot store(s). 
 	
 	Each snapshot store is a snapshot of the state of the system, specifically thread information 
-	and hook information at that point in time. gethooks() takes a snapshot and then processes it 
-	to determine which threads are associated with each HOOK. The results are printed.
+	and hook information at that point in time. init_snapshot_store() takes a snapshot and then 
+	processes it to determine which threads are associated with each HOOK. The results are printed.
 	
 	If monitoring is enabled then snapshots are taken continually with each current snapshot 
 	compared to the previous one for differences. The results are printed for each difference.
 	
 	'G->desktops' must be initialized before calling gethooks().
 	*/
-	return gethooks();
+	
+	/* gethooks function */
+	for( ;; )
+	{
+		if( !init_snapshot_store( G->current ) )
+		{
+			MSG_FATAL( "The snapshot store failed to initialize." );
+			exit( 1 );
+		}
+		
+		compare_snapshots();
+		
+		if( !G->config->polling ) // only taking one snapshot
+			break;
+		
+		Sleep( G->config->polling * 1000 );
+		
+		/* swap pointers to previous and current snapshot stores.
+		this is better than continually freeing and creating the stores.
+		the current snapshot becomes the previous, and the former previous is set 
+		to be overwritten with new info and become the current.
+		*/
+		G->current ^= G->previous, G->previous ^= G->current, G->current ^= G->previous;
+	}
+	
+	free_global_store();
+	
+	return 0;
 }
