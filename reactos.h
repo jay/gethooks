@@ -20,14 +20,15 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
 These are the structs needed to read from the session handle table.
-I copied these structs from the ReactOS project, and then made minor 
-modifications to names or types (eg changing to void* to avoid dependency).
+I copied these structs from the ReactOS project (with a few exceptions as noted), and then made 
+minor modifications to names or types (eg changing to void* to avoid dependency).
 */
 
-#ifndef _REACTOS_STRUCTS_H
-#define _REACTOS_STRUCTS_H
+#ifndef _REACTOS_H
+#define _REACTOS_H
 
 #include <windows.h>
+
 
 
 #ifdef __cplusplus
@@ -65,6 +66,8 @@ typedef struct _HANDLEENTRY
 #define HANDLEF_FINALDESTROY   0x08
 #define HANDLEF_MARKED_OK      0x10
 #define HANDLEF_GRANTED        0x20
+// mask for valid flags
+#define HANDLEF_VALID   0x3F
 
 
 // 8/17/2011
@@ -139,6 +142,20 @@ typedef struct _HOOK
 } HOOK, *PHOOK;
 
 
+// 9/18/2011
+// http://forum.sysinternals.com/enumerate-windows-hooks_topic23877.html#122641
+#define HF_GLOBAL   0x0001
+#define HF_ANSI   0x0002
+#define HF_NEEDHC_SKIP   0x0004
+#define HF_HUNG   0x0008
+#define HF_HOOKFAULTED   0x0010
+#define HF_NOPLAYBACKDELAY   0x0020
+#define HF_WX86KNOWINDOWLL   0x0040
+#define HF_DESTROYED   0x0080
+// mask for valid flags
+#define HF_VALID   0x00FF
+
+
 // 8/17/2011
 // http://reactos.org/wiki/Techwiki:Win32k/DESKTOP
 #define CWINHOOKS (WH_MAX - WH_MIN + 1)
@@ -168,8 +185,32 @@ typedef struct _DESKTOPINFO
 
 
 
+/** 
+these functions are documented in the comment block above their definitions in reactos.c
+*/
+void print_HANDLEENTRY_type( 
+	const BYTE bType   // in
+);
+
+void print_HANDLEENTRY_flags( 
+	const BYTE bFlags   // in
+);
+
+void print_HANDLEENTRY(
+	const HANDLEENTRY *const entry   // in
+);
+
+void print_HOOK_flags( 
+	const DWORD flags   // in
+);
+
+void print_HOOK(
+	const HOOK *const object   // in
+);
+
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _REACTOS_STRUCTS_H
+#endif // _REACTOS_H

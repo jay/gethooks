@@ -67,10 +67,10 @@ struct global
 	struct desktop *desktops;   // create_desktop_store(), free_desktop_store()
 	
 	/* previous snapshot of hooks and threads. requires desktops init. */
-	struct snapshot *previous;   // create_snapshot_store(), free_snapshot_store()
+	struct snapshot *past;   // create_snapshot_store(), free_snapshot_store()
 	
 	/* current snapshot of hooks and threads. requires desktops init. */
-	struct snapshot *current;   // create_snapshot_store(), free_snapshot_store()
+	struct snapshot *present;   // create_snapshot_store(), free_snapshot_store()
 };
 
 

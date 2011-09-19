@@ -41,10 +41,10 @@ For each HANDLEENTRY traversed if its bType == TYPE_HOOK then the handle entry i
 */
 struct hook 
 {
-	/* a copy of the HANDLEENTRY for the HOOK */
+	/* a copy of the HANDLEENTRY struct for the HOOK */
 	HANDLEENTRY entry;
 	
-	/* a copy of the HOOK */
+	/* a copy of the HOOK struct */
 	HOOK object;
 	
 	/* the thread that owns the handle entry to the HOOK */
@@ -126,20 +126,6 @@ static struct desktop_hook_item *add_desktop_hook_item(
 	struct desktop_item *const desktop   // in
 );
 
-int is_hook_wanted( 
-	const struct hook *const hook   // in
-);
-
-int match_hook_process_pid(
-	const struct hook *const hook,   // in
-	const int pid   // in
-);
-
-int match_hook_process_name(
-	const struct hook *const hook,   // in
-	const WCHAR *const name   // in
-);
-
 int compare_hook( 
 	const void *const p1,   // in
 	const void *const p2   // in
@@ -147,14 +133,6 @@ int compare_hook(
 
 int init_desktop_hook_store( 
 	struct snapshot *const parent   // in
-);
-
-void print_HANDLEENTRY(
-	const HANDLEENTRY *const entry   // in
-);
-
-void print_HOOK(
-	const HOOK *const object   // in
 );
 
 void print_hook(

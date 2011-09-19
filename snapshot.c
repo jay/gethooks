@@ -37,18 +37,6 @@ If the passed in thread info is for a GUI thread add it to the passed in snapsho
 -
 
 -
-match_gui_process_name()
-
-Compare a GUI thread's process name to the passed in name.
--
-
--
-match_gui_process_pid()
-
-Compare a GUI thread's process id to the passed in process id.
--
-
--
 compare_gui()
 
 Compare two gui structs according to the kernel address of the associated Win32ThreadInfo struct.
@@ -415,52 +403,6 @@ cleanup:
 	}
 	
 	return return_code;
-}
-
-
-
-/* match_gui_process_name()
-Compare a GUI thread's process name to the passed in name.
-
-returns nonzero on success ('name' matches the GUI thread's process name)
-*/
-int match_gui_process_name(
-	const struct gui *const gui,   // in
-	const WCHAR *const name   // in
-)
-{
-	FAIL_IF( !gui );
-	FAIL_IF( !name );
-	
-	
-	if( gui->spi 
-		&& gui->spi->ImageName.Buffer 
-		&& !_wcsicmp( gui->spi->ImageName.Buffer, name )
-	)
-		return TRUE;
-	else
-		return FALSE;
-}
-
-
-/* match_gui_process_pid()
-Compare a GUI thread's process id to the passed in process id.
-
-returns nonzero on success ('pid' matches the GUI thread's process id)
-*/
-int match_gui_process_pid(
-	const struct gui *const gui,   // in
-	const int pid   // in
-)
-{
-	FAIL_IF( !gui );
-	FAIL_IF( !pid );
-	
-	
-	if( gui->spi && ( pid == (int)( (DWORD)gui->spi->UniqueProcessId ) ) )
-		return TRUE;
-	else
-		return FALSE;
 }
 
 

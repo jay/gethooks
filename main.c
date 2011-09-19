@@ -174,13 +174,13 @@ int main( int argc, char **argv )
 	/* gethooks function */
 	for( ;; )
 	{
-		if( !init_snapshot_store( G->current ) )
+		if( !init_snapshot_store( G->present ) )
 		{
 			MSG_FATAL( "The snapshot store failed to initialize." );
 			exit( 1 );
 		}
 		
-		compare_snapshots();
+		print_diff_desktop_hooks( G->past->desktop_hooks, G->present->desktop_hooks );
 		
 		if( !G->config->polling ) // only taking one snapshot
 			break;
@@ -190,9 +190,9 @@ int main( int argc, char **argv )
 		/* swap pointers to previous and current snapshot stores.
 		this is better than continually freeing and creating the stores.
 		the current snapshot becomes the previous, and the former previous is set 
-		to be overwritten with new info and become the current.
+		to be reinitialized with new info and become the current.
 		*/
-		G->current ^= G->previous, G->previous ^= G->current, G->current ^= G->previous;
+		G->present ^= G->past, G->past ^= G->present, G->present ^= G->past;
 	}
 	
 	free_global_store();

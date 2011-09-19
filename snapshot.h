@@ -29,7 +29,7 @@ SYSTEM_PROCESS_INFORMATION
 */
 #include "nt_independent_sysprocinfo_structs.h"
 
-////**/
+/* the desktop hook store */
 #include "desktop_hook.h"
 
 
@@ -169,16 +169,6 @@ static int callback_add_gui(
 	SYSTEM_THREAD_INFORMATION *const sti,   // in
 	const ULONG remaining,   // in
 	const DWORD flags   // in, optional
-);
-
-int match_gui_process_name(
-	const struct gui *const gui,   // in
-	const WCHAR *const name   // in
-);
-
-int match_gui_process_pid(
-	const struct gui *const gui,   // in
-	const int pid   // in
 );
 
 static int compare_gui( 
