@@ -55,6 +55,12 @@ Take a snapshot of the system state. This initializes a snapshot store.
 -
 
 -
+print_gui_brief()
+
+Print some brief information on a GUI thread's process name, process id, thread id, etc. No newline.
+-
+
+-
 print_gui()
 
 Print a gui struct.
@@ -600,6 +606,38 @@ int init_snapshot_store(
 	/* the snapshot store has been initialized */
 	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time );
 	return TRUE;
+}
+
+
+
+/* print_gui_brief()
+Print some brief information on a GUI thread's process name, process id, thread id, etc. No newline.
+*/
+void print_gui_brief( 
+	struct gui *gui   // in
+)
+{
+	if( !gui )
+		return;
+	
+	if( gui->spi && gui->spi->ImageName.Buffer )
+	{
+		printf( "%.*ls", 
+			(int)( gui->spi->ImageName.Length / sizeof( WCHAR ) ), 
+			gui->spi->ImageName.Buffer 
+		);
+	}
+	else
+		printf( "<unknown>" );
+	
+	printf( " (" );
+	printf( "PID %Iu", (size_t)( a->spi ? a->spi->UniqueProcessId : 0 ) );
+	printf( ", TID %Iu", (size_t)( a->sti ? a->sti->ClientId.UniqueThread : 0 ) );
+	printf( ", " );
+	PRINT_BARE_PTR( a->pvWin32ThreadInfo );
+	printf( " )" );
+	
+	return;
 }
 
 

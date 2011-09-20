@@ -185,6 +185,10 @@ int init_snapshot_store(
 	struct snapshot *const store   // in
 );
 
+void print_gui_brief( 
+	struct gui *gui   // in
+);
+
 void print_gui(
 	const struct gui *const gui   // in
 );

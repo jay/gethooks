@@ -53,6 +53,30 @@ Match a hook struct's associated GUI threads' process names to the passed in nam
 -
 
 -
+print_diff_gui()
+
+Compare two gui structs and print any significant differences.
+-
+
+-
+print_hook_notice_begin()
+
+Helper function to print a hook [begin] header with basic hook info.
+-
+
+-
+print_hook_notice_end()
+
+Helper function to print a hook [end] header.
+-
+
+-
+print_diff_hook()
+
+Compare two hook structs, both for the same HOOK object, and print any significant differences.
+-
+
+-
 print_diff_desktop_hook_items()
 
 Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
@@ -239,6 +263,180 @@ int match_hook_process_name(
 
 
 
+/* print_diff_gui()
+Compare two gui structs and print any significant differences.
+
+'a' is the old gui thread info (optional)
+'b' is the new gui thread info (optional)
+'threadname' is the name of the gui thread as it applies to the HOOK. eg "target", "origin"
+
+returns nonzero if there are significant differences (something is printed)
+*/
+int print_diff_gui(
+	const struct gui *const a,   // in, optional
+	const struct gui *const b,   // in, optional
+	const char *const threadname   // in
+)
+{
+	WCHAR empty1[] = L"<unknown>";
+	WCHAR empty2[] = L"<unknown>";
+	struct
+	{
+		void *pvWin32ThreadInfo;
+		void *pvTeb;
+		HANDLE tid;
+		HANDLE pid;
+		UNICODE_STRING ImageName;
+	} oldstuff, newstuff;
+	
+	FAIL_IF( !threadname );
+	
+	
+	ZeroMemory( &oldstuff, sizeof( oldstuff ) );
+	ZeroMemory( &newstuff, sizeof( newstuff ) );
+	
+	oldstuff.ImageName.Buffer = empty1;
+	oldstuff.ImageName.Length = wcslen( oldstuff.ImageName.Buffer ) * sizeof( WCHAR );
+	oldstuff.ImageName.MaximumLength = oldstuff.ImageName.Length + sizeof( WCHAR );
+	
+	newstuff.ImageName.Buffer = empty2;
+	newstuff.ImageName.Length = wcslen( newstuff.ImageName.Buffer ) * sizeof( WCHAR );
+	newstuff.ImageName.MaximumLength = newstuff.ImageName.Length + sizeof( WCHAR );
+	
+	/* both oldstuff and newstuff have been initialized empty */
+	
+	if( a )
+	{
+		oldstuff.pvWin32ThreadInfo = a->pvWin32ThreadInfo;
+		oldstuff.pvTeb = a->pvTeb;
+		
+		if( a->sti )
+			oldstuff.tid = a->sti->ClientId.UniqueThread;
+		
+		if( a->spi )
+		{
+			oldstuff.pid = a->spi->UniqueProcessId;
+			
+			if( a->spi->ImageName.Buffer )
+				oldstuff.ImageName = a->spi->ImageName;
+		}
+	}
+	
+	if( b )
+	{
+		newstuff.pvWin32ThreadInfo = b->pvWin32ThreadInfo;
+		newstuff.pvTeb = b->pvTeb;
+		
+		if( b->sti )
+			newstuff.tid = b->sti->ClientId.UniqueThread;
+		
+		if( b->spi )
+		{
+			newstuff.pid = b->spi->UniqueProcessId;
+			
+			if( b->spi->ImageName.Buffer )
+				newstuff.ImageName = b->spi->ImageName;
+		}
+	}
+	
+	
+	if( ( oldstuff.pvWin32ThreadInfo == newstuff.pvWin32ThreadInfo )
+		&& ( oldstuff.pvTeb == newstuff.pvTeb )
+		&& ( oldstuff.tid == newstuff.tid )
+		&& ( oldstuff.pid == newstuff.pid )
+		&& ( oldstuff.ImageName.Length == newstuff.ImageName.Length )
+		&& !wcsncmp( 
+			oldstuff.ImageName.Buffer, 
+			newstuff.ImageName.Buffer, 
+			oldstuff.ImageName.Length
+		)
+	)
+		return FALSE;
+	
+	
+	printf( "\nThe associated gui %s thread information has changed.\n", threadname );
+	printf( "Old %s: ", threadname );
+	print_gui_brief( a );
+	printf( "\n" );
+	
+	printf( "New %s:", threadname );
+	print_gui_brief( b );
+	printf( "\n" );
+	
+	
+	return TRUE;
+}
+
+
+
+/* print_hook_notice_begin()
+Helper function to print a hook [begin] header with basic hook info.
+
+'b' is the hook info
+'deskname' is the desktop name
+'difftype' is the reported action, eg HOOK_ADDED, HOOK_MODIFIED, HOOK_REMOVED
+*/
+static void print_hook_notice_begin(
+	const struct hook *const b,   // in
+	const WCHAR *const deskname,   // in
+	const enum difftype difftype   // in
+)
+{
+	const char *deskname = NULL;
+	
+	FAIL_IF( !b );
+	FAIL_IF( !deskname );
+	FAIL_IF( !difftype );
+	
+	
+	PRINT_SEP_BEGIN( "" );
+	
+	if( difftype == HOOK_ADDED )
+		diffname = "Added";
+	else if( difftype == HOOK_REMOVED )
+		diffname = "Removed";
+	else if( difftype == HOOK_MODIFIED )
+		diffname = "Modified";
+	else
+		FAIL_IF( TRUE );
+	
+	
+	printf( "[%s HOOK ", diffname );
+	PRINT_BARE_PTR( b->entry.pHead );
+	printf( " on desktop %ls]\n", deskname );
+	
+	printf( "Name: " );
+	print_HOOK_id( hook->object.iHook );
+	printf( "\n" );
+	
+	printf( "Owner: " );
+	print_gui_brief( b->owner );
+	printf( "\n" );
+	
+	printf( "Origin: " );
+	print_gui_brief( b->origin );
+	printf( "\n" );
+	
+	printf( "Target: " );
+	print_gui_brief( b->target );
+	printf( "\n" );
+	
+	return;
+}
+
+
+
+/* print_hook_notice_end()
+Helper function to print a hook [end] header.
+*/
+static void print_hook_notice_end( void )
+{
+	PRINT_SEP_END( "" );
+	return;
+}
+
+
+
 /* print_diff_hook()
 Compare two hook structs, both for the same HOOK object, and print any significant differences.
 
@@ -252,23 +450,37 @@ void print_diff_hook
 	const WCHAR *const deskname   // in
 )
 {
+	unsigned modified = FALSE;
 	FAIL_IF( !a );
 	FAIL_IF( !b );
 	FAIL_IF( !deskname );
 	
-	notice printf( "HOOK object modified on desktop %ls:\n", deskname );
 	
 	if( a->entry.bFlags != b->entry.bFlags )
 	{
 		BYTE temp = 0;
 		
 		
-		printf( "The HANDLEENTRY's flags have changed.\n" );
+		if( !modified )
+		{
+			modified = TRUE;
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+		}
+		
+		printf( "\nThe associated HANDLEENTRY's flags have changed.\n" );
+		
+		temp = (BYTE)( a->entry.bFlags & b->entry.bFlags );
+		if( temp )
+		{
+			printf( "Flags same: " );
+			print_HANDLEENTRY_flags( temp );
+			printf( "\n" );
+		}
 		
 		temp = (BYTE)( a->entry.bFlags & ~b->entry.bFlags );
 		if( temp )
 		{
-			printf( "Removed: " );
+			printf( "Flags removed: " );
 			print_HANDLEENTRY_flags( temp );
 			printf( "\n" );
 		}
@@ -276,10 +488,71 @@ void print_diff_hook
 		temp = (BYTE)( b->entry.bFlags & ~a->entry.bFlags );
 		if( temp )
 		{
-			printf( "Added: " );
+			printf( "Flags added: " );
 			print_HANDLEENTRY_flags( temp );
 			printf( "\n" );
 		}
+	}
+	
+	/* the gui->owner struct has the process and thread info for entry.pOwner */
+	print_diff_gui( "owner", a->owner, b->owner );
+	
+	if( a->object.head.h != b->object.head.h )
+	{
+		printf( "\nThe HOOK's handle has changed.\n" );
+		PRINT_NAME_FOR_PTR( "Old", a->object.head.h );
+		PRINT_NAME_FOR_PTR( "New", b->object.head.h );
+	}
+	
+	if( a->object.head.cLockObj != b->object.head.cLockObj )
+	{
+		printf( "\nThe HOOK's lock count has changed.\n" );
+		printf( "Old: %lu\n", a->object.head.cLockObj );
+		printf( "New: %lu\n", b->object.head.cLockObj );
+	}
+	
+	/* the gui->origin struct has the process and thread info for pti */
+	print_diff_gui( "origin", a->origin, b->origin );
+	
+	if( a->object.rpdesk1 != b->object.rpdesk1 )
+	{
+		printf( "\nrpdesk1 has changed. The desktop that the HOOK is on has changed?\n" );
+		PRINT_NAME_FOR_PTR( "Old", a->object.rpdesk1 );
+		PRINT_NAME_FOR_PTR( "New", b->object.rpdesk1 );
+	}
+	
+	if( a->object.pSelf != b->object.pSelf )
+	{
+		printf( "\nThe HOOK's kernel address has changed.\n" );
+		PRINT_NAME_FOR_PTR( "Old", a->object.pSelf );
+		PRINT_NAME_FOR_PTR( "New", b->object.pSelf );
+	}
+	
+	if( a->object.phkNext != b->object.phkNext )
+	{
+		printf( "\nThe HOOK's chain has been modified.\n" );
+		PRINT_NAME_FOR_PTR( "Old", a->object.phkNext );
+		PRINT_NAME_FOR_PTR( "New", b->object.phkNext );
+	}
+	
+	if( a->object.iHook != b->object.iHook )
+	{
+		printf( "\nThe HOOK's id has changed.\n" );
+		
+		printf( "Old: " );
+		print_HOOK_id( a->object.iHook );
+		printf( "\n" );
+		
+		printf( "New: " );
+		print_HOOK_id( b->object.iHook );
+		printf( "\n" );
+	}
+	
+	if( a->object.offPfn != b->object.offPfn )
+	{
+		printf( "\nThe HOOK's function offset has changed.\n" );
+		PRINT_NAME_FOR_PTR( "Old", a->object.offPfn );
+		PRINT_NAME_FOR_PTR( "New", b->object.offPfn );
 	}
 	
 	if( a->object.flags != b->object.flags )
@@ -287,12 +560,20 @@ void print_diff_hook
 		BYTE temp = 0;
 		
 		
-		printf( "The HOOK's flags have changed.\n" );
+		printf( "\nThe HOOK's flags have changed.\n" );
+		
+		temp = (BYTE)( a->object.flags & b->object.flags );
+		if( temp )
+		{
+			printf( "Flags same: " );
+			print_HOOK_flags( temp );
+			printf( "\n" );
+		}
 		
 		temp = (BYTE)( a->object.flags & ~b->object.flags );
 		if( temp )
 		{
-			printf( "Removed: " );
+			printf( "Flags removed: " );
 			print_HOOK_flags( temp );
 			printf( "\n" );
 		}
@@ -300,19 +581,29 @@ void print_diff_hook
 		temp = (BYTE)( b->object.flags & ~a->object.flags );
 		if( temp )
 		{
-			printf( "Added: " );
+			printf( "Flags added: " );
 			print_HOOK_flags( temp );
 			printf( "\n" );
 		}
 	}
 	
-	if( ( a->object.offPfn != b->object.offPfn )
+	if( a->object.ihmod != b->object.ihmod )
 	{
-		printf( "The offset of the HOOK's function has changed.\n" );
-		
-		printf( "Old: 0x%08lX\tNew: 0x%08lX", a->object.offPfn, b->object.offPfn
-		printf( "Old: 0x%08lX\tNew: 0x%08lX", a->object.offPfn, b->object.offPfn
+		printf( "\nThe HOOK's function module atom index has changed.\n" );
+		printf( "Old: %d\n", a->object.ihmod );
+		printf( "New: %d\n", b->object.ihmod );
 	}
+	
+	/* the gui->target struct has the process and thread info for ptiHooked */
+	print_diff_gui( "target", a->target, b->target );
+	
+	if( a->object.rpdesk2 != b->object.rpdesk2 )
+	{
+		printf( "\nrpdesk2 has changed. HOOK locked, owner destroyed?\n" );
+		PRINT_NAME_FOR_PTR( "Old", a->object.rpdesk2 );
+		PRINT_NAME_FOR_PTR( "New", b->object.rpdesk2 );
+	}
+	
 	
 	return;
 }
@@ -351,8 +642,8 @@ void print_diff_desktop_hook_items(
 		{
 			if( match( &a->hook[ a_hi ] ) )
 			{
-				printf( "HOOK object removed from desktop %ls:\n", deskname );
-				print_basic_hook_info( &a->hook[ a_hi ] );
+				print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
+				print_hook_notice_end();
 			}
 			
 			++a_hi;
@@ -361,8 +652,8 @@ void print_diff_desktop_hook_items(
 		{
 			if( match( &b->hook[ b_hi ] ) )
 			{
-				printf( "HOOK object added to desktop %ls:\n", deskname );
-				print_basic_hook_info( &b->hook[ b_hi ] );
+				print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
+				print_hook_notice_end();
 			}
 			
 			++b_hi;
@@ -382,22 +673,23 @@ void print_diff_desktop_hook_items(
 	
 	while( a_hi < a->hook_count ) // hooks removed
 	{
-		printf( "HOOK removed from desktop %ls.\n", a->desktop->pwszDesktopName );
-		print_hook_simple( &a->hook[ a_hi ] );
+		print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
+		print_hook_notice_end();
 		
 		++a_hi;
 	}
 	
 	while( b_hi < b->hook_count ) // hooks added
 	{
-		printf( "HOOK added to desktop %ls.\n", b->desktop->pwszDesktopName );
-		print_hook_simple( &b->hook[ b_hi ] );
+		print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
+		print_hook_notice_end();
 		
 		++b_hi;
 	}
 	
 	return;
 }
+
 
 
 /* print_diff_desktop_hook_lists()

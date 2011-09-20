@@ -33,6 +33,11 @@ extern "C" {
 #endif
 
 
+/* the diff types */
+enum difftype { HOOK_ADDED = 1, HOOK_MODIFIED, HOOK_REMOVED };
+
+
+
 /** 
 these functions are documented in the comment block above their definitions in gethooks.c
 */
@@ -58,6 +63,26 @@ int match_hook_process_pid(
 int match_hook_process_name(
 	const struct hook *const hook,   // in
 	const WCHAR *const name   // in
+);
+
+int print_diff_gui(
+	const struct gui *const a,   // in, optional
+	const struct gui *const b,   // in, optional
+	const char *const threadname   // in
+);
+
+static void print_hook_notice_begin(
+	const struct hook *const b,   // in
+	const WCHAR *const deskname,   // in
+	const enum difftype difftype   // in
+);
+
+static void print_hook_notice_end( void );
+
+void print_diff_hook
+	const struct hook *const a,   // in
+	const struct hook *const b,   // in
+	const WCHAR *const deskname   // in
 );
 
 void print_diff_desktop_hook_items( 
