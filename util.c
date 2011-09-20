@@ -47,18 +47,6 @@ Get a wide character string from a multibyte character string.
 -
 
 -
-get_hook_name_from_id()
-
-Get the hook name from its id.
--
-
--
-get_hook_id_from_name()
-
-Get the hook id from its name.
--
-
--
 get_user_obj_name()
 
 Get the name of a user object.
@@ -76,6 +64,8 @@ Print an initialization utc time as local time.
 #include <limits.h>
 
 #include "traverse_threads.h"
+
+#include "reactos.h"
 
 #include "util.h"
 
@@ -258,96 +248,6 @@ int get_wstr_from_mbstr(
 
 
 
-/* hook name lookup for get_hook_name_from_id() and get_hook_id_from_name() */
-#define CHOOKNAMES 16
-static WCHAR *hooknames[ CHOOKNAMES ] = 
-{
-	L"WH_MSGFILTER",   // id -1
-	L"WH_JOURNALRECORD",   // id 0
-	L"WH_JOURNALPLAYBACK",   // id 1
-	L"WH_KEYBOARD",   // id 2
-	L"WH_GETMESSAGE",   // id 3
-	L"WH_CALLWNDPROC",   // id 4
-	L"WH_CBT",   // id 5
-	L"WH_SYSMSGFILTER",   // id 6
-	L"WH_MOUSE",   // id 7
-	L"WH_HARDWARE",   // id 8
-	L"WH_DEBUG",   // id 9
-	L"WH_SHELL",   // id 10
-	L"WH_FOREGROUNDIDLE",   // id 11
-	L"WH_CALLWNDPROCRET",   // id 12
-	L"WH_KEYBOARD_LL",   // id 13
-	L"WH_MOUSE_LL"   // id 14
-};
-
-
-
-/* get_hook_name_from_id()
-Get the hook name from its id.
-
-'id' is the hook id you want the name of.
-
-returns nonzero on success.
-if success then '*name' has received a pointer to the hook name. free() when done.
-if fail then '*name' has received NULL.
-*/
-int get_hook_name_from_id( 
-	const WCHAR **const name,   // out deref
-	const int id   // in
-)
-{
-	const int index = id + 1; /* the index in the array is the same as the id + 1 */
-	
-	FAIL_IF( !name );
-	
-	
-	*name = NULL;
-	
-	if( ( index >= 0 ) && ( index < CHOOKNAMES ) )
-		*name = must_wcsdup( hooknames[ index ] );
-	
-	return !!*name;
-}
-
-
-
-/* get_hook_id_from_name()
-Get the hook id from its name.
-
-'name' is the hook name you want the id of.
-
-returns nonzero on success.
-if success then '*id' has received the id.
-if fail then '*id' has received INT_MAX.
-*/
-int get_hook_id_from_name( 
-	int *const id,   // out
-	const WCHAR *const name   // in
-)
-{
-	int index = 0;
-	
-	FAIL_IF( !id );
-	FAIL_IF( !name );
-	
-	
-	*id = INT_MAX;
-	
-	for( index = 0; index < CHOOKNAMES; ++index )
-	{
-		if( !_wcsicmp( name, hooknames[ index ] ) ) // match
-		{
-			/* the id is the same as the index in the array - 1 */
-			*id = index - 1;
-			break;
-		}
-	}
-	
-	return ( *id != INT_MAX );
-}
-
-
-
 /* get_user_obj_name()
 Get the name of a user object.
 
@@ -406,7 +306,7 @@ eg print_init_time( "store->init_time", store->init_time );
 store->init_time: 12:35:38 PM  9/14/2011
 */
 void print_init_time(
-	char *msg   // in, optional
+	char *msg,   // in, optional
 	__int64 *utc   // in
 )
 {

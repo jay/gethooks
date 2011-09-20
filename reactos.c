@@ -23,15 +23,21 @@ This file contains functions for printing the structs I'm using from the ReactOS
 Each function is documented in the comment block above its definition.
 
 -
+w_handlenames[], w_handlenames_count
+
+An array of user-readable wide names of HANDLEENTRY types.
+-
+
+-
 print_HANDLEENTRY_type()
 
-Print type of a HANDLEENTRY.
+Print user-readable name of a HANDLEENTRY's type. No newline.
 -
 
 -
 print_HANDLEENTRY_flags()
 
-Print flags for a HANDLEENTRY.
+Print user-readable names of a HANDLEENTRY's flags. No newline.
 -
 
 -
@@ -41,15 +47,39 @@ Print a HANDLEENTRY struct.
 -
 
 -
+w_hooknames[], w_hooknames_count
+
+An array of user-readable wide names of HOOK ids. Add 1 to an id to get its position in the index.
+-
+
+-
+print_HOOK_id()
+
+Print user-readable name of a HOOK's id. No newline.
+-
+
+-
 print_HOOK_flags()
 
-Print flags for a HOOK.
+Print user-readable names of a HOOK's flags. No newline.
 -
 
 -
 print_HOOK()
 
 Print a HOOK struct.
+-
+
+-
+get_hook_name_from_id()
+
+Get the hook name from its id.
+-
+
+-
+get_hook_id_from_name()
+
+Get the hook id from its name.
 -
 
 */
@@ -62,46 +92,51 @@ Print a HOOK struct.
 
 
 
-#define CTYPENAMES 23
-static char *typenames[ CTYPENAMES ] = { 
-	"TYPE_FREE", 
-	"TYPE_WINDOW", 
-	"TYPE_MENU", 
-	"TYPE_CURSOR", 
-	"TYPE_SETWINDOWPOS", 
-	"TYPE_HOOK", 
-	"TYPE_CLIPDATA", 
-	"TYPE_CALLPROC", 
-	"TYPE_ACCELTABLE", 
-	"TYPE_DDEACCESS", 
-	"TYPE_DDECONV", 
-	"TYPE_DDEXACT", 
-	"TYPE_MONITOR", 
-	"TYPE_KBDLAYOUT", 
-	"TYPE_KBDFILE", 
-	"TYPE_WINEVENTHOOK", 
-	"TYPE_TIMER", 
-	"TYPE_INPUTCONTEXT", 
-	"TYPE_HIDDATA", 
-	"TYPE_DEVICEINFO", 
-	"TYPE_TOUCHINPUT", 
-	"TYPE_GESTUREINFO", 
-	"TYPE_CTYPES"
+/* w_handlenames[]
+An array of user-readable wide names of HANDLEENTRY types.
+*/
+const WCHAR *const w_handlenames[ 23 ] = 
+{ 
+	L"TYPE_FREE", 
+	L"TYPE_WINDOW", 
+	L"TYPE_MENU", 
+	L"TYPE_CURSOR", 
+	L"TYPE_SETWINDOWPOS", 
+	L"TYPE_HOOK", 
+	L"TYPE_CLIPDATA", 
+	L"TYPE_CALLPROC", 
+	L"TYPE_ACCELTABLE", 
+	L"TYPE_DDEACCESS", 
+	L"TYPE_DDECONV", 
+	L"TYPE_DDEXACT", 
+	L"TYPE_MONITOR", 
+	L"TYPE_KBDLAYOUT", 
+	L"TYPE_KBDFILE", 
+	L"TYPE_WINEVENTHOOK", 
+	L"TYPE_TIMER", 
+	L"TYPE_INPUTCONTEXT", 
+	L"TYPE_HIDDATA", 
+	L"TYPE_DEVICEINFO", 
+	L"TYPE_TOUCHINPUT", 
+	L"TYPE_GESTUREINFO", 
+	L"TYPE_CTYPES"
 };
+/* initialize to number of elements in w_handlenames[]: */
+const unsigned w_handlenames_count = sizeof( w_handlenames ) / sizeof( w_handlenames[ 0 ] );
 
 
 
 /* print_HANDLEENTRY_type()
-Print type of a HANDLEENTRY.
+Print user-readable name of a HANDLEENTRY's type. No newline.
 */
 void print_HANDLEENTRY_type( 
 	const BYTE bType   // in
 )
 {
-	if( bType < CTYPENAMES )
-		printf( "%s ", typenames[ bType ] );
+	if( ( bType >= 0 ) && ( bType < w_handlenames_count ) )
+		printf( "%s ", w_handlenames[ bType ] );
 	else
-		printf( "<0x%02X> ", (unsigned)bType );
+		printf( "<%u> ", (unsigned)bType );
 	
 	return;
 }
@@ -109,7 +144,7 @@ void print_HANDLEENTRY_type(
 
 
 /* print_HANDLEENTRY_flags()
-Print flags for a HANDLEENTRY.
+Print user-readable names of a HANDLEENTRY's flags. No newline.
 */
 void print_HANDLEENTRY_flags( 
 	const BYTE bFlags   // in
@@ -186,8 +221,54 @@ void print_HANDLEENTRY(
 
 
 
+/* w_hooknames[]
+An array of user-readable wide names of HOOK ids. Add 1 to an id to get its position in the index.
+*/
+const WCHAR *const w_hooknames[ 16 ] = 
+{
+	L"WH_MSGFILTER",   // id -1
+	L"WH_JOURNALRECORD",   // id 0
+	L"WH_JOURNALPLAYBACK",   // id 1
+	L"WH_KEYBOARD",   // id 2
+	L"WH_GETMESSAGE",   // id 3
+	L"WH_CALLWNDPROC",   // id 4
+	L"WH_CBT",   // id 5
+	L"WH_SYSMSGFILTER",   // id 6
+	L"WH_MOUSE",   // id 7
+	L"WH_HARDWARE",   // id 8
+	L"WH_DEBUG",   // id 9
+	L"WH_SHELL",   // id 10
+	L"WH_FOREGROUNDIDLE",   // id 11
+	L"WH_CALLWNDPROCRET",   // id 12
+	L"WH_KEYBOARD_LL",   // id 13
+	L"WH_MOUSE_LL"   // id 14
+};
+/* initialize to number of elements in w_hooknames[]: */
+const unsigned w_hooknames_count = sizeof( w_hooknames ) / sizeof( w_hooknames[ 0 ] );
+
+
+
+/* print_HOOK_id()
+Print user-readable name of a HOOK's id. No newline.
+*/
+void print_HOOK_id( 
+	const INT iHook   // in
+)
+{
+	const index = iHook + 1; /* the index in the array is the same as the id + 1 */
+	
+	if( ( index >= 0 ) && ( index < w_hooknames_count ) )
+		printf( "%s ", hooknames[ index ] );
+	else
+		printf( "<%d> ", iHook );
+	
+	return;
+}
+
+
+
 /* print_HOOK_flags()
-Print flags for a HOOK.
+Print user-readable names of a HOOK's flags. No newline.
 */
 void print_HOOK_flags( 
 	const DWORD flags   // in
@@ -267,3 +348,66 @@ void print_HOOK(
 
 
 
+/* get_hook_name_from_id()
+Get the hook name from its id.
+
+'id' is the hook id you want the name of.
+
+returns nonzero on success.
+if success then '*name' has received a pointer to the hook name. free() when done.
+if fail then '*name' has received NULL.
+*/
+int get_hook_name_from_id( 
+	const WCHAR **const name,   // out deref
+	const int id   // in
+)
+{
+	const int index = id + 1; /* the index in the array is the same as the id + 1 */
+	
+	FAIL_IF( !name );
+	
+	
+	*name = NULL;
+	
+	if( ( index >= 0 ) && ( index < w_hooknames_count ) )
+		*name = must_wcsdup( w_hooknames[ index ] );
+	
+	return !!*name;
+}
+
+
+
+/* get_hook_id_from_name()
+Get the hook id from its name.
+
+'name' is the hook name you want the id of.
+
+returns nonzero on success.
+if success then '*id' has received the id.
+if fail then '*id' has received INT_MAX.
+*/
+int get_hook_id_from_name( 
+	int *const id,   // out
+	const WCHAR *const name   // in
+)
+{
+	int index = 0;
+	
+	FAIL_IF( !id );
+	FAIL_IF( !name );
+	
+	
+	*id = INT_MAX;
+	
+	for( index = 0; index < w_hooknames_count; ++index )
+	{
+		if( !_wcsicmp( name, w_hooknames[ index ] ) ) // match
+		{
+			/* the id is the same as the index in the array - 1 */
+			*id = index - 1;
+			break;
+		}
+	}
+	
+	return ( *id != INT_MAX );
+}

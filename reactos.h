@@ -188,6 +188,9 @@ typedef struct _DESKTOPINFO
 /** 
 these functions are documented in the comment block above their definitions in reactos.c
 */
+extern const WCHAR *const w_handlenames[];
+extern const unsigned w_handlenames_count;
+
 void print_HANDLEENTRY_type( 
 	const BYTE bType   // in
 );
@@ -200,12 +203,29 @@ void print_HANDLEENTRY(
 	const HANDLEENTRY *const entry   // in
 );
 
+extern const WCHAR *const w_hooknames[];
+extern const unsigned w_hooknames_count;
+
+void print_HOOK_id( 
+	const INT iHook   // in
+);
+
 void print_HOOK_flags( 
 	const DWORD flags   // in
 );
 
 void print_HOOK(
 	const HOOK *const object   // in
+);
+
+int get_hook_name_from_id( 
+	const WCHAR **const name,   // out deref
+	const int id   // in
+);
+
+int get_hook_id_from_name( 
+	int *const id,   // out
+	const WCHAR *const name   // in
 );
 
 

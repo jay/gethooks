@@ -78,8 +78,20 @@ extern "C" {
 	} while( 0 )
 
 
-#define PRINT_PTR(addr)   \
-	printf( #addr ": 0x%0*IX", (int)( sizeof( size_t ) * 2 ), (size_t)( addr ) )
+#define PRINT_BARE_PTR(addr)   \
+	printf( "0x%0*IX", (int)( sizeof( size_t ) * 2 ), (size_t)( addr ) );
+
+#define PRINT_NAME_FOR_PTR(name,addr)   \
+	do \
+	{ \
+		const char *str = NULL; \
+		str = ( name ); \
+		printf( "%s%s", ( str ? str : "" ), ( ( str && str[ 0 ] ) ? ": " : "" ) ); \
+		PRINT_BARE_PTR( ( addr ) ); \
+		printf( "\n" ); \
+	} while( 0 )
+
+#define PRINT_PTR(addr)   PRINT_NAME_FOR_PTR( #addr, ( addr ) )
 
 
 #define PRINT_SEP_BEGIN(msg)   \
@@ -125,23 +137,13 @@ int get_wstr_from_mbstr(
 	const char *const mbstr   // in
 );
 
-int get_hook_name_from_id( 
-	const WCHAR **const name,   // out deref
-	const int id   // in
-);
-
-int get_hook_id_from_name( 
-	int *const id,   // out
-	const WCHAR *const name   // in
-);
-
 int get_user_obj_name( 
 	WCHAR **const name,   // out deref
 	HANDLE object   // in
 );
 
 void print_init_time(
-	char *msg   // in, optional
+	char *msg,   // in, optional
 	__int64 *utc   // in
 );
 
