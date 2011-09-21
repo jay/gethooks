@@ -38,24 +38,6 @@ Create a desktop hook item and append it to the desktop hook store's linked list
 -
 
 -
-is_hook_wanted()
-
-Check the user-specified configuration to determine if the hook struct should be processed.
--
-
--
-match_hook_process_pid()
-
-Match a hook struct's associated GUI threads' process pids to the passed in pid.
--
-
--
-match_hook_process_name()
-
-Match a hook struct's associated GUI threads' process names to the passed in name.
--
-
--
 compare_hook()
 
 Compare two hook structs according to the kernel address of the associated HOOK struct.

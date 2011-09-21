@@ -29,15 +29,15 @@ Compare a GUI thread's process name to the passed in name.
 -
 
 -
+match_hook_process_name()
+
+Match a hook struct's associated GUI threads' process names to the passed in name.
+-
+
+-
 match_gui_process_pid()
 
 Compare a GUI thread's process id to the passed in process id.
--
-
--
-is_hook_wanted()
-
-Check the user-specified configuration to determine if the hook struct should be processed.
 -
 
 -
@@ -47,15 +47,9 @@ Match a hook struct's associated GUI threads' process pids to the passed in pid.
 -
 
 -
-match_hook_process_name()
+is_hook_wanted()
 
-Match a hook struct's associated GUI threads' process names to the passed in name.
--
-
--
-print_diff_gui()
-
-Compare two gui structs and print any significant differences.
+Check the user-specified configuration to determine if the hook struct should be processed.
 -
 
 -
@@ -68,6 +62,12 @@ Helper function to print a hook [begin] header with basic hook info.
 print_hook_notice_end()
 
 Helper function to print a hook [end] header.
+-
+
+-
+print_diff_gui()
+
+Compare two gui structs and print any significant differences.
 -
 
 -
@@ -95,6 +95,8 @@ Print the HOOKs that have been added/removed from all attached to desktops betwe
 #include "util.h"
 
 #include "reactos.h"
+
+#include "snapshot.h"
 
 #include "diff.h"
 
@@ -128,6 +130,31 @@ int match_gui_process_name(
 
 
 
+/* match_hook_process_name()
+Match a hook struct's associated GUI threads' process names to the passed in name.
+
+returns nonzero on success ('name' matched one of the hook struct's GUI thread process names)
+*/
+int match_hook_process_name(
+	const struct hook *const hook,   // in
+	const WCHAR *const name   // in
+)
+{
+	FAIL_IF( !hook );
+	FAIL_IF( !name );
+	
+	
+	if( ( hook->owner && match_gui_process_name( hook->owner, name ) )
+		|| ( hook->origin && match_gui_process_name( hook->origin, name ) )
+		|| ( hook->target && match_gui_process_name( hook->target, name ) )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
 /* match_gui_process_pid()
 Compare a GUI thread's process id to the passed in process id.
 
@@ -143,6 +170,31 @@ int match_gui_process_pid(
 	
 	
 	if( gui->spi && ( pid == (int)( (DWORD)gui->spi->UniqueProcessId ) ) )
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* match_hook_process_pid()
+Match a hook struct's associated GUI threads' process pids to the passed in pid.
+
+returns nonzero on success ('pid' matched one of the hook struct's GUI thread process pids)
+*/
+int match_hook_process_pid(
+	const struct hook *const hook,   // in
+	const int pid   // in
+)
+{
+	FAIL_IF( !hook );
+	FAIL_IF( !name );
+	
+	
+	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
+		|| ( hook->origin && match_gui_process_pid( hook->origin, pid ) )
+		|| ( hook->target && match_gui_process_pid( hook->target, pid ) )
+	)
 		return TRUE;
 	else
 		return FALSE;
@@ -185,11 +237,12 @@ int is_hook_wanted(
 		
 		if( ( yes && ( G->config->proglist->type == LIST_EXCLUDE_PROG ) )
 			|| ( !yes && ( G->config->proglist->type == LIST_INCLUDE_PROG ) )
-				return FALSE; // the hook is not wanted
+		)
+			return FALSE; // the hook is not wanted
 	}
 	
 	
-	/* if there is a list of hooks to include/exclude */
+	/* if there is a list of HOOK ids to include/exclude */
 	if( G->config->hooklist->init_time 
 		&& ( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
 			|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
@@ -201,11 +254,12 @@ int is_hook_wanted(
 		
 		
 		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
-			yes = ( item->id == hook->object->iHook );
+			yes = ( item->id == hook->object->iHook ); // match HOOK id
 		
 		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
 			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
-				return FALSE; // the hook is not wanted
+		)
+			return FALSE; // the hook is not wanted
 	}
 	
 	return TRUE; // the hook is wanted
@@ -213,52 +267,70 @@ int is_hook_wanted(
 
 
 
-/* match_hook_process_pid()
-Match a hook struct's associated GUI threads' process pids to the passed in pid.
+/* print_hook_notice_begin()
+Helper function to print a hook [begin] header with basic hook info.
 
-returns nonzero on success ('pid' matched one of the hook struct's GUI thread process pids)
+'hook' is the hook info
+'deskname' is the desktop name
+'difftype' is the reported action, eg HOOK_ADDED, HOOK_MODIFIED, HOOK_REMOVED
 */
-int match_hook_process_pid(
+static void print_hook_notice_begin(
 	const struct hook *const hook,   // in
-	const int pid   // in
+	const WCHAR *const deskname,   // in
+	const enum difftype difftype   // in
 )
 {
+	const char *deskname = NULL;
+	
 	FAIL_IF( !hook );
-	FAIL_IF( !name );
+	FAIL_IF( !deskname );
+	FAIL_IF( !difftype );
 	
 	
-	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
-		|| ( hook->origin && match_gui_process_pid( hook->origin, pid ) )
-		|| ( hook->target && match_gui_process_pid( hook->target, pid ) )
-	)
-		return TRUE;
+	PRINT_HASHSEP_BEGIN( "" );
+	
+	if( difftype == HOOK_ADDED )
+		diffname = "Added";
+	else if( difftype == HOOK_REMOVED )
+		diffname = "Removed";
+	else if( difftype == HOOK_MODIFIED )
+		diffname = "Modified";
 	else
-		return FALSE;
+		FAIL_IF( TRUE );
+	
+	
+	printf( "[%s HOOK ", diffname );
+	PRINT_BARE_PTR( hook->entry.pHead );
+	printf( " on desktop %ls]\n", deskname );
+	
+	printf( "Name: " );
+	print_HOOK_id( hook->object.iHook );
+	printf( "\n" );
+	
+	printf( "Owner: " );
+	print_gui_brief( hook->owner );
+	printf( "\n" );
+	
+	printf( "Origin: " );
+	print_gui_brief( hook->origin );
+	printf( "\n" );
+	
+	printf( "Target: " );
+	print_gui_brief( hook->target );
+	printf( "\n" );
+	
+	return;
 }
 
 
 
-/* match_hook_process_name()
-Match a hook struct's associated GUI threads' process names to the passed in name.
-
-returns nonzero on success ('name' matched one of the hook struct's GUI thread process names)
+/* print_hook_notice_end()
+Helper function to print a hook [end] header.
 */
-int match_hook_process_name(
-	const struct hook *const hook,   // in
-	const WCHAR *const name   // in
-)
+static void print_hook_notice_end( void )
 {
-	FAIL_IF( !hook );
-	FAIL_IF( !name );
-	
-	
-	if( ( hook->owner && match_gui_process_name( hook->owner, name ) )
-		|| ( hook->origin && match_gui_process_name( hook->origin, name ) )
-		|| ( hook->target && match_gui_process_name( hook->target, name ) )
-	)
-		return TRUE;
-	else
-		return FALSE;
+	PRINT_HASHSEP_END( "" );
+	return;
 }
 
 
@@ -269,13 +341,21 @@ Compare two gui structs and print any significant differences.
 'a' is the old gui thread info (optional)
 'b' is the new gui thread info (optional)
 'threadname' is the name of the gui thread as it applies to the HOOK. eg "target", "origin"
+'modified_hook' is the hook struct for the modified header
 
-returns nonzero if there are significant differences (something is printed)
+'*modified_header' receives nonzero if the "Modified HOOK" header is printed by this function.
+the header is printed before any difference in the gui structs has been printed.
+if '*modified_header' is nonzero when this function is called then the header was already printed.
+
+returns nonzero if any difference was printed. 
+if this function returns nonzero then '*modified_header' is also nonzero.
 */
-int print_diff_gui(
+static int print_diff_gui(
 	const struct gui *const a,   // in, optional
 	const struct gui *const b,   // in, optional
-	const char *const threadname   // in
+	const char *const threadname,   // in
+	const struct hook *const modified_hook,   // in
+	unsigned *const modified_header   // in, out
 )
 {
 	WCHAR empty1[] = L"<unknown>";
@@ -290,7 +370,12 @@ int print_diff_gui(
 	} oldstuff, newstuff;
 	
 	FAIL_IF( !threadname );
+	FAIL_IF( !hook );
+	FAIL_IF( !modified );
 	
+	
+	if( !a && !b )
+		return FALSE;
 	
 	ZeroMemory( &oldstuff, sizeof( oldstuff ) );
 	ZeroMemory( &newstuff, sizeof( newstuff ) );
@@ -353,6 +438,14 @@ int print_diff_gui(
 	)
 		return FALSE;
 	
+	/* If the modified header has not yet been printed by another function then print it.
+	if !*modified_header then this gui diff is the first encountered between the two hook structs.
+	*/
+	if( !*modified_header )
+	{
+		print_hook_notice_begin( modified_hook, deskname, HOOK_MODIFIED );
+		*modified_header = TRUE;
+	}
 	
 	printf( "\nThe associated gui %s thread information has changed.\n", threadname );
 	printf( "Old %s: ", threadname );
@@ -369,88 +462,24 @@ int print_diff_gui(
 
 
 
-/* print_hook_notice_begin()
-Helper function to print a hook [begin] header with basic hook info.
-
-'b' is the hook info
-'deskname' is the desktop name
-'difftype' is the reported action, eg HOOK_ADDED, HOOK_MODIFIED, HOOK_REMOVED
-*/
-static void print_hook_notice_begin(
-	const struct hook *const b,   // in
-	const WCHAR *const deskname,   // in
-	const enum difftype difftype   // in
-)
-{
-	const char *deskname = NULL;
-	
-	FAIL_IF( !b );
-	FAIL_IF( !deskname );
-	FAIL_IF( !difftype );
-	
-	
-	PRINT_SEP_BEGIN( "" );
-	
-	if( difftype == HOOK_ADDED )
-		diffname = "Added";
-	else if( difftype == HOOK_REMOVED )
-		diffname = "Removed";
-	else if( difftype == HOOK_MODIFIED )
-		diffname = "Modified";
-	else
-		FAIL_IF( TRUE );
-	
-	
-	printf( "[%s HOOK ", diffname );
-	PRINT_BARE_PTR( b->entry.pHead );
-	printf( " on desktop %ls]\n", deskname );
-	
-	printf( "Name: " );
-	print_HOOK_id( hook->object.iHook );
-	printf( "\n" );
-	
-	printf( "Owner: " );
-	print_gui_brief( b->owner );
-	printf( "\n" );
-	
-	printf( "Origin: " );
-	print_gui_brief( b->origin );
-	printf( "\n" );
-	
-	printf( "Target: " );
-	print_gui_brief( b->target );
-	printf( "\n" );
-	
-	return;
-}
-
-
-
-/* print_hook_notice_end()
-Helper function to print a hook [end] header.
-*/
-static void print_hook_notice_end( void )
-{
-	PRINT_SEP_END( "" );
-	return;
-}
-
-
-
 /* print_diff_hook()
 Compare two hook structs, both for the same HOOK object, and print any significant differences.
 
 'a' is the old hook info
 'b' is the new hook info
 'deskname' is the name of the desktop the HOOK is on
+
+returns nonzero if any difference was printed. 
 */
-void print_diff_hook
+int print_diff_hook( 
 	const struct hook *const a,   // in
 	const struct hook *const b,   // in
 	const WCHAR *const deskname   // in
 )
 {
-	unsigned modified = FALSE;
+	/* modified_header is set nonzero if/when the "Modified HOOK" header has been printed */
+	unsigned modified_header = FALSE;
+	
 	FAIL_IF( !a );
 	FAIL_IF( !b );
 	FAIL_IF( !deskname );
@@ -461,10 +490,10 @@ void print_diff_hook
 		BYTE temp = 0;
 		
 		
-		if( !modified )
+		if( !modified_header )
 		{
-			modified = TRUE;
 			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
 		}
 		
 		printf( "\nThe associated HANDLEENTRY's flags have changed.\n" );
@@ -495,10 +524,16 @@ void print_diff_hook
 	}
 	
 	/* the gui->owner struct has the process and thread info for entry.pOwner */
-	print_diff_gui( "owner", a->owner, b->owner );
+	print_diff_gui( "owner", a->owner, b->owner, b, &modified_header );
 	
 	if( a->object.head.h != b->object.head.h )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's handle has changed.\n" );
 		PRINT_NAME_FOR_PTR( "Old", a->object.head.h );
 		PRINT_NAME_FOR_PTR( "New", b->object.head.h );
@@ -506,16 +541,28 @@ void print_diff_hook
 	
 	if( a->object.head.cLockObj != b->object.head.cLockObj )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's lock count has changed.\n" );
 		printf( "Old: %lu\n", a->object.head.cLockObj );
 		printf( "New: %lu\n", b->object.head.cLockObj );
 	}
 	
 	/* the gui->origin struct has the process and thread info for pti */
-	print_diff_gui( "origin", a->origin, b->origin );
+	print_diff_gui( "origin", a->origin, b->origin, b, &modified_header );
 	
 	if( a->object.rpdesk1 != b->object.rpdesk1 )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nrpdesk1 has changed. The desktop that the HOOK is on has changed?\n" );
 		PRINT_NAME_FOR_PTR( "Old", a->object.rpdesk1 );
 		PRINT_NAME_FOR_PTR( "New", b->object.rpdesk1 );
@@ -523,6 +570,12 @@ void print_diff_hook
 	
 	if( a->object.pSelf != b->object.pSelf )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's kernel address has changed.\n" );
 		PRINT_NAME_FOR_PTR( "Old", a->object.pSelf );
 		PRINT_NAME_FOR_PTR( "New", b->object.pSelf );
@@ -530,6 +583,12 @@ void print_diff_hook
 	
 	if( a->object.phkNext != b->object.phkNext )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's chain has been modified.\n" );
 		PRINT_NAME_FOR_PTR( "Old", a->object.phkNext );
 		PRINT_NAME_FOR_PTR( "New", b->object.phkNext );
@@ -537,6 +596,12 @@ void print_diff_hook
 	
 	if( a->object.iHook != b->object.iHook )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's id has changed.\n" );
 		
 		printf( "Old: " );
@@ -550,6 +615,12 @@ void print_diff_hook
 	
 	if( a->object.offPfn != b->object.offPfn )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's function offset has changed.\n" );
 		PRINT_NAME_FOR_PTR( "Old", a->object.offPfn );
 		PRINT_NAME_FOR_PTR( "New", b->object.offPfn );
@@ -559,6 +630,12 @@ void print_diff_hook
 	{
 		BYTE temp = 0;
 		
+		
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
 		
 		printf( "\nThe HOOK's flags have changed.\n" );
 		
@@ -589,23 +666,38 @@ void print_diff_hook
 	
 	if( a->object.ihmod != b->object.ihmod )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nThe HOOK's function module atom index has changed.\n" );
 		printf( "Old: %d\n", a->object.ihmod );
 		printf( "New: %d\n", b->object.ihmod );
 	}
 	
 	/* the gui->target struct has the process and thread info for ptiHooked */
-	print_diff_gui( "target", a->target, b->target );
+	print_diff_gui( "target", a->target, b->target, b, &modified_header );
 	
 	if( a->object.rpdesk2 != b->object.rpdesk2 )
 	{
+		if( !modified_header )
+		{
+			print_hook_notice_begin( b, deskname, HOOK_MODIFIED );
+			modified_header = TRUE;
+		}
+		
 		printf( "\nrpdesk2 has changed. HOOK locked, owner destroyed?\n" );
 		PRINT_NAME_FOR_PTR( "Old", a->object.rpdesk2 );
 		PRINT_NAME_FOR_PTR( "New", b->object.rpdesk2 );
 	}
 	
 	
-	return;
+	if( modified_header )
+		print_hook_notice_end();
+	
+	return !!modified_header;
 }
 
 
@@ -640,7 +732,7 @@ void print_diff_desktop_hook_items(
 		
 		if( ret < 0 ) // hook removed
 		{
-			if( match( &a->hook[ a_hi ] ) )
+			if( is_hook_wanted( &a->hook[ a_hi ] ) )
 			{
 				print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
 				print_hook_notice_end();
@@ -650,7 +742,7 @@ void print_diff_desktop_hook_items(
 		}
 		else if( ret > 0 ) // hook added
 		{
-			if( match( &b->hook[ b_hi ] ) )
+			if( is_hook_wanted( &b->hook[ b_hi ] ) )
 			{
 				print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
 				print_hook_notice_end();
@@ -664,7 +756,8 @@ void print_diff_desktop_hook_items(
 			In this case check there is no reason to print the HOOK again unless certain 
 			information has changed (like the hook is hung, etc).
 			*/
-			print_diff_hook( &a->hook[ a_hi ], &b->hook[ b_hi ], deskname );
+			if( is_hook_wanted( &a->hook[ a_hi ] ) || is_hook_wanted( &b->hook[ b_hi ] ) )
+				print_diff_hook( &a->hook[ a_hi ], &b->hook[ b_hi ], deskname );
 			
 			++a_hi;
 			++b_hi;
@@ -673,16 +766,22 @@ void print_diff_desktop_hook_items(
 	
 	while( a_hi < a->hook_count ) // hooks removed
 	{
-		print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
-		print_hook_notice_end();
+		if( is_hook_wanted( &a->hook[ a_hi ] ) )
+		{
+			print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
+			print_hook_notice_end();
+		}
 		
 		++a_hi;
 	}
 	
 	while( b_hi < b->hook_count ) // hooks added
 	{
-		print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
-		print_hook_notice_end();
+		if( is_hook_wanted( &b->hook[ b_hi ] ) )
+		{
+			print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
+			print_hook_notice_end();
+		}
 		
 		++b_hi;
 	}

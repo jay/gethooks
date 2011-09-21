@@ -46,13 +46,14 @@ int match_gui_process_name(
 	const WCHAR *const name   // in
 );
 
+int match_hook_process_name(
+	const struct hook *const hook,   // in
+	const WCHAR *const name   // in
+);
+
 int match_gui_process_pid(
 	const struct gui *const gui,   // in
 	const int pid   // in
-);
-
-int is_hook_wanted( 
-	const struct hook *const hook   // in
 );
 
 int match_hook_process_pid(
@@ -60,26 +61,27 @@ int match_hook_process_pid(
 	const int pid   // in
 );
 
-int match_hook_process_name(
-	const struct hook *const hook,   // in
-	const WCHAR *const name   // in
-);
-
-int print_diff_gui(
-	const struct gui *const a,   // in, optional
-	const struct gui *const b,   // in, optional
-	const char *const threadname   // in
+int is_hook_wanted( 
+	const struct hook *const hook   // in
 );
 
 static void print_hook_notice_begin(
-	const struct hook *const b,   // in
+	const struct hook *const hook,   // in
 	const WCHAR *const deskname,   // in
 	const enum difftype difftype   // in
 );
 
 static void print_hook_notice_end( void );
 
-void print_diff_hook
+static int print_diff_gui(
+	const struct gui *const a,   // in, optional
+	const struct gui *const b,   // in, optional
+	const char *const threadname,   // in
+	const struct hook *const modified_hook,   // in
+	unsigned *const modified_header   // in, out
+);
+
+int print_diff_hook( 
 	const struct hook *const a,   // in
 	const struct hook *const b,   // in
 	const WCHAR *const deskname   // in
@@ -94,6 +96,7 @@ void print_diff_desktop_hook_lists(
 	const struct desktop_hook_list *const list1,   // in
 	const struct desktop_hook_list *const list2   // in
 );
+
 
 #ifdef __cplusplus
 }
