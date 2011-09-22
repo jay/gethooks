@@ -18,12 +18,15 @@ You should have received a copy of the GNU General Public License
 along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _GETHOOKS_H
-#define _GETHOOKS_H
+#ifndef _DIFF_H
+#define _DIFF_H
 
 #include <windows.h>
 
-/* the desktop hook store */
+/* snapshot store (system process info, gui threads, desktop hooks) */
+#include "snapshot.h"
+
+/* desktop hook store (linked list of desktop and hook information) */
 #include "desktop_hook.h"
 
 
@@ -77,6 +80,7 @@ static int print_diff_gui(
 	const struct gui *const a,   // in, optional
 	const struct gui *const b,   // in, optional
 	const char *const threadname,   // in
+	const WCHAR *const deskname,   // in
 	const struct hook *const modified_hook,   // in
 	unsigned *const modified_header   // in, out
 );
@@ -102,4 +106,4 @@ void print_diff_desktop_hook_lists(
 }
 #endif
 
-#endif // _GETHOOKS_H
+#endif // _DIFF_H

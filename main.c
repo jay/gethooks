@@ -34,6 +34,12 @@ Print the GPL license and copyright.
 -
 
 -
+gethooks()
+
+Initialize and process the snapshot store(s), and print the HOOK info to stdout.
+-
+
+-
 main()
 
 Create and initialize the global stores, print the license and version and then run gethooks().
@@ -45,7 +51,9 @@ Create and initialize the global stores, print the license and version and then 
 
 #include "util.h"
 
-#include "gethooks.h"
+#include "snapshot.h"
+
+#include "diff.h"
 
 /* the global stores */
 #include "global.h"
@@ -105,14 +113,72 @@ void print_license( void )
 
 
 
+/* gethooks()
+Initialize and process the snapshot store(s), and print the HOOK info to stdout.
+
+Each snapshot store is a snapshot of the state of the system, specifically thread information and 
+HOOK information at that point in time. This function calls init_snapshot_store() which takes a 
+snapshot and then matches the HOOKs to their threads. This function then prints the results.
+
+If monitoring/polling is enabled then snapshots are taken continuously with each current snapshot 
+compared to the previous one for differences. The results are printed for each difference.
+
+returns nonzero on success (a single snapshot was taken and its results printed to stdout).
+if polling is enabled this function will loop continuously and never return.
+*/
+int gethooks()
+{
+	struct snapshot *previous = NULL;
+	struct snapshot *current = NULL;
+	struct snapshot *temp = NULL;
+	
+	FAIL_IF( !G );   // The global store must exist.
+	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must be initialized.
+	FAIL_IF( !G->desktops->init_time );   // The desktop store must be initialized.
+	
+	
+	create_snapshot_store( &current );
+	create_snapshot_store( &previous );
+	
+	for( ;; )
+	{
+		if( !init_snapshot_store( current ) )
+		{
+			MSG_FATAL( "The snapshot store failed to initialize." );
+			exit( 1 );
+		}
+		
+		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
+		
+		if( !G->config->polling ) // only taking one snapshot
+			break;
+		
+		Sleep( G->config->polling * 1000 );
+		
+		/* swap pointers to previous and current snapshot stores.
+		this is better than continually freeing and creating the stores.
+		the current snapshot becomes the previous, and the former previous is set 
+		to be reinitialized with new info and become the current.
+		*/
+		temp = previous;
+		previous = current;
+		current = temp;
+	}
+	
+	free_snapshot_store( &previous );
+	free_snapshot_store( &current );
+	
+	return TRUE;
+}
+
+
+
 /* main()
 Create and initialize the global stores, print the license and version and then run gethooks().
 */
 int main( int argc, char **argv )
 {
-	HWINSTA station = NULL;
-	
-	
 	_set_printf_count_output( 1 ); // enable support for %n.
 	
 	
@@ -158,44 +224,8 @@ int main( int argc, char **argv )
 	
 	/* G->desktops has been initialized */
 	
+	/* The global stores have been initialized */
 	
-	/* Initialize and process the global snapshot store(s). 
-	
-	Each snapshot store is a snapshot of the state of the system, specifically thread information 
-	and hook information at that point in time. init_snapshot_store() takes a snapshot and then 
-	processes it to determine which threads are associated with each HOOK. The results are printed.
-	
-	If monitoring is enabled then snapshots are taken continually with each current snapshot 
-	compared to the previous one for differences. The results are printed for each difference.
-	
-	'G->desktops' must be initialized before calling gethooks().
-	*/
-	
-	/* gethooks function */
-	for( ;; )
-	{
-		if( !init_snapshot_store( G->present ) )
-		{
-			MSG_FATAL( "The snapshot store failed to initialize." );
-			exit( 1 );
-		}
-		
-		print_diff_desktop_hooks( G->past->desktop_hooks, G->present->desktop_hooks );
-		
-		if( !G->config->polling ) // only taking one snapshot
-			break;
-		
-		Sleep( G->config->polling * 1000 );
-		
-		/* swap pointers to previous and current snapshot stores.
-		this is better than continually freeing and creating the stores.
-		the current snapshot becomes the previous, and the former previous is set 
-		to be reinitialized with new info and become the current.
-		*/
-		G->present ^= G->past, G->past ^= G->present, G->present ^= G->past;
-	}
-	
-	free_global_store();
-	
-	return 0;
+	/* Call gethooks() to take snapshots and print differences */
+	return !gethooks();
 }

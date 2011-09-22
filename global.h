@@ -23,16 +23,6 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows.h>
 
-
-/* ReactOS structures for hooks and handles */
-#include "reactos_structs.h"
-
-/* SYSTEM_THREAD_INFORMATION,
-SYSTEM_EXTENDED_THREAD_INFORMATION,
-SYSTEM_PROCESS_INFORMATION
-*/
-#include "nt_independent_sysprocinfo_structs.h"
-
 /* program store (command line arguments, OS version, etc) */
 #include "prog.h"
 
@@ -41,9 +31,6 @@ SYSTEM_PROCESS_INFORMATION
 
 /* desktop store (linked list of desktops' heap and thread info) */
 #include "desktop.h"
-
-/* snapshot store (system process info, gui threads and hooks) */
-#include "snapshot.h"
 
 
 
@@ -64,13 +51,7 @@ struct global
 	struct config *config;   // create_config_store(), free_config_store()
 	
 	/* linked list of attached to desktops and their heap info. requires config init. */
-	struct desktop *desktops;   // create_desktop_store(), free_desktop_store()
-	
-	/* previous snapshot of hooks and threads. requires desktops init. */
-	struct snapshot *past;   // create_snapshot_store(), free_snapshot_store()
-	
-	/* current snapshot of hooks and threads. requires desktops init. */
-	struct snapshot *present;   // create_snapshot_store(), free_snapshot_store()
+	struct desktop_list *desktops;   // create_desktop_store(), free_desktop_store()
 };
 
 
@@ -82,9 +63,9 @@ extern struct global *G;   // create_global_store(), free_global_store()
 /** 
 these functions are documented in the comment block above their definitions in global.c
 */
-static void create_global_store( void );
+void create_global_store( void );
 
-static void free_global_store( void );
+void free_global_store( void );
 
 
 #ifdef __cplusplus

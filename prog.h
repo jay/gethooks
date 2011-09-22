@@ -23,8 +23,8 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows.h>
 
-/* ReactOS structures for SHAREDINFO */
-#include "reactos_structs.h"
+/* ReactOS structures and supporting functions */
+#include "reactos.h"
 
 
 
@@ -55,7 +55,13 @@ struct prog
 	
 	/* the name of the window station */
 	WCHAR *pwszWinstaName;   // calloc(), free()
-	
+
+	/* an array of HANDLEENTRY structs */
+	HANDLEENTRY *aheList;
+
+	/* aheList count */
+	volatile ULONG *pcHandleEntries;
+
 	/* the system utc time in FILETIME format immediately after this store has been initialized.
 	this is nonzero when this store has been initialized.
 	*/
@@ -71,9 +77,7 @@ void create_prog_store(
 	struct prog **const out   // out deref
 );
 
-int get_SharedInfo( 
-	SHAREDINFO **SharedInfo   // out deref
-);
+SHAREDINFO *get_SharedInfo( void );
 
 void init_global_prog_store( 
 	int argc,   // in

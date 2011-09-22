@@ -58,6 +58,8 @@ Free a list store and all its descendants.
 
 #include "util.h"
 
+#include "reactos.h"
+
 #include "list.h"
 
 
@@ -309,8 +311,8 @@ Print a list store and all its descendants.
 
 if the list store pointer != NULL print the store
 */
-void print_list_store(
-	const struct list_store *const store   // in
+void print_list_store( 
+	const struct list *const store   // in
 )
 {
 	struct list_item *item = NULL;
@@ -355,7 +357,7 @@ void print_list_store(
 	for( item = store->head; item; item = item->next )
 	{
 		PRINT_PTR( item );
-		print_store_item( item );
+		print_list_item( item );
 	}
 	
 	PRINT_PTR( store->tail );

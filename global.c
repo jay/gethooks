@@ -26,8 +26,6 @@ There are several global stores (these are referred to as descendants of 'G'):
 'G->prog' is the global program store. It holds basic program and system info.
 'G->config' is the global configuration store. It holds the user's configuration.
 'G->desktops' is the global desktop store. It holds the list of attached to desktops.
-'G->snapshots.previous' is a global snapshot store. It holds the previous system snapshot, if any.
-'G->snapshots.current' is a global snapshot store. It holds the current system snapshot.
 
 Each of the global stores and their functions are defined in their own units, eg prog.h/prog.c
 
@@ -68,21 +66,17 @@ void create_global_store( void )
 	FAIL_IF( G );   // Fail if the global store already exists
 	
 	
-	/* the global store */
+	/* the global store (the store of global stores) */
 	G = must_calloc( 1, sizeof( *G ) );
 	
-	/* the program store */
+	/* program store (command line arguments, OS version, etc) */
 	create_prog_store( &G->prog );
 	
-	/* the configuration store */
+	/* configuration store (user-specified command line configuration) */
 	create_config_store( &G->config );
 	
-	/* the desktop store */
+	/* desktop store (linked list of desktops' heap and thread info) */
 	create_desktop_store( &G->desktops );
-	
-	/* the two snapshot stores, previous and current */
-	create_snapshot_store( &G->snapshots.previous );
-	create_snapshot_store( &G->snapshots.current );
 	
 	
 	return;
@@ -100,9 +94,6 @@ void free_global_store( void )
 {
 	if( !G )
 		return;
-	
-	free_snapshot_store( &G->snapshots.current );
-	free_snapshot_store( &G->snapshots.previous );
 	
 	free_desktop_store( &G->desktops );
 	

@@ -84,14 +84,14 @@ Free a snapshot store and all its descendants.
 
 #include "util.h"
 
+/* traverse_threads() */
+#include "nt_independent_sysprocinfo_structs.h"
+#include "traverse_threads.h"
+
 #include "snapshot.h"
 
 /* the global stores */
 #include "global.h"
-
-/* traverse_threads() */
-#include "nt_independent_sysprocinfo_structs.h"
-#include "traverse_threads.h"
 
 
 
@@ -462,7 +462,7 @@ static struct gui *find_Win32ThreadInfo(
 	
 	return 
 		bsearch( 
-			findme, 
+			&findme, 
 			store->gui, 
 			store->gui_count, 
 			sizeof( *store->gui ), 
@@ -495,13 +495,14 @@ int init_snapshot_store(
 	struct snapshot *const store   // in
 )
 {
+	unsigned i = 0;
 	int ret = 0;
 	LONG nt_status = 0;
 	struct callback_info ci;
 	
-	FAIL_IF( !G->prog->initialized );   // The program store must already be initialized.
-	FAIL_IF( !G->config->initialized );   // The configuration store must already be initialized.
-	FAIL_IF( !G->desktops->initialized );   // The desktop store must already be initialized.
+	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must be initialized.
+	FAIL_IF( !G->desktops->init_time );   // The desktop store must be initialized.
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -555,7 +556,7 @@ int init_snapshot_store(
 	}
 	
 	/* sort the gui array according to Win32ThreadInfo.
-	the desktop hook initialization searches the array using bsearch()
+	this array must be sorted so that bsearch() can be called to later search for a Win32ThreadInfo
 	*/
 	qsort( 
 		store->gui,
@@ -614,7 +615,7 @@ int init_snapshot_store(
 Print some brief information on a GUI thread's process name, process id, thread id, etc. No newline.
 */
 void print_gui_brief( 
-	struct gui *gui   // in
+	const struct gui *const gui   // in
 )
 {
 	if( !gui )
@@ -631,10 +632,10 @@ void print_gui_brief(
 		printf( "<unknown>" );
 	
 	printf( " (" );
-	printf( "PID %Iu", (size_t)( a->spi ? a->spi->UniqueProcessId : 0 ) );
-	printf( ", TID %Iu", (size_t)( a->sti ? a->sti->ClientId.UniqueThread : 0 ) );
+	printf( "PID %Iu", (size_t)( gui->spi ? gui->spi->UniqueProcessId : 0 ) );
+	printf( ", TID %Iu", (size_t)( gui->sti ? gui->sti->ClientId.UniqueThread : 0 ) );
 	printf( ", " );
-	PRINT_BARE_PTR( a->pvWin32ThreadInfo );
+	PRINT_BARE_PTR( gui->pvWin32ThreadInfo );
 	printf( " )" );
 	
 	return;
@@ -669,7 +670,7 @@ void print_gui(
 	CreateTime: 12:45:24 PM  9/7/2011
 	*/
 	if( gui->spi )
-		callback_print_thread_state( &G->prog->dwOSVersion, spi, sti, 0, 0 );
+		callback_print_thread_state( &G->prog->dwOSVersion, gui->spi, gui->sti, 0, 0 );
 	else
 		MSG_ERROR( "gui->spi == NULL" );
 	

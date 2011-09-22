@@ -29,7 +29,7 @@ SYSTEM_PROCESS_INFORMATION
 */
 #include "nt_independent_sysprocinfo_structs.h"
 
-/* the desktop hook store */
+/* desktop hook store (linked list of desktop and hook information) */
 #include "desktop_hook.h"
 
 

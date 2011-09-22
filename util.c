@@ -60,12 +60,14 @@ Print an initialization utc time as local time.
 
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <limits.h>
 
+/* traverse_threads() */
+#include "nt_independent_sysprocinfo_structs.h"
 #include "traverse_threads.h"
-
-#include "reactos.h"
 
 #include "util.h"
 
@@ -260,7 +262,7 @@ if fail call GetLastError() for GetUserObjectInformationW() last error
 */
 int get_user_obj_name( 
 	WCHAR **const name,   // out deref
-	HANDLE object   // in
+	HANDLE const object   // in
 )
 {
 	DWORD bytes_needed = 0;
@@ -306,18 +308,15 @@ eg print_init_time( "store->init_time", store->init_time );
 store->init_time: 12:35:38 PM  9/14/2011
 */
 void print_init_time(
-	char *msg,   // in, optional
-	__int64 *utc   // in
+	const char *const msg,   // in, optional
+	const __int64 utc   // in
 )
 {
-	if( !utc )
-		return;
-	
 	if( msg )
 		printf( "%s: ", msg );
 	
-	if( *utc )
-		print_filetime_as_local( (FILETIME *)utc );
+	if( utc )
+		print_filetime_as_local( (FILETIME *)&utc );
 	else
 		printf( "<uninitialized>" );
 	

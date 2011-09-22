@@ -255,10 +255,10 @@ void print_HOOK_id(
 	const INT iHook   // in
 )
 {
-	const index = iHook + 1; /* the index in the array is the same as the id + 1 */
+	const int index = iHook + 1; /* the index in the array is the same as the id + 1 */
 	
 	if( ( index >= 0 ) && ( index < w_hooknames_count ) )
-		printf( "%s ", hooknames[ index ] );
+		printf( "%s ", w_hooknames[ index ] );
 	else
 		printf( "<%d> ", iHook );
 	
@@ -323,8 +323,8 @@ void print_HOOK(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	PRINT_PTR( object->Head.h );
-	printf( "object->Head.cLockObj: %lu\n", object->Head.cLockObj );
+	PRINT_PTR( object->head.h );
+	printf( "object->head.cLockObj: %lu\n", object->head.cLockObj );
 	
 	PRINT_PTR( object->pti );
 	PRINT_PTR( object->rpdesk1 );

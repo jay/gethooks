@@ -60,7 +60,7 @@ Create a program store and its descendants or die.
 
 The program store holds some basic program and system info.
 */
-static void create_prog_store( 
+void create_prog_store( 
 	struct prog **const out   // out deref
 )
 {
@@ -81,18 +81,13 @@ static void create_prog_store(
 
 
 /* get_SharedInfo()
-Get the address of Microsoft's SHAREDINFO structure (aka gSharedInfo).
+Return the address of Microsoft's SHAREDINFO structure (aka gSharedInfo) or die.
 
-returns nonzero on success.
-if success then '*SharedInfo' has received a pointer to the SHAREDINFO struct.
-if fail then '*SharedInfo' has received NULL.
-
-x86 only.
+x86 only, for now.
 */
-SHAREDINFO *get_SharedInfo( 
-)
+SHAREDINFO *get_SharedInfo( void )
 {
-	static void *SharedInfo;
+	static DWORD SharedInfo;
 	
 	int i = 0;
 	char *p = NULL;
@@ -100,14 +95,24 @@ SHAREDINFO *get_SharedInfo(
 	
 	
 	if( SharedInfo )
-		return SharedInfo;
+		return (SHAREDINFO *)SharedInfo;
+	
+#ifdef _MSC_VER
+#pragma warning(push)  
+#pragma warning(disable:4054) /* function pointer cast as data pointer */
+#endif
 	
 	User32InitializeImmEntryTable = 
 		(void *)GetProcAddress( LoadLibraryA( "user32" ), "User32InitializeImmEntryTable" );
 	
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+	
 	if( !User32InitializeImmEntryTable )
 	{
-		MSG_FATAL( "Failed to get address of User32InitializeImmEntryTable()" );
+		MSG_FATAL_GLE( "GetProcAddress() failed." );
+		printf( "Failed to get address of User32InitializeImmEntryTable() in user32.dll\n" );
 		exit( 1 );
 	}
 	
@@ -115,8 +120,8 @@ SHAREDINFO *get_SharedInfo(
 	(alex ntinternals org), originally implemented in asm in EnumWindowsHooks.c
 	http://www.ntinternals.org/
 	
-	This works on XP, Vista, Win7. If you have to be sure an alternate way 
-	would be to check the win32k pdb files and find the addresses there.
+	This works on XP, Vista, Win7 x86. To be sure an alternate way would be to check the different 
+	win32k pdb files and find the addresses there.
 	*/
 	p = (char *)User32InitializeImmEntryTable;
 	for( i = 0; i < 127; ++i )
@@ -131,9 +136,13 @@ SHAREDINFO *get_SharedInfo(
 		}
 	}
 	
-	FAIL_IF( !SharedInfo )
+	if( !SharedInfo )
+	{
+		MSG_FATAL( "Failed to get address of SharedInfo. The magic number wasn't found." );
+		exit( 1 );
+	}
 	
-	return SharedInfo;
+	return (SHAREDINFO *)SharedInfo;
 }
 
 
@@ -149,15 +158,25 @@ void init_global_prog_store(
 	char **argv   // in deref
 )
 {
-	FAIL_IF( !G );   // The global store must have already been created.
+	SHAREDINFO *SharedInfo = NULL;
+	unsigned offsetof_cHandleEntries = 0;
+	
+	FAIL_IF( !G );   // The global store must exist.
 	
 	FAIL_IF( G->prog->init_time );   // Fail if this store has already been initialized.
 	
 	
+	/* get_SharedInfo() or die.
+	This function loads user32.dll and must be called before any other pointer to GUI related info 
+	is initialized.
+	*/
+	SharedInfo = get_SharedInfo();
+
+
 	G->prog->argc = argc;
 	G->prog->argv = argv;
 	
-	/* point pszBaseName to this program's basename */
+	/* point pszBasename to this program's basename */
 	if( argc && argv[ 0 ][ 0 ] )
 	{
 		char *clip = NULL;
@@ -166,10 +185,10 @@ void init_global_prog_store(
 		if( clip )
 			++clip;
 		
-		G->prog->pszBaseName = ( clip && *clip ) ? clip : argv[ 0 ];
+		G->prog->pszBasename = ( clip && *clip ) ? clip : argv[ 0 ];
 	}
 	else
-		G->prog->pszBaseName = "<unknown>";
+		G->prog->pszBasename = "<unknown>";
 	
 	/* main thread id */
 	G->prog->dwMainThreadId = GetCurrentThreadId();
@@ -183,13 +202,30 @@ void init_global_prog_store(
 	
 	/* the name of this program's window station */
 	SetLastError( 0 );  //gle may or may not be set on error
-	G->prog->pwszWinstaName = get_user_obj_name( GetProcessWindowStation() );
-	if( !G->prog->pwszWinstaName )
+	if( !get_user_obj_name( &G->prog->pwszWinstaName, GetProcessWindowStation() ) )
 	{
 		MSG_FATAL_GLE( "get_user_obj_name() failed." );
 		printf( "Failed to get this program's window station name.\n" );
 		exit( 1 );
 	}
+	
+	/* Determine the offset of cHandleEntries in SERVERINFO.
+	In NT4 the offset is 4 but this program isn't for NT4 so ignore.
+	In Win2k and XP the offset is 8.
+	In Vista and Win7 the offset is 4.
+	*/
+	offsetof_cHandleEntries = ( G->prog->dwOSMajorVersion >= 6 ) ? 4 : 8;
+	
+	/* The first member of SHAREDINFO is pointer to SERVERINFO.
+	Add offsetof_cHandleEntries to the SERVERINFO pointer to get the address of cHandleEntries.
+	*/
+	G->prog->pcHandleEntries = 
+		(volatile DWORD *)( (char *)SharedInfo->psi + offsetof_cHandleEntries );
+	
+	/* The second member of SHAREDINFO is a pointer to an array of HANDLEENTRY structs. 
+	Maybe this should be volatile? aheList is the allocation base. Does it ever change hm
+	*/
+	G->prog->aheList = SharedInfo->aheList;
 	
 	
 	/* G->prog has been initialized */
@@ -253,7 +289,7 @@ this function then sets the prog store pointer to NULL and returns
 'in' is a pointer to a pointer to the prog store, which contains the program information.
 if( !in || !*in ) then this function returns.
 */
-static void free_prog_store( 
+void free_prog_store( 
 	struct prog **const in   // in deref
 )
 {

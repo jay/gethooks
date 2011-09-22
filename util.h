@@ -30,6 +30,12 @@ extern "C" {
 #endif
 
 
+/* __pragma keyword only exists in Visual Studio 2008 or better */
+#if !defined( _MSC_VER ) || ( _MSC_VER < 1500 )
+#define __pragma(x)
+#endif
+
+
 /* this is a basic function-like macro to print an error message and its location in code */
 #define MSG_LOCATION(type,msg)   \
 	do \
@@ -39,12 +45,16 @@ extern "C" {
 		GetSystemTimeAsFileTime( (FILETIME *)&utc ); \
 		fflush( stdout ); \
 		printf( "\n" ); \
-		print_init_time( NULL, &utc ); \
+		print_init_time( NULL, utc ); \
 		printf( \
 			"%s: %s line %d, %s(): %s\n", \
 			( type ), __FILE__, __LINE__, __FUNCTION__, ( msg ) \
 		); \
-	} while( 0 )
+__pragma(warning(push)) \
+__pragma(warning(disable:4127)) \
+	} while( 0 ) \
+__pragma(warning(pop))
+
 
 #define MSG_LOCATION_GLE(type,msg)   \
 	do \
@@ -53,7 +63,11 @@ extern "C" {
 		 \
 		MSG_LOCATION( ( type ), ( msg ) ); \
 		printf( "GetLastError(): %lu\n", gle ); \
-	} while( 0 )
+__pragma(warning(push)) \
+__pragma(warning(disable:4127)) \
+	} while( 0 ) \
+__pragma(warning(pop))
+
 
 
 #define MSG_WARNING(msg)   MSG_LOCATION( "Warning", ( msg ) )
@@ -75,7 +89,10 @@ extern "C" {
 			printf( "The following expression is true: ( " #expr " )\n" ); \
 			exit( 1 ); \
 		} \
-	} while( 0 )
+__pragma(warning(push)) \
+__pragma(warning(disable:4127)) \
+	} while( 0 ) \
+__pragma(warning(pop))
 
 
 #define PRINT_BARE_PTR(addr)   \
@@ -89,7 +106,11 @@ extern "C" {
 		printf( "%s%s", ( str ? str : "" ), ( ( str && str[ 0 ] ) ? ": " : "" ) ); \
 		PRINT_BARE_PTR( ( addr ) ); \
 		printf( "\n" ); \
-	} while( 0 )
+		 \
+__pragma(warning(push)) \
+__pragma(warning(disable:4127)) \
+	} while( 0 ) \
+__pragma(warning(pop))
 
 #define PRINT_PTR(addr)   PRINT_NAME_FOR_PTR( #addr, ( addr ) )
 
@@ -139,12 +160,12 @@ int get_wstr_from_mbstr(
 
 int get_user_obj_name( 
 	WCHAR **const name,   // out deref
-	HANDLE object   // in
+	HANDLE const object   // in
 );
 
 void print_init_time(
-	char *msg,   // in, optional
-	__int64 *utc   // in
+	const char *const msg,   // in, optional
+	const __int64 utc   // in
 );
 
 

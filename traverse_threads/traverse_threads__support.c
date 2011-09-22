@@ -115,7 +115,7 @@ void *get_teb(
 		printf( "OpenThread() %s. GLE: %I32u, Handle: 0x%IX.\n", 
 			( thread ? "success" : "error" ), 
 			GetLastError(), 
-			thread 
+			(size_t)thread 
 		);
 	}
 	
@@ -128,7 +128,7 @@ void *get_teb(
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
 		printf( "NtQueryInformationThread() %s. status: 0x%08X.\n", 
-			( ( status != STATUS_SUCCESS ) ? "!= STATUS_SUCCESS" : "== STATUS_SUCCESS" ),
+			( ( status ) ? "!= STATUS_SUCCESS" : "== STATUS_SUCCESS" ),
 			status 
 		);
 	}
@@ -163,6 +163,11 @@ cleanup:
 }
 
 
+
+#ifdef _MSC_VER
+#pragma warning(push)  
+#pragma warning(disable:4100) /* disable unused parameter warning */
+#endif
 
 /* callback_print_thread_state()
 A default callback used by traverse_threads() if no callback was supplied by the caller.
@@ -291,6 +296,10 @@ int callback_print_thread_state(
 	
 	return TRAVERSE_CALLBACK_CONTINUE;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 
 

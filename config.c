@@ -149,16 +149,16 @@ void print_usage_and_exit( void )
 		"   -p     include only these programs: a list of programs separated by space.\n"
 		"   -r     exclude only these programs: a list of programs separated by space.\n"
 		"\n",
-		G->prog->pszBaseName, POLLING_DEFAULT
+		G->prog->pszBasename, POLLING_DEFAULT
 	);
 	
 	printf( "\nexample to list WH_MOUSE hooks on the current desktop only:\n" );
-	printf( " %s -d -i WH_MOUSE\n", G->prog->pszBaseName );
+	printf( " %s -d -i WH_MOUSE\n", G->prog->pszBasename );
 	
 	printf( "\nexample to monitor WH_KEYBOARD from workrave.exe and pids 799 and 801:\n" );
-	printf( " %s -m -i WH_KEYBOARD -p workrave.exe 799 801\n", G->prog->pszBaseName );
+	printf( " %s -m -i WH_KEYBOARD -p workrave.exe 799 801\n", G->prog->pszBasename );
 	
-	printf( "\nTo show more examples: %s --examples\n", G->prog->pszBaseName );
+	printf( "\nTo show more examples: %s --examples\n", G->prog->pszBasename );
 	exit( 1 );
 }
 
@@ -179,27 +179,27 @@ void print_more_examples_and_exit( void )
 		"You can specify individual desktops with the 'd' option.\n"
 		"example to monitor only \"Sysinternals Desktop 1\":\n"
 	);
-	printf( " %s -d \"Sysinternals Desktop 1\"\n", G->prog->pszBaseName );
+	printf( " %s -d \"Sysinternals Desktop 1\"\n", G->prog->pszBasename );
 	
 	printf( "\n"
 		"You may use a hook's id instead of its name when including/excluding hooks.\n"
 		"example to monitor only WH_KEYBOARD(2) and WH_MOUSE(7) hooks:\n"
 	);
-	printf( " %s -m -i 2 7\n", G->prog->pszBaseName );
+	printf( " %s -m -i 2 7\n", G->prog->pszBasename );
 	
 	printf( "\n"
 		"If the program name you want hooks for has only numbers and no extension you \n"
 		"may prefix it with a colon so that it is not misinterpreted as a pid.\n"
 		"example to list hooks associated with program name 907\n"
 	);
-	printf( " %s -p :907\n", G->prog->pszBaseName );
+	printf( " %s -p :907\n", G->prog->pszBasename );
 	
 	printf( "\n"
 		"If the program name you want hooks for starts with a dash and has one letter \n"
 		"you may prefix it with a colon so that it is not misinterpreted as an option.\n"
 		"example to list hooks associated with program name -h\n"
 	);
-	printf( " %s -p :-h\n", G->prog->pszBaseName );
+	printf( " %s -p :-h\n", G->prog->pszBasename );
 	
 	printf( "\n"
 		"If the colon is the first character in an argument to program include/exclude \n"
@@ -208,7 +208,7 @@ void print_more_examples_and_exit( void )
 	);
 	
 	printf( "\nexample piping to 'tee' to print output to stdout and file \"outfile\":\n" );
-	printf( " %s -m | tee outfile\n", G->prog->pszBaseName );
+	printf( " %s -m | tee outfile\n", G->prog->pszBasename );
 	
 	printf( "\n"
 		"If the colon is the first character in an argument to program include/exclude \n"
@@ -345,9 +345,11 @@ void init_global_config_store( void )
 	int i = 0;
 	unsigned arf = 0;
 	
+	FAIL_IF( !G );   // The global store must exist.
+	
 	FAIL_IF( G->config->init_time );   // Fail if this store has already been initialized.
 	
-	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
+	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -384,7 +386,7 @@ void init_global_config_store( void )
 			case 'd':
 			case 'D':
 			{
-				G->config->desklist->type = LIST_DESKTOP_INCLUDE;
+				G->config->desklist->type = LIST_INCLUDE_DESKTOP;
 				
 				/* since this option may or may not have an associated argument, 
 				test for both an option's argument(optarg) or the next option
@@ -408,7 +410,7 @@ void init_global_config_store( void )
 					}
 					
 					/* append to the linked list */
-					if( !add_list_item( G->config->desklist, 0, name );
+					if( !add_list_item( G->config->desklist, 0, name ) )
 					{
 						MSG_FATAL( "add_list_item() failed." );
 						printf( "desktop: %s\n", G->prog->argv[ i ] );
@@ -436,7 +438,7 @@ void init_global_config_store( void )
 			case 'm':
 			case 'M':
 			{
-				if( polling >= 0 )
+				if( G->config->polling >= 0 )
 				{
 					MSG_FATAL( "Option 'm': this option has already been specified." );
 					printf( "sec: %d\n", G->config->polling );
@@ -485,13 +487,13 @@ void init_global_config_store( void )
 			case 'i':
 			case 'I':
 			{
-				if( G->config->hooklist->type == FILTER_EXCLUDE_HOOK )
+				if( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
 				{
 					MSG_FATAL( "Options 'i' and 'x' are mutually exclusive." );
 					exit( 1 );
 				}
 				
-				G->config->hooklist->type = FILTER_INCLUDE_HOOK;
+				G->config->hooklist->type = LIST_INCLUDE_HOOK;
 			}
 			/* pass through to the exclude code. 
 			the exclude code can handle either type of list, include or exclude.
@@ -499,9 +501,9 @@ void init_global_config_store( void )
 			case 'x':
 			case 'X':
 			{
-				if( G->config->hooklist->type != FILTER_INCLUDE_HOOK )
+				if( G->config->hooklist->type != LIST_INCLUDE_HOOK )
 				{
-					G->config->hooklist->type = FILTER_EXCLUDE_HOOK;
+					G->config->hooklist->type = LIST_EXCLUDE_HOOK;
 				}
 				else if( ( G->prog->argv[ i ][ 1 ] == 'x' ) || ( G->prog->argv[ i ][ 1 ] == 'X' ) )
 				{
@@ -566,13 +568,13 @@ void init_global_config_store( void )
 			case 'p':
 			case 'P':
 			{
-				if( G->config->proglist->type == FILTER_EXCLUDE_PROG )
+				if( G->config->proglist->type == LIST_EXCLUDE_PROG )
 				{
 					MSG_FATAL( "Options 'p' and 'r' are mutually exclusive." );
 					exit( 1 );
 				}
 				
-				G->config->proglist->type = FILTER_INCLUDE_PROG;
+				G->config->proglist->type = LIST_INCLUDE_PROG;
 			}
 			/* pass through to the exclude code. 
 			the exclude code can handle either type of list, include or exclude.
@@ -580,9 +582,9 @@ void init_global_config_store( void )
 			case 'r':
 			case 'R':
 			{
-				if( G->config->proglist->type != FILTER_INCLUDE_PROG )
+				if( G->config->proglist->type != LIST_INCLUDE_PROG )
 				{
-					G->config->proglist->type = FILTER_EXCLUDE_PROG;
+					G->config->proglist->type = LIST_EXCLUDE_PROG;
 				}
 				else if( ( G->prog->argv[ i ][ 1 ] == 'r' ) || ( G->prog->argv[ i ][ 1 ] == 'R' ) )
 				{
@@ -600,7 +602,7 @@ void init_global_config_store( void )
 				{
 					int id = 0;
 					WCHAR *name = NULL;
-					char *p = G->prog->argv[ i ];
+					const char *const p = G->prog->argv[ i ];
 					
 					
 					/* a colon is used as the escape character. 

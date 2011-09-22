@@ -679,10 +679,12 @@ For now there is only one desktop store implemented and it's a global store (G->
 */
 void init_global_desktop_store( void )
 {
+	FAIL_IF( !G );   // The global store must exist.
+	
 	FAIL_IF( G->desktop->init_time );   // Fail if this store has already been initialized.
 	
-	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
-	FAIL_IF( !G->config->init_time );   // The configuration store must already be initialized.
+	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must be initialized.
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	

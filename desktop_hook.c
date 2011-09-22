@@ -85,6 +85,8 @@ Free a desktop hook store and all its descendants.
 
 #include "util.h"
 
+#include "snapshot.h"
+
 #include "desktop_hook.h"
 
 /* the global stores */
@@ -205,16 +207,18 @@ int init_desktop_hook_store(
 	struct snapshot *const parent   // in
 )
 {
+	unsigned i = 0;
 	struct desktop_hook_list *store = NULL;
 	struct desktop_hook_item *item = NULL;
 	
-	FAIL_IF( !G->prog->init_time );   // The program store must already be initialized.
-	FAIL_IF( !G->config->init_time );   // The configuration store must already be initialized.
-	FAIL_IF( !G->desktops->init_time );   // The desktop store must already be initialized.
+	FAIL_IF( !G );   // The global store must exist.
+	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must be initialized.
+	FAIL_IF( !G->desktops->init_time );   // The desktop store must be initialized.
 	
 	FAIL_IF( !parent );   // The snapshot parent of the desktop_hook store must always be passed in.
-	FAIL_IF( !parent->init_time_spi );   // The snapshot's spi array must already be initialized.
-	FAIL_IF( !parent->init_time_gui );   // The snapshot's gui array must already be initialized.
+	FAIL_IF( !parent->init_time_spi );   // The snapshot's spi array must be initialized.
+	FAIL_IF( !parent->init_time_gui );   // The snapshot's gui array must be initialized.
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
@@ -231,7 +235,7 @@ int init_desktop_hook_store(
 		
 		/* add the desktops from the global desktop store */
 		for( current = G->desktops->head; current; current = current->next )
-			add_desktop_hook_item( store->desktop_hooks, current );
+			add_desktop_hook_item( store, current );
 	}
 	else // the desktop hook list already exists. reuse it.
 	{
@@ -251,7 +255,7 @@ int init_desktop_hook_store(
 		the info may change so it can't just be pointed to.
 		*/
 		HANDLEENTRY entry = G->prog->aheList[ i ];
-		
+		struct hook *hook = NULL;
 		
 		if( entry.bType != TYPE_HOOK ) /* not for a HOOK object */
 			continue;
@@ -279,9 +283,9 @@ int init_desktop_hook_store(
 			*(HOOK *)( (size_t)hook->entry.pHead - (size_t)item->desktop->pvClientDelta );
 		
 		/* search the gui threads to find the owner origin and target of the HOOK */
-		hook->owner = find_Win32ThreadInfo( store, hook->entry.pOwner );
-		hook->origin = find_Win32ThreadInfo( store, hook->object.pti );
-		hook->target = find_Win32ThreadInfo( store, hook->object.ptiHooked );
+		hook->owner = find_Win32ThreadInfo( parent, hook->entry.pOwner );
+		hook->origin = find_Win32ThreadInfo( parent, hook->object.pti );
+		hook->target = find_Win32ThreadInfo( parent, hook->object.ptiHooked );
 		
 		item->hook_count++;
 		if( item->hook_count >= item->hook_max )

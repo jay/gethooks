@@ -176,11 +176,21 @@ typedef struct _DESKTOPINFO
 /* 068 */ INT          cntMBox;
           PWND         spwndGestureEngine;
           void *pvwplMessagePPHandler; //PVWPL
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4214) /* nonstandard extension: bitfields other than int */
+#pragma warning(disable:4201) /* nonstandard extension: nameless struct/union */
+#endif
           struct
           {
             ULONG fComposited:1;
             ULONG fIsDwmDesktop:1;
           };
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 } DESKTOPINFO, *PDESKTOPINFO;
 
 

@@ -23,11 +23,14 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows.h>
 
-/* ReactOS structures for hooks and handles */
-#include "reactos_structs.h"
+/* ReactOS structures and supporting functions */
+#include "reactos.h"
 
 /* desktop store (linked list of desktops' heap and thread info) */
 #include "desktop.h"
+
+/* snapshot store (system process info, gui threads, desktop hooks) */
+#include "snapshot.h"
 
 
 

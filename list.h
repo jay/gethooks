@@ -110,7 +110,7 @@ void print_list_item(
 );
 
 void print_list_store( 
-	const struct list_store *const store   // in
+	const struct list *const store   // in
 );
 
 void free_list_store( 

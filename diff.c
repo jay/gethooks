@@ -96,8 +96,6 @@ Print the HOOKs that have been added/removed from all attached to desktops betwe
 
 #include "reactos.h"
 
-#include "snapshot.h"
-
 #include "diff.h"
 
 /* the global stores */
@@ -166,7 +164,6 @@ int match_gui_process_pid(
 )
 {
 	FAIL_IF( !gui );
-	FAIL_IF( !pid );
 	
 	
 	if( gui->spi && ( pid == (int)( (DWORD)gui->spi->UniqueProcessId ) ) )
@@ -188,7 +185,6 @@ int match_hook_process_pid(
 )
 {
 	FAIL_IF( !hook );
-	FAIL_IF( !name );
 	
 	
 	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
@@ -254,7 +250,7 @@ int is_hook_wanted(
 		
 		
 		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
-			yes = ( item->id == hook->object->iHook ); // match HOOK id
+			yes = ( item->id == hook->object.iHook ); // match HOOK id
 		
 		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
 			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
@@ -280,7 +276,7 @@ static void print_hook_notice_begin(
 	const enum difftype difftype   // in
 )
 {
-	const char *deskname = NULL;
+	const char *diffname = NULL;
 	
 	FAIL_IF( !hook );
 	FAIL_IF( !deskname );
@@ -341,6 +337,7 @@ Compare two gui structs and print any significant differences.
 'a' is the old gui thread info (optional)
 'b' is the new gui thread info (optional)
 'threadname' is the name of the gui thread as it applies to the HOOK. eg "target", "origin"
+'deskname' is the name of the desktop the hook is on
 'modified_hook' is the hook struct for the modified header
 
 '*modified_header' receives nonzero if the "Modified HOOK" header is printed by this function.
@@ -354,6 +351,7 @@ static int print_diff_gui(
 	const struct gui *const a,   // in, optional
 	const struct gui *const b,   // in, optional
 	const char *const threadname,   // in
+	const WCHAR *const deskname,   // in
 	const struct hook *const modified_hook,   // in
 	unsigned *const modified_header   // in, out
 )
@@ -366,12 +364,17 @@ static int print_diff_gui(
 		void *pvTeb;
 		HANDLE tid;
 		HANDLE pid;
-		UNICODE_STRING ImageName;
+		struct
+		{
+			USHORT Length;
+			USHORT MaximumLength;
+			PWSTR  Buffer;
+		} ImageName;
 	} oldstuff, newstuff;
 	
 	FAIL_IF( !threadname );
-	FAIL_IF( !hook );
-	FAIL_IF( !modified );
+	FAIL_IF( !modified_hook );
+	FAIL_IF( !modified_header );
 	
 	
 	if( !a && !b )
@@ -403,7 +406,11 @@ static int print_diff_gui(
 			oldstuff.pid = a->spi->UniqueProcessId;
 			
 			if( a->spi->ImageName.Buffer )
-				oldstuff.ImageName = a->spi->ImageName;
+			{
+				oldstuff.ImageName.Buffer = a->spi->ImageName.Buffer;
+				oldstuff.ImageName.Length = a->spi->ImageName.Length;
+				oldstuff.ImageName.MaximumLength = a->spi->ImageName.MaximumLength;
+			}
 		}
 	}
 	
@@ -420,7 +427,11 @@ static int print_diff_gui(
 			newstuff.pid = b->spi->UniqueProcessId;
 			
 			if( b->spi->ImageName.Buffer )
-				newstuff.ImageName = b->spi->ImageName;
+			{
+				newstuff.ImageName.Buffer = b->spi->ImageName.Buffer;
+				newstuff.ImageName.Length = b->spi->ImageName.Length;
+				newstuff.ImageName.MaximumLength = b->spi->ImageName.MaximumLength;
+			}
 		}
 	}
 	
@@ -524,7 +535,7 @@ int print_diff_hook(
 	}
 	
 	/* the gui->owner struct has the process and thread info for entry.pOwner */
-	print_diff_gui( "owner", a->owner, b->owner, b, &modified_header );
+	print_diff_gui( a->owner, b->owner, "owner", deskname, b, &modified_header );
 	
 	if( a->object.head.h != b->object.head.h )
 	{
@@ -553,7 +564,7 @@ int print_diff_hook(
 	}
 	
 	/* the gui->origin struct has the process and thread info for pti */
-	print_diff_gui( "origin", a->origin, b->origin, b, &modified_header );
+	print_diff_gui( a->origin, b->origin, "origin", deskname, b, &modified_header );
 	
 	if( a->object.rpdesk1 != b->object.rpdesk1 )
 	{
@@ -678,7 +689,7 @@ int print_diff_hook(
 	}
 	
 	/* the gui->target struct has the process and thread info for ptiHooked */
-	print_diff_gui( "target", a->target, b->target, b, &modified_header );
+	print_diff_gui( a->target, b->target, "target", deskname, b, &modified_header );
 	
 	if( a->object.rpdesk2 != b->object.rpdesk2 )
 	{
