@@ -39,6 +39,12 @@ extern "C" {
 #endif
 
 
+/** Forward declaration for desktop hook store due to circular dependency.
+*/
+struct desktop_hook_list;
+
+
+
 /** This is the info to keep track of when a GUI thread is found in the system.
 For each thread traversed if its TEB.Win32ThreadInfo != NULL then the thread is a GUI thread.
 */
@@ -176,7 +182,7 @@ static int compare_gui(
 	const void *const p2   // in
 );
 
-static struct gui *find_Win32ThreadInfo( 
+struct gui *find_Win32ThreadInfo( 
 	struct snapshot *const store,   // in
 	void *const pvWin32ThreadInfo   // in
 );
@@ -186,7 +192,7 @@ int init_snapshot_store(
 );
 
 void print_gui_brief( 
-	struct gui *gui   // in
+	const struct gui *const gui   // in
 );
 
 void print_gui(

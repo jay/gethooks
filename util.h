@@ -30,8 +30,11 @@ extern "C" {
 #endif
 
 
-/* __pragma keyword only exists in Visual Studio 2008 or better */
-#if !defined( _MSC_VER ) || ( _MSC_VER < 1500 )
+/* __pragma keyword only exists in Visual Studio 2008 or better according to documentation. 
+however the keyword apparently exists undocumented in VS2005 and VS2003 as well
+http://code.google.com/p/dream-of-idle/source/browse/trunk/Dream/CELayoutEditor-0.7.1/inc/Config.h?spec=svn6&r=6#427
+*/
+#if !defined( _MSC_VER ) // || ( _MSC_VER < 1500 )
 #define __pragma(x)
 #endif
 

@@ -388,7 +388,7 @@ void print_desktop_hook_item(
 )
 {
 	const char *const objname = "Desktop Hook Item";
-	int i = 0;
+	unsigned i = 0;
 	
 	if( !item )
 		return;

@@ -55,6 +55,14 @@ int traverse_threads(
 	/* only print debug information when debugging */
 	#define dbg_printf   if( ( flags & TRAVERSE_FLAG_DEBUG ) )printf
 	
+	/* function pointer for NtQuerySystemInformation */
+	static NTSTATUS (__stdcall *NtQuerySystemInformation)(
+		SYSTEM_INFORMATION_CLASS SystemInformationClass,
+		PVOID SystemInformation,
+		ULONG SystemInformationLength,
+		PULONG ReturnLength
+	);
+	
 	/* a pointer to the current spi struct */
 	SYSTEM_PROCESS_INFORMATION *spi = NULL;
 	
@@ -231,6 +239,26 @@ int traverse_threads(
 	
 	/* rem initialize after test_memory() call, which changed the pointed to memory */
 	*status = -1;
+	
+	
+	if( !NtQuerySystemInformation )
+	{
+		SetLastError( 0 );
+		*(FARPROC *)&NtQuerySystemInformation = 
+			(FARPROC)GetProcAddress( GetModuleHandleA( "ntdll" ), "NtQuerySystemInformation" );
+		
+		dbg_printf( "GetProcAddress() %s. GLE: %I32u, NtQuerySystemInformation: 0x%p.\n", 
+			( NtQuerySystemInformation ? "success" : "error" ), 
+			GetLastError(), 
+			NtQuerySystemInformation 
+		);
+		
+		if( !NtQuerySystemInformation )
+		{
+			error_code = TRAVERSE_ERROR_QUERY;
+			goto quit;
+		}
+	}
 	
 	
 	/* 

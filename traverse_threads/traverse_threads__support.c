@@ -89,6 +89,14 @@ void *get_teb(
 	const DWORD flags   // in, optional
 )
 {
+	static NTSTATUS (__stdcall *NtQueryInformationThread)(
+		HANDLE ThreadHandle,
+		int ThreadInformationClass,
+		PVOID ThreadInformation,
+		ULONG ThreadInformationLength,
+		PULONG ReturnLength
+	);
+	
 	struct /* THREAD_BASIC_INFORMATION */
 	{
 		LONG ExitStatus;
@@ -108,6 +116,26 @@ void *get_teb(
 	void *return_code = NULL;
 	
 	
+	if( !NtQueryInformationThread )
+	{
+		SetLastError( 0 );
+		*(FARPROC *)&NtQueryInformationThread = 
+			(FARPROC)GetProcAddress( GetModuleHandleA( "ntdll" ), "NtQueryInformationThread" );
+		
+		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+		{
+			printf( "GetProcAddress() %s. GLE: %I32u, NtQueryInformationThread: 0x%p.\n", 
+				( NtQueryInformationThread ? "success" : "error" ), 
+				GetLastError(), 
+				NtQueryInformationThread 
+			);
+		}
+		
+		if( !NtQueryInformationThread )
+			goto cleanup;
+	}
+	
+	SetLastError( 0 );
 	thread = OpenThread( THREAD_QUERY_INFORMATION, FALSE, tid );
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
@@ -129,7 +157,7 @@ void *get_teb(
 	{
 		printf( "NtQueryInformationThread() %s. status: 0x%08X.\n", 
 			( ( status ) ? "!= STATUS_SUCCESS" : "== STATUS_SUCCESS" ),
-			status 
+			(unsigned)status 
 		);
 	}
 	
@@ -149,7 +177,7 @@ cleanup:
 		
 		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 		{
-			printf( "CloseHandle(0x%IX) %s. GLE: %I32u.\n", 
+			printf( "CloseHandle(0x%p) %s. GLE: %I32u.\n", 
 				thread, 
 				( ret ? "success" : "error" ), 
 				GetLastError() 
@@ -232,7 +260,7 @@ int callback_print_thread_state(
 	printf( ", TID %Iu ", (size_t)sti->ClientId.UniqueThread );
 	
 	/* print thread state */
-	printf( "state %hs", ThreadState_to_cstr( sti->ThreadState ) );
+	printf( "state %s", ThreadState_to_cstr( sti->ThreadState ) );
 	
 	/* MS: "Thread Wait Reason is only applicable when the thread is in the Wait state."
 	http://support.microsoft.com/?kbid=837372
@@ -240,7 +268,7 @@ int callback_print_thread_state(
 	if( (KTHREAD_STATE)sti->ThreadState == Waiting )
 	{
 		/* the threadstate is waiting. print the reason it's waiting. */
-		printf( " (%hs", WaitReason_to_cstr( sti->WaitReason ) );
+		printf( " (%s", WaitReason_to_cstr( sti->WaitReason ) );
 		
 		if( (KWAIT_REASON)sti->WaitReason >= MaximumWaitReason )
 		{
@@ -281,12 +309,12 @@ int callback_print_thread_state(
 			|| ( dwMajorVersion >= 6 ) // >= Vista
 		) // >= XP
 		{
-			printf( "StackBase: 0x%IX\n", (size_t)seti->StackBase );
-			printf( "StackLimit: 0x%IX\n", (size_t)seti->StackLimit );
-			printf( "Win32StartAddress: 0x%IX\n", (size_t)seti->Win32StartAddress );
+			printf( "StackBase: 0x%p\n", seti->StackBase );
+			printf( "StackLimit: 0x%p\n", seti->StackLimit );
+			printf( "Win32StartAddress: 0x%p\n", seti->Win32StartAddress );
 			
 			if( dwMajorVersion >= 6 ) // >= Vista
-				printf( "TebAddress: 0x%IX\n", (size_t)seti->TebAddress );
+				printf( "TebAddress: 0x%p\n", seti->TebAddress );
 		}
 		else
 			printf( "Extended members are only available for XP+.\n" );
@@ -355,8 +383,8 @@ int print_filetime_as_local(
 		pm = 1;
 	}
 	
-	printf( "%hu:%02hu:%02hu %hs"
-		"  %hu/%hu/%04hu", 
+	printf( "%u:%02u:%02u %s"
+		"  %u/%u/%04u", 
 		hour, local.wMinute, local.wSecond, ( pm ? "PM" : "AM" ), 
 		local.wMonth, local.wDay, local.wYear
 	);

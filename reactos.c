@@ -255,9 +255,9 @@ void print_HOOK_id(
 	const INT iHook   // in
 )
 {
-	const int index = iHook + 1; /* the index in the array is the same as the id + 1 */
-	
-	if( ( index >= 0 ) && ( index < w_hooknames_count ) )
+	const unsigned index = (unsigned)( iHook + 1 ); /* the index in the array is the same as the id + 1 */
+
+	if( index < w_hooknames_count )
 		printf( "%s ", w_hooknames[ index ] );
 	else
 		printf( "<%d> ", iHook );
@@ -362,14 +362,14 @@ int get_hook_name_from_id(
 	const int id   // in
 )
 {
-	const int index = id + 1; /* the index in the array is the same as the id + 1 */
+	const unsigned index = (unsigned)( id + 1 ); /* the index in the array is the same as the id + 1 */
 	
 	FAIL_IF( !name );
 	
 	
 	*name = NULL;
 	
-	if( ( index >= 0 ) && ( index < w_hooknames_count ) )
+	if( index < w_hooknames_count )
 		*name = must_wcsdup( w_hooknames[ index ] );
 	
 	return !!*name;
@@ -391,7 +391,7 @@ int get_hook_id_from_name(
 	const WCHAR *const name   // in
 )
 {
-	int index = 0;
+	unsigned index = 0;
 	
 	FAIL_IF( !id );
 	FAIL_IF( !name );

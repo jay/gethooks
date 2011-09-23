@@ -105,7 +105,10 @@ Free a desktop store and all its descendants.
 
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
+#include <process.h>
 
 #include "util.h"
 
@@ -173,7 +176,7 @@ static int attach(
 			MSG_ERROR_GLE( "OpenDesktopW() failed." );
 			printf( 
 				"Failed to open desktop '%ls' for DESKTOP_READOBJECTS access.\n", 
-				d->pswzDesktopName 
+				d->pwszDesktopName 
 			);
 			goto fail;
 		}
@@ -181,7 +184,7 @@ static int attach(
 		if( !SetThreadDesktop( d->hDesktop ) )
 		{
 			MSG_ERROR_GLE( "SetThreadDesktop() failed." );
-			printf( "Failed to attach to desktop '%ls'.\n", d->pswzDesktopName );
+			printf( "Failed to attach to desktop '%ls'.\n", d->pwszDesktopName );
 			goto fail;
 		}
 	}
@@ -207,7 +210,7 @@ static int attach(
 	
 	
 	/* offsetof( struct CLIENTINFO, pDeskInfo ) */
-	if( ( G->prog->dwMajorSysVersion == 5 ) && ( G->prog->dwMinorSysVersion == 0 ) ) // win2k
+	if( ( G->prog->dwOSMajorVersion == 5 ) && ( G->prog->dwOSMinorVersion == 0 ) ) // win2k
 		offsetof_pDeskInfo = 20;
 	else // XP+
 		offsetof_pDeskInfo = 24;
@@ -274,7 +277,7 @@ points to will be modified ("out").
 struct stuff
 {
 	/* a new desktop item, calloc'd. only d->pwszDesktopName is expected to be valid. */
-	struct destkop_item *d;   // in, out
+	struct desktop_item *d;   // in, out
 	
 	/* this event is signaled when the thread's initialization has completed.
 	whether or not it was successful is determined by checking if( d->hEventTerminate )
@@ -419,8 +422,7 @@ static struct desktop_item *add_desktop_item(
 	
 	/* Get the main thread's desktop name */
 	SetLastError( 0 );
-	pwszMainDesktopName = get_user_obj_name( hMainDesktop );
-	if( !pwszMainDesktopName )
+	if( !get_user_obj_name( &pwszMainDesktopName, hMainDesktop ) )
 	{
 		MSG_FATAL_GLE( "get_user_obj_name() failed." );
 		printf( "Failed to get main thread's desktop name.\n" );
@@ -462,8 +464,8 @@ static struct desktop_item *add_desktop_item(
 		/* the worker thread signals this event when it has initialized, regardless of if the 
 		initialization was a success 
 		*/
-		stuff->hEventInitialized = CreateEvent( NULL, 0, 0, NULL );
-		if( !stuff->hEventInitialized )
+		stuff.hEventInitialized = CreateEvent( NULL, 0, 0, NULL );
+		if( !stuff.hEventInitialized )
 		{
 			MSG_FATAL_GLE( "CreateEvent() failed." );
 			printf( "Failed to create the initialization event.\n" );
@@ -471,7 +473,7 @@ static struct desktop_item *add_desktop_item(
 		}
 		
 		d->pwszDesktopName = must_wcsdup( name );
-		stuff->d = d;
+		stuff.d = d;
 		
 		/* create the worker thread, which calls attach() */
 		d->hThread = (HANDLE)_beginthreadex( NULL, 0, thread, &stuff, 0, NULL );
@@ -483,7 +485,7 @@ static struct desktop_item *add_desktop_item(
 		}
 		
 		SetLastError( 0 );
-		if( WaitForSingleObject( stuff->hEventInitialized, INFINITE ) )
+		if( WaitForSingleObject( stuff.hEventInitialized, INFINITE ) )
 		{
 			MSG_FATAL_GLE( "WaitForSingleObject() failed." );
 			printf( "Failed to wait for a worker thread to initialize.\n" );
@@ -571,7 +573,7 @@ static BOOL CALLBACK EnumDesktopProc(
 	if( !add_desktop_item( store, pwszDesktopName ) )
 	{
 		MSG_WARNING( "add_desktop_item() failed." );
-		printf( "Failed to attach to desktop '%ls'.\n", lpwszDesktop );
+		printf( "Failed to attach to desktop '%ls'.\n", pwszDesktopName );
 	}
 	
 	return TRUE;  // continue enumeration
@@ -603,7 +605,7 @@ static int add_all_desktops(
 	
 	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
-	FAIL_IF( GetdThreadId() != G->prog->dwMainThreadId );   // main thread only
+	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
 	
 	/*
@@ -681,7 +683,7 @@ void init_global_desktop_store( void )
 {
 	FAIL_IF( !G );   // The global store must exist.
 	
-	FAIL_IF( G->desktop->init_time );   // Fail if this store has already been initialized.
+	FAIL_IF( G->desktops->init_time );   // Fail if this store has already been initialized.
 	
 	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
 	FAIL_IF( !G->config->init_time );   // The configuration store must be initialized.

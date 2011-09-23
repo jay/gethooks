@@ -291,7 +291,7 @@ int get_user_obj_name(
 		return FALSE;
 	}
 	
-	*name[ ( bytes_needed / sizeof( WCHAR ) ) - 1 ] = L'\0';
+	(*name)[ ( bytes_needed / sizeof( WCHAR ) ) - 1 ] = L'\0';
 	
 	return TRUE;
 }

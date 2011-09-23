@@ -39,6 +39,12 @@ extern "C" {
 #endif
 
 
+/** Forward declaration for snapshot store due to circular dependency.
+*/
+struct snapshot;
+
+
+
 /** This is the info to keep track of when a HOOK object is found.
 For each HANDLEENTRY traversed if its bType == TYPE_HOOK then the handle entry is for a HOOK.
 */

@@ -447,7 +447,7 @@ Search a snapshot store's array of gui threads for a Win32ThreadInfo address.
 
 returns the gui struct that contains the matching pvWin32ThreadInfo
 */
-static struct gui *find_Win32ThreadInfo( 
+struct gui *find_Win32ThreadInfo( 
 	struct snapshot *const store,   // in
 	void *const pvWin32ThreadInfo   // in
 )
@@ -692,7 +692,8 @@ static void print_snapshot_store(
 {
 	const char *const objname = "Snapshot Store";
 	DWORD flags = 0;
-	int i = 0, ret = 0;
+	int ret = 0;
+	unsigned i = 0;
 	
 	
 	if( !store )

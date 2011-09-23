@@ -247,25 +247,6 @@ typedef enum _KWAIT_REASON
 } KWAIT_REASON, *PKWAIT_REASON;
 
 
-/* microsoft */
-NTSTATUS WINAPI NtQuerySystemInformation(
-	SYSTEM_INFORMATION_CLASS SystemInformationClass,
-	PVOID SystemInformation,
-	ULONG SystemInformationLength,
-	PULONG ReturnLength
-);
-
-
-/* microsoft */
-NTSTATUS WINAPI NtQueryInformationThread(
-	HANDLE ThreadHandle,
-	int ThreadInformationClass,
-	PVOID ThreadInformation,
-	ULONG ThreadInformationLength,
-	PULONG ReturnLength
-);
-
-
 #ifdef __cplusplus
 }
 #endif

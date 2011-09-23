@@ -76,6 +76,8 @@ Free a configuration store and all its descendants.
 
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 
 #include "util.h"
@@ -111,13 +113,13 @@ void create_config_store(
 	config = must_calloc( 1, sizeof( *config ) );
 	
 	/* allocate the list store for the linked list of desktops to filter */
-	config->desklist = create_list_store( &config->desklist );
+	create_list_store( &config->desklist );
 	
 	/* allocate the list store for the linked list of hooks to filter */
-	config->hooklist = create_list_store( &config->hooklist );
+	create_list_store( &config->hooklist );
 	
 	/* allocate the list store for the linked list of programs to filter */
-	config->proglist = create_list_store( &config->proglist );
+	create_list_store( &config->proglist );
 	
 	
 	*out = config;
@@ -386,7 +388,7 @@ void init_global_config_store( void )
 			case 'd':
 			case 'D':
 			{
-				G->config->desklist->type = LIST_INCLUDE_DESKTOP;
+				G->config->desklist->type = LIST_INCLUDE_DESK;
 				
 				/* since this option may or may not have an associated argument, 
 				test for both an option's argument(optarg) or the next option
@@ -538,7 +540,7 @@ void init_global_config_store( void )
 					}
 					
 					/* append to the linked list */
-					if( !add_list_item( G->config->hooklist, id, name );
+					if( !add_list_item( G->config->hooklist, id, name ) )
 					{
 						MSG_FATAL( "add_list_item() failed." );
 						printf( "hook: %s\n", G->prog->argv[ i ] );
@@ -602,7 +604,7 @@ void init_global_config_store( void )
 				{
 					int id = 0;
 					WCHAR *name = NULL;
-					const char *const p = G->prog->argv[ i ];
+					const char *p = G->prog->argv[ i ];
 					
 					
 					/* a colon is used as the escape character. 
@@ -640,7 +642,7 @@ void init_global_config_store( void )
 					/* else the id is valid and name remains NULL*/
 					
 					/* append to the linked list */
-					if( !add_list_item( G->config->proglist, id, name );
+					if( !add_list_item( G->config->proglist, id, name ) )
 					{
 						MSG_FATAL( "add_list_item() failed." );
 						printf( "prog: %s\n", G->prog->argv[ i ] );
@@ -719,13 +721,13 @@ static void print_config_store(
 	printf( "\n" );
 	
 	//printf( "Printing list store of user specified hooks:" );
-	print_list( store->hooklist );
+	print_list_store( store->hooklist );
 	
 	//printf( "Printing list store of user specified programs:" );
-	print_list( store->proglist );
+	print_list_store( store->proglist );
 	
 	//printf( "Printing list store of user specified desktops:" );
-	print_list( store->desklist );
+	print_list_store( store->desklist );
 	
 	PRINT_DBLSEP_END( objname );
 	
