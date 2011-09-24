@@ -119,6 +119,38 @@ Free a desktop store and all its descendants.
 
 
 
+static int attach( 
+	struct desktop_item *d   // in, out
+);
+
+static unsigned __stdcall thread( 
+	void *param   // in
+);
+
+static struct desktop_item *add_desktop_item( 
+	struct desktop_list *store,   // out
+	const WCHAR *name   // in, optional
+);
+
+static BOOL CALLBACK EnumDesktopProc(
+	LPWSTR param1,   // in
+	LPARAM param2   // in
+);
+
+static int add_all_desktops( 
+	struct desktop_list *store   // out
+);
+
+static void print_desktop_store( 
+	const struct desktop_list *const store   // in
+);
+
+static void free_desktop_item( 
+	struct desktop_item **const in   // in deref
+);
+
+
+
 /* create_desktop_store()
 Create a desktop store and its descendants or die.
 */
@@ -524,13 +556,13 @@ static struct desktop_item *add_desktop_item(
 	
 	if( !store->head )
 	{
-		store->head = current;
-		store->tail = current;
+		store->head = d;
+		store->tail = d;
 	}
 	else
 	{
-		store->tail->next = current;
-		store->tail = current;
+		store->tail->next = d;
+		store->tail = d;
 	}
 	
 	goto cleanup;
@@ -595,10 +627,8 @@ static int add_all_desktops(
 	struct desktop_list *store   // out
 )
 {
-	HWINSTA station = NULL;
-	WCHAR *station_name = NULL;
-	
 	int count = 0;
+	HWINSTA station = NULL;
 	struct desktop_item *d = NULL;
 	
 	FAIL_IF( !store );
@@ -655,9 +685,6 @@ static int add_all_desktops(
 		);
 		exit( 1 );
 	}
-	
-	free( station_name );
-	station_name = NULL;
 	
 	CloseWindowStation( station );
 	station = NULL;

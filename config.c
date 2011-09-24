@@ -89,6 +89,12 @@ Free a configuration store and all its descendants.
 
 
 
+static void print_config_store( 
+	struct config *store   // in
+);
+
+
+
 /* the default number of seconds when polling */
 #define POLLING_DEFAULT   7
 
@@ -211,13 +217,7 @@ void print_more_examples_and_exit( void )
 	
 	printf( "\nexample piping to 'tee' to print output to stdout and file \"outfile\":\n" );
 	printf( " %s -m | tee outfile\n", G->prog->pszBasename );
-	
-	printf( "\n"
-		"If the colon is the first character in an argument to program include/exclude \n"
-		"it is assumed a program name follows. If the program name you want for some \n"
-		"reason starts with a colon then you must prefix it with another colon.\n" 
-	);
-	
+		
 	exit( 1 );
 }
 

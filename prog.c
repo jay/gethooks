@@ -55,6 +55,12 @@ Free a program store and all its descendants.
 
 
 
+static void print_prog_store( 
+	struct prog *store   // in
+);
+
+
+
 /* create_prog_store()
 Create a program store and its descendants or die.
 

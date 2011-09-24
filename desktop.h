@@ -132,43 +132,13 @@ void create_desktop_store(
 	struct desktop_list **const out   // out deref
 );
 
-static int attach( 
-	struct desktop_item *d   // in, out
-);
-
-static unsigned __stdcall thread( 
-	void *param   // in
-);
-
-static struct desktop_item *add_desktop_item( 
-	struct desktop_list *store,   // out
-	const WCHAR *name   // in, optional
-);
-
-static BOOL CALLBACK EnumDesktopProc(
-	LPWSTR param1,   // in
-	LPARAM param2   // in
-);
-
-static int add_all_desktops( 
-	struct desktop_list *store   // out
-);
-
 void init_global_desktop_store( void );
 
 void print_desktop_item( 
 	const struct desktop_item *const item   // in
 );
 
-static void print_desktop_store( 
-	const struct desktop_list *const store   // in
-);
-
 void print_global_desktop_store( void );
-
-static void free_desktop_item( 
-	struct desktop_item **const in   // in deref
-);
 
 void free_desktop_store( 
 	struct desktop_list **const in   // in deref

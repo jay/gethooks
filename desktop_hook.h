@@ -130,11 +130,6 @@ void create_desktop_hook_store(
 	struct desktop_hook_list **const out   // out deref
 );
 
-static struct desktop_hook_item *add_desktop_hook_item(
-	struct desktop_hook_list *const store,   // in
-	struct desktop_item *const desktop   // in
-);
-
 int compare_hook( 
 	const void *const p1,   // in
 	const void *const p2   // in
@@ -154,10 +149,6 @@ void print_desktop_hook_item(
 
 void print_desktop_hook_store( 
 	const struct desktop_hook_list *const store   // in
-);
-
-static void free_desktop_hook_item( 
-	struct desktop_hook_item **const in   // in deref
 );
 
 void free_desktop_hook_store( 

@@ -134,7 +134,7 @@ void print_HANDLEENTRY_type(
 )
 {
 	if( ( bType >= 0 ) && ( bType < w_handlenames_count ) )
-		printf( "%s ", w_handlenames[ bType ] );
+		printf( "%ls ", w_handlenames[ bType ] );
 	else
 		printf( "<%u> ", (unsigned)bType );
 	
@@ -258,7 +258,7 @@ void print_HOOK_id(
 	const unsigned index = (unsigned)( iHook + 1 ); /* the index in the array is the same as the id + 1 */
 
 	if( index < w_hooknames_count )
-		printf( "%s ", w_hooknames[ index ] );
+		printf( "%ls ", w_hooknames[ index ] );
 	else
 		printf( "<%d> ", iHook );
 	

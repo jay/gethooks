@@ -169,19 +169,6 @@ void create_snapshot_store(
 	struct snapshot **const out   // out deref
 );
 
-static int callback_add_gui( 
-	void *cb_param,   // in, out
-	SYSTEM_PROCESS_INFORMATION *const spi,   // in
-	SYSTEM_THREAD_INFORMATION *const sti,   // in
-	const ULONG remaining,   // in
-	const DWORD flags   // in, optional
-);
-
-static int compare_gui( 
-	const void *const p1,   // in
-	const void *const p2   // in
-);
-
 struct gui *find_Win32ThreadInfo( 
 	struct snapshot *const store,   // in
 	void *const pvWin32ThreadInfo   // in
@@ -197,10 +184,6 @@ void print_gui_brief(
 
 void print_gui(
 	const struct gui *const gui   // in
-);
-
-static void print_snapshot_store( 
-	const struct snapshot *const store   // in
 );
 
 void free_snapshot_store( 

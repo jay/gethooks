@@ -243,7 +243,7 @@ int get_wstr_from_mbstr(
 		return FALSE;
 	}
 	
-	*pwcstr[ ecount ] = L'\0';
+	(*pwcstr)[ ecount ] = L'\0';
 	
 	return TRUE;
 }

@@ -71,7 +71,7 @@ If you've made any modifications to this program add a line that says "Modificat
 */
 void print_version( void )
 {
-	printf( "gethooks v%u.%u", VERSION_MAJOR, VERSION_MINOR );
+	printf( "\ngethooks v%u.%u", VERSION_MAJOR, VERSION_MINOR );
 	printf( " - " );
 	printf( "Built on " __DATE__ " at " __TIME__ "\n" );
 	printf( "The original gethooks source can be found at http://jay.github.com/gethooks\n" );
@@ -149,10 +149,13 @@ int gethooks()
 			exit( 1 );
 		}
 		
-		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
-		
-		if( !G->config->polling ) // only taking one snapshot
+		if( G->config->polling < 0 ) // only taking one snapshot
+		{
+			print_diff_desktop_hook_list( current->desktop_hooks );
 			break;
+		}
+		
+		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
 		
 		Sleep( G->config->polling * 1000 );
 		

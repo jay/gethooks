@@ -68,32 +68,23 @@ int is_hook_wanted(
 	const struct hook *const hook   // in
 );
 
-static void print_hook_notice_begin(
-	const struct hook *const hook,   // in
-	const WCHAR *const deskname,   // in
-	const enum difftype difftype   // in
-);
-
-static void print_hook_notice_end( void );
-
-static int print_diff_gui(
-	const struct gui *const a,   // in, optional
-	const struct gui *const b,   // in, optional
-	const char *const threadname,   // in
-	const WCHAR *const deskname,   // in
-	const struct hook *const modified_hook,   // in
-	unsigned *const modified_header   // in, out
-);
-
 int print_diff_hook( 
 	const struct hook *const a,   // in
 	const struct hook *const b,   // in
 	const WCHAR *const deskname   // in
 );
 
+void print_diff_desktop_hook_item( 
+	const struct desktop_hook_item *const b   // in
+);
+
 void print_diff_desktop_hook_items( 
 	const struct desktop_hook_item *const a,   // in
 	const struct desktop_hook_item *const b   // in
+);
+
+void print_diff_desktop_hook_list( 
+	const struct desktop_hook_list *const list2   // in
 );
 
 void print_diff_desktop_hook_lists( 

@@ -94,6 +94,17 @@ Free a desktop hook store and all its descendants.
 
 
 
+static struct desktop_hook_item *add_desktop_hook_item(
+	struct desktop_hook_list *const store,   // in
+	struct desktop_item *const desktop   // in
+);
+
+static void free_desktop_hook_item( 
+	struct desktop_hook_item **const in   // in deref
+);
+
+
+
 /* create_desktop_hook_store()
 Create a desktop hook store and its descendants or die.
 */
@@ -159,6 +170,19 @@ static struct desktop_hook_item *add_desktop_hook_item(
 	/* allocate an array of hook structs */
 	item->hook = must_calloc( item->hook_max, sizeof( *item->hook ) );
 	
+	
+	/* the desktop hook item is initialized. add the new item to the end of the list */
+	
+	if( !store->head )
+	{
+		store->head = item;
+		store->tail = item;
+	}
+	else
+	{
+		store->tail->next = item;
+		store->tail = item;
+	}
 	
 	return item;
 }
@@ -261,7 +285,7 @@ int init_desktop_hook_store(
 			continue;
 		
 		/* Check to see if the HOOK is located on a desktop we're attached to */
-		for( item = store->head; item; item->next )
+		for( item = store->head; item; item = item->next )
 		{
 			if( ( (void *)entry.pHead >= item->desktop->pvDesktopBase )
 				&& ( (void *)entry.pHead < item->desktop->pvDesktopLimit )
@@ -299,7 +323,7 @@ int init_desktop_hook_store(
 	
 	
 	/* sort the hook array for each desktop according to its position in the heap */
-	for( item = store->head; item; item->next )
+	for( item = store->head; item; item = item->next )
 	{
 		/* sort according to HANDLEENTRY's entry.pHead */
 		qsort( 

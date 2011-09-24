@@ -78,10 +78,6 @@ unsigned get_next_arg(
 
 void init_global_config_store( void );
 
-static void print_config_store( 
-	struct config *store   // in
-);
-
 void print_global_config_store( void );
 
 void free_config_store( 

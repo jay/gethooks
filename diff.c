@@ -77,9 +77,21 @@ Compare two hook structs, both for the same HOOK object, and print any significa
 -
 
 -
+print_diff_desktop_hook_item()
+
+Print the HOOKs that have been found on a single attached to desktop.
+-
+
+-
 print_diff_desktop_hook_items()
 
 Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
+-
+
+-
+print_diff_desktop_hook_list()
+
+Print the HOOKs that have been found on all attached to desktops for a single snapshot.
 -
 
 -
@@ -100,6 +112,25 @@ Print the HOOKs that have been added/removed from all attached to desktops betwe
 
 /* the global stores */
 #include "global.h"
+
+
+
+static void print_hook_notice_begin(
+	const struct hook *const hook,   // in
+	const WCHAR *const deskname,   // in
+	const enum difftype difftype   // in
+);
+
+static void print_hook_notice_end( void );
+
+static int print_diff_gui(
+	const struct gui *const a,   // in, optional
+	const struct gui *const b,   // in, optional
+	const char *const threadname,   // in
+	const WCHAR *const deskname,   // in
+	const struct hook *const modified_hook,   // in
+	unsigned *const modified_header   // in, out
+);
 
 
 
@@ -283,7 +314,7 @@ static void print_hook_notice_begin(
 	FAIL_IF( !difftype );
 	
 	
-	PRINT_HASHSEP_BEGIN( "" );
+	PRINT_SEP_BEGIN( "" );
 	
 	if( difftype == HOOK_ADDED )
 		diffname = "Added";
@@ -315,9 +346,16 @@ static void print_hook_notice_begin(
 	print_gui_brief( hook->origin );
 	printf( "\n" );
 	
+	
 	printf( "Target: " );
-	print_gui_brief( hook->target );
+	
+	if( hook->object.ptiHooked )
+		print_gui_brief( hook->target );
+	else
+		printf( "<GLOBAL>" );
+	
 	printf( "\n" );
+	
 	
 	return;
 }
@@ -329,7 +367,7 @@ Helper function to print a hook [end] header.
 */
 static void print_hook_notice_end( void )
 {
-	PRINT_HASHSEP_END( "" );
+	PRINT_SEP_END( "" );
 	return;
 }
 
@@ -717,8 +755,39 @@ int print_diff_hook(
 
 
 
+/* print_diff_desktop_hook_item()
+Print the HOOKs that have been found on a single attached to desktop.
+*/
+void print_diff_desktop_hook_item( 
+	const struct desktop_hook_item *const b   // in
+)
+{
+	unsigned i = 0;
+	
+	FAIL_IF( !b );
+	FAIL_IF( !b->desktop );
+	FAIL_IF( !b->hook_max );
+	
+	
+	for( i = 0; i < b->hook_count; ++i )
+	{
+		if( is_hook_wanted( &b->hook[ i ] ) )
+		{
+			print_hook_notice_begin( &b->hook[ i ], b->desktop->pwszDesktopName, HOOK_ADDED );
+			print_hook_notice_end();
+		}
+	}
+	
+	return;
+}
+
+
+
 /* print_diff_desktop_hook_items()
 Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
+
+'a' is an item from the desktop hook list of the previous snapshot
+'b' is an item from the desktop hook list of the current snapshot
 */
 void print_diff_desktop_hook_items( 
 	const struct desktop_hook_item *const a,   // in
@@ -806,8 +875,31 @@ void print_diff_desktop_hook_items(
 
 
 
+/* print_diff_desktop_hook_list()
+Print the HOOKs that have been found on all attached to desktops for a single snapshot.
+*/
+void print_diff_desktop_hook_list( 
+	const struct desktop_hook_list *const list2   // in
+)
+{
+	struct desktop_hook_item *b = NULL;
+	
+	FAIL_IF( !list2 );
+	
+	
+	for( b = list2->head; b; b = b->next )
+		print_diff_desktop_hook_item( b );
+	
+	return;
+}
+
+
+
 /* print_diff_desktop_hook_lists()
 Print the HOOKs that have been added/removed from all attached to desktops between snapshots.
+
+'list1' is the previous snapshot's desktop hook list
+'list2' is the current snapshot's desktop hook list
 */
 void print_diff_desktop_hook_lists( 
 	const struct desktop_hook_list *const list1,   // in

@@ -84,10 +84,6 @@ void init_global_prog_store(
 	char **argv   // in deref
 );
 
-static void print_prog_store( 
-	struct prog *store   // in
-);
-
 void print_global_prog_store( void );
 
 void free_prog_store( 

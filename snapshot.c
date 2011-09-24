@@ -95,6 +95,25 @@ Free a snapshot store and all its descendants.
 
 
 
+static int callback_add_gui( 
+	void *cb_param,   // in, out
+	SYSTEM_PROCESS_INFORMATION *const spi,   // in
+	SYSTEM_THREAD_INFORMATION *const sti,   // in
+	const ULONG remaining,   // in
+	const DWORD flags   // in, optional
+);
+
+static int compare_gui( 
+	const void *const p1,   // in
+	const void *const p2   // in
+);
+
+static void print_snapshot_store( 
+	const struct snapshot *const store   // in
+);
+
+
+
 /* create_snapshot_store()
 Create a snapshot store and its descendants or die.
 
@@ -619,7 +638,10 @@ void print_gui_brief(
 )
 {
 	if( !gui )
+	{
+		printf( "<unknown>" );
 		return;
+	}
 	
 	if( gui->spi && gui->spi->ImageName.Buffer )
 	{
