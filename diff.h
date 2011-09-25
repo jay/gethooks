@@ -37,7 +37,34 @@ extern "C" {
 
 
 /* the diff types */
-enum difftype { HOOK_ADDED = 1, HOOK_MODIFIED, HOOK_REMOVED };
+enum difftype
+{ 
+	/* every HOOK in the initial snapshot is "found" */
+	HOOK_FOUND = 1, 
+	
+	/* a HOOK that is present in the current snapshot but not in the previous */
+	HOOK_ADDED, 
+	
+	/* a HOOK that is present in both the previous and current snapshots but has changed */
+	HOOK_MODIFIED, 
+	
+	/* a HOOK that is present in the previous snapshot but not in the current */
+	HOOK_REMOVED
+};
+
+
+/* thread info as it pertains to a HOOK */
+enum threadtype
+{
+	/* the thread that owns the HOOK */
+	THREAD_OWNER = 1, 
+	
+	/* the thread that the HOOK originated from */
+	THREAD_ORIGIN, 
+	
+	/* the thread that is hooked */
+	THREAD_TARGET 
+};
 
 
 
@@ -74,7 +101,7 @@ int print_diff_hook(
 	const WCHAR *const deskname   // in
 );
 
-void print_diff_desktop_hook_item( 
+void print_initial_desktop_hook_item( 
 	const struct desktop_hook_item *const b   // in
 );
 
@@ -83,7 +110,7 @@ void print_diff_desktop_hook_items(
 	const struct desktop_hook_item *const b   // in
 );
 
-void print_diff_desktop_hook_list( 
+void print_initial_desktop_hook_list( 
 	const struct desktop_hook_list *const list2   // in
 );
 

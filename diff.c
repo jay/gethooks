@@ -67,7 +67,7 @@ Helper function to print a hook [end] header.
 -
 print_diff_gui()
 
-Compare two gui structs and print any significant differences.
+Compare two gui structs and print any significant differences. Helper function for print_diff_hook()
 -
 
 -
@@ -77,7 +77,7 @@ Compare two hook structs, both for the same HOOK object, and print any significa
 -
 
 -
-print_diff_desktop_hook_item()
+print_initial_desktop_hook_item()
 
 Print the HOOKs that have been found on a single attached to desktop.
 -
@@ -89,7 +89,7 @@ Print the HOOKs that have been added/removed from a single attached to desktop b
 -
 
 -
-print_diff_desktop_hook_list()
+print_initial_desktop_hook_list()
 
 Print the HOOKs that have been found on all attached to desktops for a single snapshot.
 -
@@ -124,11 +124,10 @@ static void print_hook_notice_begin(
 static void print_hook_notice_end( void );
 
 static int print_diff_gui(
-	const struct gui *const a,   // in, optional
-	const struct gui *const b,   // in, optional
-	const char *const threadname,   // in
+	const struct hook *const oldhook,   // in
+	const struct hook *const newhook,   // in
+	const enum threadtype threadtype,   // in
 	const WCHAR *const deskname,   // in
-	const struct hook *const modified_hook,   // in
 	unsigned *const modified_header   // in, out
 );
 
@@ -316,12 +315,14 @@ static void print_hook_notice_begin(
 	
 	PRINT_SEP_BEGIN( "" );
 	
-	if( difftype == HOOK_ADDED )
+	if( difftype == HOOK_FOUND )
+		diffname = "Found";
+	else if( difftype == HOOK_ADDED )
 		diffname = "Added";
-	else if( difftype == HOOK_REMOVED )
-		diffname = "Removed";
 	else if( difftype == HOOK_MODIFIED )
 		diffname = "Modified";
+	else if( difftype == HOOK_REMOVED )
+		diffname = "Removed";
 	else
 	{
 		MSG_FATAL( "Unknown diff type." );
@@ -330,11 +331,24 @@ static void print_hook_notice_begin(
 	}
 	
 	
-	printf( "[%s HOOK ", diffname );
-	PRINT_BARE_PTR( hook->entry.pHead );
-	printf( " on desktop %ls]\n", deskname );
+	printf( "[%s]", diffname );
 	
-	printf( "Name: " );
+	printf( " [%ls]", deskname );
+	
+	printf( " [HOOK head " );
+	PRINT_BARE_PTR( hook->object.head.h );
+	printf( " @ kernel address " );
+	PRINT_BARE_PTR( hook->entry.pHead );
+	printf( "]" );
+	
+	printf( " [" );
+	print_time();
+	printf( "]" );
+	
+	printf( "\n" );
+	
+	
+	printf( "Id: " );
 	print_HOOK_id( hook->object.iHook );
 	printf( "\n" );
 	
@@ -349,13 +363,23 @@ static void print_hook_notice_begin(
 	
 	printf( "Target: " );
 	
-	if( hook->object.ptiHooked )
-		print_gui_brief( hook->target );
-	else
+	if( hook->object.flags & HF_GLOBAL )
+	{
 		printf( "<GLOBAL>" );
+		if( hook->object.ptiHooked ) /* A global hook should NOT have a target */
+		{
+			printf( " ERROR: There is target information for this global hook: " );
+			print_gui_brief( hook->target );
+		}
+	}
+	else
+		print_gui_brief( hook->target );
 	
 	printf( "\n" );
 	
+	
+	if( difftype == HOOK_MODIFIED )
+		printf( "\n" );
 	
 	return;
 }
@@ -374,13 +398,12 @@ static void print_hook_notice_end( void )
 
 
 /* print_diff_gui()
-Compare two gui structs and print any significant differences.
+Compare two gui structs and print any significant differences. Helper function for print_diff_hook()
 
-'a' is the old gui thread info (optional)
-'b' is the new gui thread info (optional)
-'threadname' is the name of the gui thread as it applies to the HOOK. eg "target", "origin"
+'oldhook' is the old hook info (optional)
+'newhook' is the new hook info (optional)
+'threadtype' is the gui thread info in the hook struct to compare eg THREAD_TARGET (hook->target)
 'deskname' is the name of the desktop the hook is on
-'modified_hook' is the hook struct for the modified header
 
 '*modified_header' receives nonzero if the "Modified HOOK" header is printed by this function.
 the header is printed before any difference in the gui structs has been printed.
@@ -390,14 +413,21 @@ returns nonzero if any difference was printed.
 if this function returns nonzero then '*modified_header' is also nonzero.
 */
 static int print_diff_gui(
-	const struct gui *const a,   // in, optional
-	const struct gui *const b,   // in, optional
-	const char *const threadname,   // in
+	const struct hook *const oldhook,   // in
+	const struct hook *const newhook,   // in
+	const enum threadtype threadtype,   // in
 	const WCHAR *const deskname,   // in
-	const struct hook *const modified_hook,   // in
 	unsigned *const modified_header   // in, out
 )
 {
+	/* oldhook's gui thread owner, origin, or target */
+	const struct gui *a = NULL;
+	
+	/* newhook's gui thread owner, origin, or target */
+	const struct gui *b = NULL;
+	
+	const char *threadname = NULL;
+	
 	WCHAR empty1[] = L"<unknown>";
 	WCHAR empty2[] = L"<unknown>";
 	struct
@@ -414,9 +444,37 @@ static int print_diff_gui(
 		} ImageName;
 	} oldstuff, newstuff;
 	
-	FAIL_IF( !threadname );
-	FAIL_IF( !modified_hook );
+	FAIL_IF( !oldhook );
+	FAIL_IF( !newhook );
+	FAIL_IF( !threadtype );
+	FAIL_IF( !deskname );
 	FAIL_IF( !modified_header );
+	
+	
+	if( threadtype == THREAD_OWNER )
+	{
+		threadname = "owner";
+		a = oldhook->owner;
+		b = newhook->owner;
+	}
+	else if( threadtype == THREAD_ORIGIN )
+	{
+		threadname = "origin";
+		a = oldhook->origin;
+		b = newhook->origin;
+	}
+	else if( threadtype == THREAD_TARGET )
+	{
+		threadname = "target";
+		a = oldhook->target;
+		b = newhook->target;
+	}
+	else
+	{
+		MSG_FATAL( "Unknown thread type." );
+		printf( "threadtype: %d\n", threadtype );
+		exit( 1 );
+	}
 	
 	
 	if( !a && !b )
@@ -491,22 +549,51 @@ static int print_diff_gui(
 	)
 		return FALSE;
 	
+	
 	/* If the modified header has not yet been printed by another function then print it.
 	if !*modified_header then this gui diff is the first encountered between the two hook structs.
 	*/
 	if( !*modified_header )
 	{
-		print_hook_notice_begin( modified_hook, deskname, HOOK_MODIFIED );
+		print_hook_notice_begin( newhook, deskname, HOOK_MODIFIED );
 		*modified_header = TRUE;
 	}
 	
+	
 	printf( "\nThe associated gui %s thread information has changed.\n", threadname );
+	
+	
 	printf( "Old %s: ", threadname );
-	print_gui_brief( a );
+	
+	if( ( threadtype == THREAD_TARGET ) && ( oldhook->object.flags & HF_GLOBAL ) )
+	{
+		printf( "<GLOBAL>" );
+		if( oldhook->object.ptiHooked ) /* A global hook should NOT have a target */
+		{
+			printf( " ERROR: There is target information for this global hook: " );
+			print_gui_brief( a );
+		}
+	}
+	else
+		print_gui_brief( a );
+	
 	printf( "\n" );
 	
-	printf( "New %s:", threadname );
-	print_gui_brief( b );
+	
+	printf( "New %s: ", threadname );
+	
+	if( ( threadtype == THREAD_TARGET ) && ( newhook->object.flags & HF_GLOBAL ) )
+	{
+		printf( "<GLOBAL>" );
+		if( newhook->object.ptiHooked ) /* A global hook should NOT have a target */
+		{
+			printf( " ERROR: There is target information for this global hook: " );
+			print_gui_brief( b );
+		}
+	}
+	else
+		print_gui_brief( b );
+	
 	printf( "\n" );
 	
 	
@@ -577,7 +664,7 @@ int print_diff_hook(
 	}
 	
 	/* the gui->owner struct has the process and thread info for entry.pOwner */
-	print_diff_gui( a->owner, b->owner, "owner", deskname, b, &modified_header );
+	print_diff_gui( a, b, THREAD_OWNER, deskname, &modified_header );
 	
 	if( a->object.head.h != b->object.head.h )
 	{
@@ -606,7 +693,7 @@ int print_diff_hook(
 	}
 	
 	/* the gui->origin struct has the process and thread info for pti */
-	print_diff_gui( a->origin, b->origin, "origin", deskname, b, &modified_header );
+	print_diff_gui( a, b, THREAD_ORIGIN, deskname, &modified_header );
 	
 	if( a->object.rpdesk1 != b->object.rpdesk1 )
 	{
@@ -731,7 +818,7 @@ int print_diff_hook(
 	}
 	
 	/* the gui->target struct has the process and thread info for ptiHooked */
-	print_diff_gui( a->target, b->target, "target", deskname, b, &modified_header );
+	print_diff_gui( a, b, THREAD_TARGET, deskname, &modified_header );
 	
 	if( a->object.rpdesk2 != b->object.rpdesk2 )
 	{
@@ -755,10 +842,10 @@ int print_diff_hook(
 
 
 
-/* print_diff_desktop_hook_item()
+/* print_initial_desktop_hook_item()
 Print the HOOKs that have been found on a single attached to desktop.
 */
-void print_diff_desktop_hook_item( 
+void print_initial_desktop_hook_item( 
 	const struct desktop_hook_item *const b   // in
 )
 {
@@ -773,7 +860,7 @@ void print_diff_desktop_hook_item(
 	{
 		if( is_hook_wanted( &b->hook[ i ] ) )
 		{
-			print_hook_notice_begin( &b->hook[ i ], b->desktop->pwszDesktopName, HOOK_ADDED );
+			print_hook_notice_begin( &b->hook[ i ], b->desktop->pwszDesktopName, HOOK_FOUND );
 			print_hook_notice_end();
 		}
 	}
@@ -875,10 +962,10 @@ void print_diff_desktop_hook_items(
 
 
 
-/* print_diff_desktop_hook_list()
+/* print_initial_desktop_hook_list()
 Print the HOOKs that have been found on all attached to desktops for a single snapshot.
 */
-void print_diff_desktop_hook_list( 
+void print_initial_desktop_hook_list( 
 	const struct desktop_hook_list *const list2   // in
 )
 {
@@ -888,7 +975,7 @@ void print_diff_desktop_hook_list(
 	
 	
 	for( b = list2->head; b; b = b->next )
-		print_diff_desktop_hook_item( b );
+		print_initial_desktop_hook_item( b );
 	
 	return;
 }

@@ -171,6 +171,8 @@ void print_init_time(
 	const __int64 utc   // in
 );
 
+void print_time( void );
+
 
 #ifdef __cplusplus
 }

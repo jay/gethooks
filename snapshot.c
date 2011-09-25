@@ -658,7 +658,7 @@ void print_gui_brief(
 	printf( ", TID %Iu", (size_t)( gui->sti ? gui->sti->ClientId.UniqueThread : 0 ) );
 	printf( ", " );
 	PRINT_BARE_PTR( gui->pvWin32ThreadInfo );
-	printf( " )" );
+	printf( ")" );
 	
 	return;
 }

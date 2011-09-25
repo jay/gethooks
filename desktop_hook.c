@@ -40,7 +40,7 @@ Create a desktop hook item and append it to the desktop hook store's linked list
 -
 compare_hook()
 
-Compare two hook structs according to the kernel address of the associated HOOK struct.
+Compare two hook structs according their HANDLEENTRY info.
 -
 
 -
@@ -190,15 +190,24 @@ static struct desktop_hook_item *add_desktop_hook_item(
 
 
 /* compare_hook()
-Compare two hook structs according to the kernel address of the associated HOOK struct.
+Compare two hook structs according their HANDLEENTRY info.
 
-Compare the pHead in two hook structs.
+Compare the HANDLEENTRY pHead, which was the kernel address of the associated HOOK struct 
+at that point in time (before the HOOK was copied to hook->object). If the pHead is the same then 
+check what was the HANDLEENTRY's index in the list (aheList) at that point in time (before the 
+HANDLEENTRY was copied to hook->entry). If the index is the same then check the HOOK's handle.
+If the handles compare the same as well then assume the two hook structs have information on the 
+same HOOK. This will happen when comparing the hook info from two different system snapshots.
 
-qsort() callback: this function is called to sort the hook array according to pHead
+There is no way to passively determine whether or not a HOOK is actually the same. This function 
+essentially provides a best guess. Windows reuses the memory locations and all the other associated 
+information can change.
 
-returns -1 if 'p1' pHead < 'p2' pHead
-returns 1 if 'p1' pHead > 'p2' pHead
-returns 0 if 'p1' pHead == 'p2' pHead
+qsort() callback: this function is called to sort the hook array
+
+returns -1 if p1's entry is less than p2's entry
+returns 1 if p1's entry is greater than p2's entry
+returns 0 if p1's entry is the same as p2's entry
 */
 int compare_hook( 
 	const void *const p1,   // in
@@ -212,6 +221,14 @@ int compare_hook(
 	if( a->entry.pHead < b->entry.pHead )
 		return -1;
 	else if( a->entry.pHead > b->entry.pHead )
+		return 1;
+	else if( a->entry_index < b->entry_index )
+		return -1;
+	else if( a->entry_index > b->entry_index )
+		return 1;
+	else if( a->object.head.h < b->object.head.h )
+		return -1;
+	else if( a->object.head.h > b->object.head.h )
 		return 1;
 	else
 		return 0;
@@ -298,6 +315,7 @@ int init_desktop_hook_store(
 		
 		hook = &item->hook[ item->hook_count ];
 		
+		hook->entry_index = i;
 		hook->entry = entry;
 		
 		/* copy the HOOK struct from the desktop heap.

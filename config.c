@@ -469,11 +469,21 @@ void init_global_config_store( void )
 					exit( 1 );
 				}
 				
-				/* not sure why anyone would want this */
-				if( G->config->polling > 86400 )
+				if( !G->config->polling )
+				{
+					MSG_WARNING( "Option 'm': an interval of 0 uses too much CPU time." );
+					printf( "sec: %d\n", G->config->polling );
+				}
+				else if( G->config->polling > 86400 )
 				{
 					MSG_WARNING( "Option 'm': more seconds than in a day." );
 					printf( "sec: %d\n", G->config->polling );
+				}
+				else if( G->config->polling > 1036800 )
+				{
+					MSG_FATAL( "Option 'm': more seconds than in twelve days." );
+					printf( "sec: %d\n", G->config->polling );
+					exit( 1 );
 				}
 				
 				continue;

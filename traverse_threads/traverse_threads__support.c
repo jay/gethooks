@@ -37,7 +37,7 @@ A default callback used by traverse_threads() if no callback was supplied by the
 -
 print_filetime_as_local()
 
-Print a FILETIME as local time.
+Print a FILETIME as local time and date. No newline.
 -
 
 -
@@ -332,7 +332,7 @@ int callback_print_thread_state(
 
 
 /* print_filetime_as_local()
-Print a FILETIME as local time.
+Print a FILETIME as local time and date. No newline.
 
 This function takes a pointer to a utc system time FILETIME ('ft') and prints it as local time.
 No newline is printed.

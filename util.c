@@ -55,7 +55,13 @@ Get the name of a user object.
 -
 print_init_time()
 
-Print an initialization utc time as local time.
+Print an initialization utc time as local time and date.
+-
+
+-
+print_time()
+
+Print the local time and date. No newline.
 -
 
 */
@@ -299,7 +305,7 @@ int get_user_obj_name(
 
 
 /* print_init_time()
-Print an initialization utc time as local time.
+Print an initialization utc time as local time and date.
 
 'msg' is an optional message to print before printing the time
 'utc' is the utc time
@@ -321,6 +327,22 @@ void print_init_time(
 		printf( "<uninitialized>" );
 	
 	printf( "\n" );
+	
+	return;
+}
+
+
+
+/* print_time()
+Print the local time and date. No newline.
+*/
+void print_time( void )
+{
+	__int64 utc = 0;
+	
+	
+	GetSystemTimeAsFileTime( (FILETIME *)&utc );
+	print_filetime_as_local( (FILETIME *)&utc );
 	
 	return;
 }

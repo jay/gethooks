@@ -141,24 +141,18 @@ int gethooks()
 	create_snapshot_store( &current );
 	create_snapshot_store( &previous );
 	
-	for( ;; )
+	
+	if( !init_snapshot_store( current ) )
 	{
-		if( !init_snapshot_store( current ) )
-		{
-			MSG_FATAL( "The snapshot store failed to initialize." );
-			exit( 1 );
-		}
-		
-		if( G->config->polling < 0 ) // only taking one snapshot
-		{
-			print_diff_desktop_hook_list( current->desktop_hooks );
-			break;
-		}
-		
-		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
-		
-		Sleep( G->config->polling * 1000 );
-		
+		MSG_FATAL( "The snapshot store failed to initialize." );
+		exit( 1 );
+	}
+	
+	print_initial_desktop_hook_list( current->desktop_hooks );
+	
+	
+	while( G->config->polling >= 0 )
+	{
 		/* swap pointers to previous and current snapshot stores.
 		this is better than continually freeing and creating the stores.
 		the current snapshot becomes the previous, and the former previous is set 
@@ -167,6 +161,16 @@ int gethooks()
 		temp = previous;
 		previous = current;
 		current = temp;
+		
+		if( !init_snapshot_store( current ) )
+		{
+			MSG_FATAL( "The snapshot store failed to initialize." );
+			exit( 1 );
+		}
+		
+		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
+		
+		Sleep( G->config->polling * 1000 );
 	}
 	
 	free_snapshot_store( &previous );
