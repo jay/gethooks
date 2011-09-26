@@ -313,7 +313,9 @@ static void print_hook_notice_begin(
 	FAIL_IF( !difftype );
 	
 	
-	PRINT_SEP_BEGIN( "" );
+	//PRINT_SEP_BEGIN( "" );
+	printf( "\n" );
+	printf( "------------------------------------------------------------------------[begin]\n" );
 	
 	if( difftype == HOOK_FOUND )
 		diffname = "Found";
@@ -333,11 +335,9 @@ static void print_hook_notice_begin(
 	
 	printf( "[%s]", diffname );
 	
-	printf( " [%ls]", deskname );
-	
-	printf( " [HOOK head " );
+	printf( " [HOOK " );
 	PRINT_BARE_PTR( hook->object.head.h );
-	printf( " @ kernel address " );
+	printf( " @ " );
 	PRINT_BARE_PTR( hook->entry.pHead );
 	printf( "]" );
 	
@@ -345,31 +345,131 @@ static void print_hook_notice_begin(
 	print_time();
 	printf( "]" );
 	
-	printf( "\n" );
+	printf( "\n\n" );
 	
 	
 	printf( "Id: " );
 	print_HOOK_id( hook->object.iHook );
 	printf( "\n" );
 	
-	printf( "Owner: " );
-	print_gui_brief( hook->owner );
-	printf( "\n" );
+	printf( "Desktop: %ls\n", deskname );
 	
-	printf( "Origin: " );
-	print_gui_brief( hook->origin );
-	printf( "\n" );
+	printf( "%p, %p, %p\n", hook->owner, hook->origin, hook->target );
 	
+	/**
+	HOOK owner GUI thread info kernel address: hook->entry.pOwner
+	The related thread info obtained by this program: hook->owner
+	
+	HOOK origin GUI thread info kernel address: hook->object.pti
+	The related thread info obtained by this program: hook->origin
+	
+	HOOK target GUI thread info kernel address: hook->object.ptiHooked
+	The related thread info obtained by this program: hook->target
+	
+	If no related thread info could be obtained for a kernel address I refer to it as "unknown,"
+	eg if !hook->origin then hook->object.pti is the unknown origin address.
+	*/
+	
+	if( hook->owner && ( hook->owner == hook->origin ) )
+	{
+		// owner and origin point to the same info and can be consolidated on the same line
+		printf( "Owner/Origin" );
+		
+		if( ( hook->owner != hook->target ) 
+			|| ( hook->object.flags & HF_GLOBAL )
+		) // the owner/origin info must be on a separate line from the target info/address
+		{
+			printf( ": " );
+			print_gui_brief( hook->owner );
+			printf( "\n" );
+		}
+		else // the owner/origin info is the same as the target and will be consolidated
+		{
+			printf( "/" );
+		}
+	}
+	else if( !hook->owner && !hook->origin && ( hook->entry.pOwner == hook->object.pti ) )
+	{
+		// owner and origin have the same unknown address and can be consolidated on the same line
+		printf( "Owner/Origin" );
+		
+		if( hook->target 
+			|| ( hook->entry.pOwner != hook->object.ptiHooked ) 
+			|| ( hook->object.flags & HF_GLOBAL )
+		)
+		{ // the owner/origin address must be on a separate line from the target info/address
+			printf( ": " );
+			printf( "<unknown> (<unknown> @ " );
+			PRINT_BARE_PTR( hook->entry.pOwner );
+			printf( ")" );
+		}
+		else // the owner/origin info is the same as the target and will be consolidated
+		{
+			printf( "/" );
+		}
+	}
+	else // the owner and origin aren't the same and must be printed on separate lines
+	{
+		printf( "Owner: " );
+		
+		if( !hook->owner )
+		{
+			printf( "<unknown> (<unknown> @ " );
+			PRINT_BARE_PTR( hook->entry.pOwner );
+			printf( ")" );
+		}
+		else
+			print_gui_brief( hook->owner );
+		
+		printf( "\n" );
+		
+		
+		printf( "Origin: " );
+		
+		if( !hook->origin )
+		{
+			printf( "<unknown> (<unknown> @ " );
+			PRINT_BARE_PTR( hook->object.pti );
+			printf( ")" );
+		}
+		else
+			print_gui_brief( hook->origin );
+		
+		printf( "\n" );
+	}
+	/* REM based on the above logic the only possible way owner and origin will share a line with 
+	target is if all three are valid (!=NULL) and point to the same info and the HOOK isn't global.
+	otherwise at this point owner and origin have been printed either on the same or separate lines.
+	*/
+	///asdf
 	
 	printf( "Target: " );
 	
 	if( hook->object.flags & HF_GLOBAL )
 	{
-		printf( "<GLOBAL>" );
-		if( hook->object.ptiHooked ) /* A global hook should NOT have a target */
+		printf( "<GLOBAL> " );
+		
+		if( hook->target || hook->object.ptiHooked )
+			printf( "ERROR: This global HOOK has a target: " );
+	}
+	
+	/* if !target then owner and origin lines have already been printed so it's alright to 
+	print the unknown address since owner and origin are not piggybacking on the target line.
+	REM it is important to avoid combining lines where unknown addresses must be printed, eg:
+	Owner/Origin/Target:  <unknown> (<unknown> @ 0XFEFFABCD)
+	in that case it would be unclear that 0xFEFFABCD is the kernel address for the HOOK target
+	*/
+	if( !hook->target ) // target is unknown
+	{
+		/* print the unknown address unless it's NULL *and* the hook is global, which is 
+		expected and does not need to be printed
+		*/
+		
+		if( !( hook->object.flags & HF_GLOBAL ) || hook->object.ptiHooked )
 		{
-			printf( " ERROR: There is target information for this global hook: " );
-			print_gui_brief( hook->target );
+			printf( " <unknown> (<unknown> @ " );
+			PRINT_BARE_PTR( hook->object.ptiHooked );
+			printf( ")" );
 		}
 	}
 	else
@@ -391,7 +491,8 @@ Helper function to print a hook [end] header.
 */
 static void print_hook_notice_end( void )
 {
-	PRINT_SEP_END( "" );
+	//PRINT_SEP_END( "" );
+	printf( "--------------------------------------------------------------------------[end]\n" );
 	return;
 }
 
