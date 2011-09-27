@@ -50,11 +50,11 @@ For each HANDLEENTRY traversed if its bType == TYPE_HOOK then the handle entry i
 */
 struct hook 
 {
-	/* a copy of the HANDLEENTRY struct for the HOOK */
-	HANDLEENTRY entry;
-	
 	/* what was the HANDLEENTRY's index position in the list of user handles */
 	unsigned entry_index;
+	
+	/* a copy of the HANDLEENTRY struct for the HOOK */
+	HANDLEENTRY entry;
 	
 	/* a copy of the HOOK struct */
 	HOOK object;

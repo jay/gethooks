@@ -67,6 +67,18 @@ Print a gui struct.
 -
 
 -
+print_gui_array()
+
+Print a snapshot store's gui array.
+-
+
+-
+print_spi_array_brief()
+
+Print some basic information from a snapshot store's spi array.
+-
+
+-
 print_snapshot_store()
 
 Print a snapshot store and all its descendants.
@@ -106,10 +118,6 @@ static int callback_add_gui(
 static int compare_gui( 
 	const void *const p1,   // in
 	const void *const p2   // in
-);
-
-static void print_snapshot_store( 
-	const struct snapshot *const store   // in
 );
 
 
@@ -517,6 +525,7 @@ int init_snapshot_store(
 	unsigned i = 0;
 	int ret = 0;
 	LONG nt_status = 0;
+	DWORD flags = 0;
 	struct callback_info ci;
 	
 	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
@@ -542,6 +551,14 @@ int init_snapshot_store(
 	ZeroMemory( &ci, sizeof( ci ) );
 	ci.store = store;
 	
+	/* callback_add_gui() gets TEBs faster with EXTENDED */
+	store->spi_extended = TRUE;
+	if( store->spi_extended ) 
+		flags |= TRAVERSE_FLAG_EXTENDED;
+	
+	if( G->config->verbose >= 9 )
+		flags |= TRAVERSE_FLAG_DEBUG;
+	
 	/* call traverse_threads() to write the array of spi and gui.
 	traverse_threads() calls callback_add_gui() which writes to the store's array of gui and sets 
 	the spi init time.
@@ -551,7 +568,7 @@ int init_snapshot_store(
 		&ci, /* pointer to callback data */
 		ci.store->spi, /* buffer that will receive the array of spi */
 		ci.store->spi_max_bytes, /* buffer's byte count */
-		TRAVERSE_FLAG_EXTENDED, /* flags. callback_add_gui() gets TEBs faster with EXTENDED */
+		flags, /* flags */
 		&nt_status /* pointer to receive status */
 	);
 	
@@ -685,6 +702,8 @@ void print_gui(
 	PRINT_PTR( gui->pvWin32ThreadInfo );
 	PRINT_PTR( gui->pvTeb );
 	
+	printf( "\n" );
+	
 	/* This uses my default callback for traverse_threads() to print some very basic information 
 	from the gui's associated system process info (spi) and system thread info (sti).
 	eg
@@ -703,27 +722,50 @@ void print_gui(
 
 
 
-/* print_snapshot_store()
-Print a snapshot store and all its descendants.
-
-if the snapshot store pointer != NULL print the store
+/* print_gui_array()
+Print a snapshot store's gui array.
 */
-static void print_snapshot_store( 
+void print_gui_array(
 	const struct snapshot *const store   // in
 )
 {
-	const char *const objname = "Snapshot Store";
-	DWORD flags = 0;
-	int ret = 0;
+	const char *const objname = "array of gui structs";
 	unsigned i = 0;
 	
 	
 	if( !store )
 		return;
 	
-	PRINT_DBLSEP_BEGIN( objname );
-	print_init_time( "store->init_time", store->init_time );
+	PRINT_SEP_BEGIN( objname );
 	
+	printf( "store->gui_max: %u\n", store->gui_max );
+	printf( "store->gui_count: %u\n", store->gui_count );
+	for( i = 0; i < store->gui_count; ++i )
+		print_gui( &store->gui[ i ] );
+	
+	PRINT_SEP_END( objname );
+	
+	return;
+}
+
+
+
+/* print_spi_array_brief()
+Print some basic information from a snapshot store's spi array.
+*/
+void print_spi_array_brief(
+	const struct snapshot *const store   // in
+)
+{
+	const char *const objname = "array of spi structs (brief)";
+	DWORD flags = 0;
+	int ret = 0;
+	
+	
+	if( !store )
+		return;
+	
+	PRINT_SEP_BEGIN( objname );
 	
 	/* traverse_threads() should use as input the output buffer from a previous call (store->spi) */
 	flags |= TRAVERSE_FLAG_RECYCLE;
@@ -752,11 +794,34 @@ static void print_snapshot_store(
 		printf( "traverse_threads() returned: %s\n", traverse_threads_retcode_to_cstr( ret ) );
 	}
 	
+	PRINT_SEP_END( objname );
 	
-	printf( "store->gui_max: %u\n", store->gui_max );
-	printf( "store->gui_count: %u\n", store->gui_count );
-	for( i = 0; i < store->gui_count; ++i )
-		print_gui( store->gui );
+	return;
+}
+
+
+
+/* print_snapshot_store()
+Print a snapshot store and all its descendants.
+
+if the snapshot store pointer != NULL print the store
+*/
+void print_snapshot_store( 
+	const struct snapshot *const store   // in
+)
+{
+	const char *const objname = "Snapshot Store";
+	
+	
+	if( !store )
+		return;
+	
+	PRINT_DBLSEP_BEGIN( objname );
+	print_init_time( "store->init_time", store->init_time );
+	
+	print_spi_array_brief( store );
+	
+	print_gui_array( store );
 	
 	print_desktop_hook_store( store->desktop_hooks );
 	

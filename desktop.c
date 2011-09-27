@@ -205,18 +205,26 @@ static int attach(
 		d->hDesktop = OpenDesktopW( d->pwszDesktopName, 0, 0, DESKTOP_READOBJECTS );
 		if( !d->hDesktop )
 		{
-			MSG_ERROR_GLE( "OpenDesktopW() failed." );
-			printf( 
-				"Failed to open desktop '%ls' for DESKTOP_READOBJECTS access.\n", 
-				d->pwszDesktopName 
-			);
+			if( G->config->verbose >= 1 )
+			{
+				MSG_ERROR_GLE( "OpenDesktopW() failed." );
+				printf( 
+					"Failed to open desktop '%ls' for DESKTOP_READOBJECTS access.\n", 
+					d->pwszDesktopName 
+				);
+			}
+			
 			goto fail;
 		}
 		
 		if( !SetThreadDesktop( d->hDesktop ) )
 		{
-			MSG_ERROR_GLE( "SetThreadDesktop() failed." );
-			printf( "Failed to attach to desktop '%ls'.\n", d->pwszDesktopName );
+			if( G->config->verbose >= 1 )
+			{
+				MSG_ERROR_GLE( "SetThreadDesktop() failed." );
+				printf( "Failed to attach to desktop '%ls'.\n", d->pwszDesktopName );
+			}
+			
 			goto fail;
 		}
 	}
@@ -231,8 +239,12 @@ static int attach(
 	d->pvTeb = NtCurrentTeb();
 	if( !d->pvTeb )
 	{
-		MSG_ERROR( "NtCurrentTeb() failed." );
-		printf( "d->dwThreadId: %u\n", d->dwThreadId );
+		if( G->config->verbose >= 1 )
+		{
+			MSG_ERROR( "NtCurrentTeb() failed." );
+			printf( "d->dwThreadId: %u\n", d->dwThreadId );
+		}
+		
 		goto fail;
 	}
 	
@@ -254,7 +266,11 @@ static int attach(
 	
 	if( !d->pvDeskInfo )
 	{
-		MSG_ERROR( "Failed to get a pointer to the DESKTOPINFO struct." );
+		if( G->config->verbose >= 1 )
+		{
+			MSG_ERROR( "Failed to get a pointer to the DESKTOPINFO struct." );
+		}
+		
 		goto fail;
 	}
 	
@@ -285,17 +301,23 @@ static int attach(
 		|| ( d->pvClientDelta > d->pvDesktopBase ) 
 	)
 	{
-		MSG_ERROR( "Desktop heap info is invalid." );
-		PRINT_PTR( d->pvDesktopBase );
-		PRINT_PTR( d->pvDesktopLimit );
-		PRINT_PTR( d->pvClientDelta );
+		if( G->config->verbose >= 1 )
+		{
+			MSG_ERROR( "Desktop heap info is invalid." );
+			PRINT_PTR( d->pvDesktopBase );
+			PRINT_PTR( d->pvDesktopLimit );
+			PRINT_PTR( d->pvClientDelta );
+		}
+		
 		goto fail;
 	}
 	
 	return 1;
 	
 fail:
-	printf( "d->pwszDesktopName: %ls\n", d->pwszDesktopName );
+	if( G->config->verbose >= 1 )
+		printf( "d->pwszDesktopName: %ls\n", d->pwszDesktopName );
+	
 	return 0;
 }
 
@@ -354,7 +376,10 @@ static unsigned __stdcall thread(
 	/* attach to the desktop specified by d->pwszDesktopName and get the desktop's heap info */
 	if( !attach( stuff->d ) )
 	{
-		MSG_ERROR( "attach() failed." );
+		if( G->config->verbose >= 1 )
+		{
+			MSG_ERROR( "attach() failed." );
+		}
 		
 		/* initialization was unsuccessful. after the thread's initialization event is signaled the 
 		main thread checks if the terminate event is NULL to determine whether or not the 
@@ -473,9 +498,13 @@ static struct desktop_item *add_desktop_item(
 	{
 		if( current->pwszDesktopName && !_wcsicmp( name, current->pwszDesktopName ) )
 		{
-			MSG_WARNING( "Already attached to desktop." );
-			printf( "desktop: %ls\n", name );
-			d = current;
+			if( G->config->verbose >= 1 )
+			{
+				MSG_WARNING( "Already attached to desktop." );
+				printf( "desktop: %ls\n", name );
+				d = current;
+			}
+			
 			goto cleanup;
 		}
 	}
@@ -529,7 +558,11 @@ static struct desktop_item *add_desktop_item(
 		*/
 		if( !d->hEventTerminate ) // worker thread's initialization failed
 		{
-			MSG_ERROR( "Worker thread initialization failed." );
+			if( G->config->verbose >= 1 )
+			{
+				MSG_ERROR( "Worker thread initialization failed." );
+			}
+			
 			goto fail;
 		}
 	}
@@ -544,7 +577,11 @@ static struct desktop_item *add_desktop_item(
 		
 		if( !attach( d ) )
 		{
-			MSG_ERROR( "attach() failed." );
+			if( G->config->verbose >= 1 )
+			{
+				MSG_ERROR( "attach() failed." );
+			}
+			
 			goto fail;
 		}
 		
@@ -574,6 +611,19 @@ fail:
 	free_desktop_item( &d );
 	
 cleanup:
+	
+	if( d )
+	{
+		printf( "Attached to desktop '%ls'.\n", name );
+	}
+	else
+	{
+		printf( "Failed to attach to desktop '%ls'.", name );
+		if( !_wcsicmp( name, L"Winlogon" ) ) // this is the only name expected to fail
+			printf( " (expected)" );
+		printf( "\n" );
+	}
+	
 	free( pwszMainDesktopName );
 	
 	return d;
@@ -602,11 +652,7 @@ static BOOL CALLBACK EnumDesktopProc(
 	FAIL_IF( !store );
 	
 	
-	if( !add_desktop_item( store, pwszDesktopName ) )
-	{
-		MSG_WARNING( "add_desktop_item() failed." );
-		printf( "Failed to attach to desktop '%ls'.\n", pwszDesktopName );
-	}
+	add_desktop_item( store, pwszDesktopName );
 	
 	return TRUE;  // continue enumeration
 }
@@ -638,6 +684,7 @@ static int add_all_desktops(
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
 	
+	printf( "Attempting to attach to all desktops in the current window station.\n" );
 	/*
 	Remarkably, unless I fouled something up, calling EnumDesktopsW() with NULL for the station 
 	handle does not work properly, despite what Microsoft documentation says for hwinsta:

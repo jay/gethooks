@@ -407,12 +407,30 @@ void print_hook(
 	
 	PRINT_SEP_BEGIN( objname );
 	
+	printf( "\nhook->entry_index: %u\n", hook->entry_index );
 	print_HANDLEENTRY( &hook->entry );
-	print_HOOK( &hook->object );
-	print_gui( hook->owner );
-	print_gui( hook->origin );
-	print_gui( hook->target );
 	
+	print_HOOK( &hook->object );
+	
+	if( hook->owner )
+	{
+		printf( "\nhook->owner GUI info:\n" );
+		print_gui( hook->owner );
+	}
+	
+	if( hook->origin )
+	{
+		printf( "\nhook->origin GUI info:\n" );
+		print_gui( hook->origin );
+	}
+	
+	if( hook->target )
+	{
+		printf( "\nhook->target GUI info:\n" );
+		print_gui( hook->target );
+	}
+	
+	printf( "\n" );
 	PRINT_SEP_END( objname );
 	
 	return;
@@ -479,6 +497,7 @@ void print_desktop_hook_store(
 	{
 		PRINT_PTR( item );
 		print_desktop_hook_item( item );
+		printf( "\n" );
 	}
 	
 	PRINT_PTR( store->tail );

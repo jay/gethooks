@@ -53,6 +53,18 @@ Check the user-specified configuration to determine if the hook struct should be
 -
 
 -
+print_unknown_address()
+
+Print a pointed to address as unknown. No newline.
+-
+
+-
+print_brief_thread_info()
+
+Print the associated owner, origin or target thread of a HOOK.
+-
+
+-
 print_hook_notice_begin()
 
 Helper function to print a hook [begin] header with basic hook info.
@@ -114,6 +126,10 @@ Print the HOOKs that have been added/removed from all attached to desktops betwe
 #include "global.h"
 
 
+
+static void print_unknown_address(
+	const void *const address   // in, optional
+);
 
 static void print_hook_notice_begin(
 	const struct hook *const hook,   // in
@@ -293,6 +309,90 @@ int is_hook_wanted(
 
 
 
+/* print_unknown_address()
+Print a pointed to address as unknown. No newline.
+
+This is a helper function that is called when the user mode process and thread info associated with 
+a kernel address could not be determined. In that case the thread and process info is unknown.
+
+This function will print any 'address' as unknown including NULL.
+eg
+<unknown> (<unknown> @ 0xFDB08008)
+*/
+static void print_unknown_address(
+	const void *const address   // in, optional
+)
+{
+	printf( " <unknown> (<unknown> @ " );
+	PRINT_BARE_PTR( address );
+	printf( ")" );
+	
+	return;
+}
+
+
+
+/* print_brief_thread_info()
+Print the associated owner, origin or target thread of a HOOK.
+*/
+void print_brief_thread_info(
+	const struct hook *const hook,   // in
+	const enum threadtype threadtype   // in
+)
+{
+	FAIL_IF( !hook );
+	FAIL_IF( !threadtype );
+	
+	
+	if( threadtype == THREAD_OWNER )
+	{
+		printf( "Owner: " );
+		
+		if( hook->owner )
+			print_gui_brief( hook->owner );
+		else
+			print_unknown_address( hook->entry.pOwner );
+	}
+	else if( threadtype == THREAD_ORIGIN )
+	{
+		printf( "Origin: " );
+		
+		if( hook->origin )
+			print_gui_brief( hook->origin );
+		else
+			print_unknown_address( hook->object.pti );
+	}
+	else if( threadtype == THREAD_TARGET )
+	{
+		printf( "Target: " );
+		
+		if( hook->object.flags & HF_GLOBAL )
+		{
+			printf( "<GLOBAL> " );
+			
+			if( hook->target || hook->object.ptiHooked )
+				printf( "ERROR: This global HOOK has a target: " );
+		}
+		
+		if( hook->target )
+			print_gui_brief( hook->target );
+		else if( !( hook->object.flags & HF_GLOBAL ) || hook->object.ptiHooked )
+			print_unknown_address( hook->object.ptiHooked );
+	}
+	else
+	{
+		MSG_FATAL( "Unknown thread type." );
+		printf( "threadtype: %d\n", threadtype );
+		exit( 1 );
+	}
+	
+	printf( "\n" );
+	
+	return;
+}
+
+
+
 /* print_hook_notice_begin()
 Helper function to print a hook [begin] header with basic hook info.
 
@@ -315,7 +415,7 @@ static void print_hook_notice_begin(
 	
 	//PRINT_SEP_BEGIN( "" );
 	printf( "\n" );
-	printf( "------------------------------------------------------------------------[begin]\n" );
+	printf( "----------------------------------------------------------------------------[b]\n" );
 	
 	if( difftype == HOOK_FOUND )
 		diffname = "Found";
@@ -357,126 +457,49 @@ static void print_hook_notice_begin(
 	printf( "%p, %p, %p\n", hook->owner, hook->origin, hook->target );
 	
 	/**
+	When the desktop hook store is initialized this program matches the Win32ThreadInfo kernel 
+	addresses associated with a HOOK (aka hook->object) to their user mode threads and processes.
+	
 	HOOK owner GUI thread info kernel address: hook->entry.pOwner
-	The related thread info obtained by this program: hook->owner
+	The related user mode thread info obtained by this program: hook->owner
 	
 	HOOK origin GUI thread info kernel address: hook->object.pti
-	The related thread info obtained by this program: hook->origin
+	The related user mode thread info obtained by this program: hook->origin
 	
 	HOOK target GUI thread info kernel address: hook->object.ptiHooked
-	The related thread info obtained by this program: hook->target
-	
-	If no related thread info could be obtained for a kernel address I refer to it as "unknown,"
-	eg if !hook->origin then hook->object.pti is the unknown origin address.
+	The related user mode thread info obtained by this program: hook->target
 	*/
 	
-	if( hook->owner && ( hook->owner == hook->origin ) )
+	if( ( hook->owner == hook->origin ) && ( hook->entry.pOwner == hook->object.pti ) )
 	{
-		// owner and origin point to the same info and can be consolidated on the same line
-		printf( "Owner/Origin" );
+		// owner and origin have the same user mode info and kernel address and will be consolidated
+		printf( "Owner/" );
 		
-		if( ( hook->owner != hook->target ) 
-			|| ( hook->object.flags & HF_GLOBAL )
-		) // the owner/origin info must be on a separate line from the target info/address
-		{
-			printf( ": " );
-			print_gui_brief( hook->owner );
-			printf( "\n" );
-		}
-		else // the owner/origin info is the same as the target and will be consolidated
-		{
-			printf( "/" );
-		}
-	}
-	else if( !hook->owner && !hook->origin && ( hook->entry.pOwner == hook->object.pti ) )
-	{
-		// owner and origin have the same unknown address and can be consolidated on the same line
-		printf( "Owner/Origin" );
-		
-		if( hook->target 
-			|| ( hook->entry.pOwner != hook->object.ptiHooked ) 
-			|| ( hook->object.flags & HF_GLOBAL )
-		)
-		{ // the owner/origin address must be on a separate line from the target info/address
-			printf( ": " );
-			printf( "<unknown> (<unknown> @ " );
-			PRINT_BARE_PTR( hook->entry.pOwner );
-			printf( ")" );
-		}
-		else // the owner/origin info is the same as the target and will be consolidated
-		{
-			printf( "/" );
-		}
+		if( ( hook->owner == hook->target ) 
+			&& ( hook->entry.pOwner == hook->object.ptiHooked ) 
+			&& !( hook->object.flags & HF_GLOBAL )
+		)  // the owner/origin is the same as the target and will be further consolidated
+			printf( "Origin/" );
+		else // the owner/origin info or address must be on a separate line from the target
+			print_brief_thread_info( hook, THREAD_ORIGIN );
 	}
 	else // the owner and origin aren't the same and must be printed on separate lines
 	{
-		printf( "Owner: " );
-		
-		if( !hook->owner )
-		{
-			printf( "<unknown> (<unknown> @ " );
-			PRINT_BARE_PTR( hook->entry.pOwner );
-			printf( ")" );
-		}
-		else
-			print_gui_brief( hook->owner );
-		
-		printf( "\n" );
-		
-		
-		printf( "Origin: " );
-		
-		if( !hook->origin )
-		{
-			printf( "<unknown> (<unknown> @ " );
-			PRINT_BARE_PTR( hook->object.pti );
-			printf( ")" );
-		}
-		else
-			print_gui_brief( hook->origin );
-		
-		printf( "\n" );
+		print_brief_thread_info( hook, THREAD_OWNER );
+		print_brief_thread_info( hook, THREAD_ORIGIN );
 	}
 	/* REM based on the above logic the only possible way owner and origin will share a line with 
-	target is if all three are valid (!=NULL) and point to the same info and the HOOK isn't global.
+	target is if all three have the same info and address, and the HOOK isn't global.
 	otherwise at this point owner and origin have been printed either on the same or separate lines.
 	*/
-	///asdf
 	
-	printf( "Target: " );
+	print_brief_thread_info( hook, THREAD_TARGET );
 	
-	if( hook->object.flags & HF_GLOBAL )
-	{
-		printf( "<GLOBAL> " );
-		
-		if( hook->target || hook->object.ptiHooked )
-			printf( "ERROR: This global HOOK has a target: " );
-	}
 	
-	/* if !target then owner and origin lines have already been printed so it's alright to 
-	print the unknown address since owner and origin are not piggybacking on the target line.
-	REM it is important to avoid combining lines where unknown addresses must be printed, eg:
-	Owner/Origin/Target:  <unknown> (<unknown> @ 0XFEFFABCD)
-	in that case it would be unclear that 0xFEFFABCD is the kernel address for the HOOK target
-	*/
-	if( !hook->target ) // target is unknown
-	{
-		/* print the unknown address unless it's NULL *and* the hook is global, which is 
-		expected and does not need to be printed
-		*/
-		
-		if( !( hook->object.flags & HF_GLOBAL ) || hook->object.ptiHooked )
-		{
-			printf( " <unknown> (<unknown> @ " );
-			PRINT_BARE_PTR( hook->object.ptiHooked );
-			printf( ")" );
-		}
-	}
-	else
-		print_gui_brief( hook->target );
-	
-	printf( "\n" );
-	
+	if( G->config->verbose == 6 )
+		print_HOOK( &hook->object );
+	else if( G->config->verbose >= 7 )
+		print_hook( hook ); // this calls print_HOOK()
 	
 	if( difftype == HOOK_MODIFIED )
 		printf( "\n" );
@@ -492,7 +515,8 @@ Helper function to print a hook [end] header.
 static void print_hook_notice_end( void )
 {
 	//PRINT_SEP_END( "" );
-	printf( "--------------------------------------------------------------------------[end]\n" );
+	printf( "----------------------------------------------------------------------------[e]\n" );
+	fflush( stdout );
 	return;
 }
 
@@ -663,39 +687,11 @@ static int print_diff_gui(
 	
 	printf( "\nThe associated gui %s thread information has changed.\n", threadname );
 	
+	printf( "Old " );
+	print_brief_thread_info( oldhook, threadtype );
 	
-	printf( "Old %s: ", threadname );
-	
-	if( ( threadtype == THREAD_TARGET ) && ( oldhook->object.flags & HF_GLOBAL ) )
-	{
-		printf( "<GLOBAL>" );
-		if( oldhook->object.ptiHooked ) /* A global hook should NOT have a target */
-		{
-			printf( " ERROR: There is target information for this global hook: " );
-			print_gui_brief( a );
-		}
-	}
-	else
-		print_gui_brief( a );
-	
-	printf( "\n" );
-	
-	
-	printf( "New %s: ", threadname );
-	
-	if( ( threadtype == THREAD_TARGET ) && ( newhook->object.flags & HF_GLOBAL ) )
-	{
-		printf( "<GLOBAL>" );
-		if( newhook->object.ptiHooked ) /* A global hook should NOT have a target */
-		{
-			printf( " ERROR: There is target information for this global hook: " );
-			print_gui_brief( b );
-		}
-	}
-	else
-		print_gui_brief( b );
-	
-	printf( "\n" );
+	printf( "New " );
+	print_brief_thread_info( newhook, threadtype );
 	
 	
 	return TRUE;

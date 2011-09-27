@@ -95,8 +95,11 @@ static void print_config_store(
 
 
 
-/* the default number of seconds when polling */
+/* the default number of seconds when polling is enabled */
 #define POLLING_DEFAULT   7
+
+/* the default verbosity level when verbosity is enabled */
+#define VERBOSE_DEFAULT   1
 
 
 
@@ -144,27 +147,27 @@ void print_usage_and_exit( void )
 	
 	printf( 
 		"gethooks lists any hook in the user handle table that is on any desktop in the \n"
-		"current window station, and the thread/process associated with that hook.\n"
+		"current window station, and the threads/processes associated with that hook.\n"
 		"gethooks prints any errors to stdout, not stderr.\n"
 		"\n"
-		"%s usage:"
-		"[-m [sec]]  [-d [desktop]]  [[-i]|[-x] <hook>]  [[-p]|[-r] <prog>]\n"
+		"[-m [sec]]  [-v [num]]  [-d [desktop]]  [[-i]|[-x] <hook>]  [[-p]|[-r] <prog>]\n"
 		"\n"
 		"   -m     monitor mode. check for changes every n seconds (default %u).\n"
+		"   -v     verbosity. print more information (default level when enabled is %u).\n"
 		"   -d     include only these desktops: a list of desktops separated by space.\n"
 		"   -i     include only these hooks: a list of hooks separated by space.\n"
 		"   -x     exclude only these hooks: a list of hooks separated by space.\n"
 		"   -p     include only these programs: a list of programs separated by space.\n"
 		"   -r     exclude only these programs: a list of programs separated by space.\n"
 		"\n",
-		G->prog->pszBasename, POLLING_DEFAULT
+		POLLING_DEFAULT, VERBOSE_DEFAULT
 	);
 	
 	printf( "\nexample to list WH_MOUSE hooks on the current desktop only:\n" );
 	printf( " %s -d -i WH_MOUSE\n", G->prog->pszBasename );
 	
-	printf( "\nexample to monitor WH_KEYBOARD from workrave.exe and pids 799 and 801:\n" );
-	printf( " %s -m -i WH_KEYBOARD -p workrave.exe 799 801\n", G->prog->pszBasename );
+	printf( "\nexample to monitor WH_KEYBOARD hooks associated with workrave.exe or pid 799:\n" );
+	printf( " %s -m -i WH_KEYBOARD -p workrave.exe 799\n", G->prog->pszBasename );
 	
 	printf( "\nTo show more examples: %s --examples\n", G->prog->pszBasename );
 	exit( 1 );
@@ -212,12 +215,21 @@ void print_more_examples_and_exit( void )
 	printf( "\n"
 		"If the colon is the first character in an argument to program include/exclude \n"
 		"it is assumed a program name follows. If the program name you want for some \n"
-		"reason starts with a colon then you must prefix it with another colon.\n" 
+		"reason starts with a colon then you must prefix it with another.\n" 
+		"example to list hooks associated with program name :program.exe\n"
+	);
+	printf( " %s -p ::program.exe\n", G->prog->pszBasename );
+	
+	printf( "\nUse GNU 'tee' to print output to stdout and record output to file \"outfile\":\n" );
+	printf( " %s -m | tee outfile\n", G->prog->pszBasename );
+	
+	printf( "\n"
+		"The higher the verbosity level the more information that is printed.\n"
+		"Currently the verbosity to dump each whole HOOK struct is at level 6.\n"
+		"The verbosity to dump all major structs is level 9. Output to a file.\n"
 	);
 	
-	printf( "\nexample piping to 'tee' to print output to stdout and file \"outfile\":\n" );
-	printf( " %s -m | tee outfile\n", G->prog->pszBasename );
-		
+	
 	exit( 1 );
 }
 
@@ -674,6 +686,46 @@ void init_global_config_store( void )
 			
 			
 			
+			/** 
+			verbosity option
+			*/
+			case 'v':
+			case 'V':
+			{
+				if( G->config->verbose )
+				{
+					MSG_FATAL( "Option 'v': this option has already been specified." );
+					printf( "verbosity level: %d\n", G->config->verbose );
+					exit( 1 );
+				}
+				
+				G->config->verbose = VERBOSE_DEFAULT;
+				
+				/* since this option may or may not have an associated argument, 
+				test for both an option's argument(optarg) or the next option
+				*/
+				arf = get_next_arg( &i, OPT | OPTARG );
+				
+				if( arf != OPTARG )
+					continue;
+				
+				/* option argument found */
+				
+				/* if the string is not an integer representation, or it is but it's invalid */
+				if( !str_to_int( &G->config->verbose, G->prog->argv[ i ] ) 
+					|| ( G->config->verbose <= 0 ) 
+				) 
+				{
+					MSG_FATAL( "Option 'v': verbosity level invalid." );
+					printf( "verbosity level: %d\n", G->config->verbose );
+					exit( 1 );
+				}
+				
+				continue;
+			}
+			
+			
+			
 			default:
 			{
 				MSG_FATAL( "Unknown option." );
@@ -729,6 +781,8 @@ static void print_config_store(
 		printf( " (Taking only one snapshot)" );
 	
 	printf( "\n" );
+	
+	printf( "store->verbose: %d\n", store->verbose );
 	
 	//printf( "Printing list store of user specified hooks:" );
 	print_list_store( store->hooklist );

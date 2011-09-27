@@ -196,12 +196,7 @@ void print_HANDLEENTRY(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	if( entry->pHead )
-	{
-		PRINT_PTR( entry->pHead->h );
-		printf( "entry->pHead->cLockObj: %lu\n", entry->pHead->cLockObj );
-	}
-	
+	PRINT_PTR( entry->pHead );
 	PRINT_PTR( entry->pOwner );
 	
 	printf( "entry->bType: " );

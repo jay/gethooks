@@ -53,6 +53,7 @@ http://code.google.com/p/dream-of-idle/source/browse/trunk/Dream/CELayoutEditor-
 			"%s: %s line %d, %s(): %s\n", \
 			( type ), __FILE__, __LINE__, __FUNCTION__, ( msg ) \
 		); \
+		fflush( stdout ); \
 __pragma(warning(push)) \
 __pragma(warning(disable:4127)) \
 	} while( 0 ) \
@@ -66,6 +67,7 @@ __pragma(warning(pop))
 		 \
 		MSG_LOCATION( ( type ), ( msg ) ); \
 		printf( "GetLastError(): %lu\n", gle ); \
+		fflush( stdout ); \
 __pragma(warning(push)) \
 __pragma(warning(disable:4127)) \
 	} while( 0 ) \
@@ -90,6 +92,7 @@ __pragma(warning(pop))
 		{ \
 			MSG_FATAL( "A parameter or expression failed validation." ); \
 			printf( "The following expression is true: ( " #expr " )\n" ); \
+			fflush( stdout ); \
 			exit( 1 ); \
 		} \
 __pragma(warning(push)) \
@@ -129,13 +132,16 @@ __pragma(warning(pop))
 
 
 #define PRINT_SEP_END(msg)   \
-	printf( "--------------------------- [end] %s\n", ( msg ) );
+	printf( "--------------------------- [end] %s\n", ( msg ) ); \
+	fflush( stdout );
 
 #define PRINT_HASHSEP_END(msg)   \
-	printf( "########################### [end] %s\n", ( msg ) );
+	printf( "########################### [end] %s\n", ( msg ) ); \
+	fflush( stdout );
 
 #define PRINT_DBLSEP_END(msg)   \
-	printf( "=========================== [end] %s\n", ( msg ) );
+	printf( "=========================== [end] %s\n", ( msg ) ); \
+	fflush( stdout );
 
 
 

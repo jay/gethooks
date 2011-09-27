@@ -36,6 +36,12 @@ Create the global store and its descendants or die.
 -
 
 -
+print_global_store()
+
+Print the global store and all its descendants.
+-
+
+-
 free_global_store()
 
 Free the global store and all its descendants.
@@ -78,6 +84,24 @@ void create_global_store( void )
 	/* desktop store (linked list of desktops' heap and thread info) */
 	create_desktop_store( &G->desktops );
 	
+	
+	return;
+}
+
+
+
+/* print_global_store()
+Print the global store and all its descendants.
+*/
+void print_global_store( void )
+{
+	if( !G )
+		return;
+	
+	print_global_prog_store();
+	print_global_config_store();
+	print_global_desktop_store();
+	printf( "\n" );
 	
 	return;
 }

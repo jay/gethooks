@@ -186,6 +186,18 @@ void print_gui(
 	const struct gui *const gui   // in
 );
 
+void print_gui_array(
+	const struct snapshot *const store   // in
+);
+
+void print_spi_array_brief(
+	const struct snapshot *const store   // in
+);
+
+void print_snapshot_store( 
+	const struct snapshot *const store   // in
+);
+
 void free_snapshot_store( 
 	struct snapshot **const in   // in deref
 );

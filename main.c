@@ -148,11 +148,21 @@ int gethooks()
 		exit( 1 );
 	}
 	
+	if( G->config->verbose >= 8 )
+		print_snapshot_store( current );
+	
 	print_initial_desktop_hook_list( current->desktop_hooks );
 	
+	if( G->config->polling < 0 )
+		goto cleanup;
 	
-	while( G->config->polling >= 0 )
+	printf( "\nMonitor mode enabled. Monitoring for changes...\n" );
+	fflush( stdout );
+	
+	for( ;; )
 	{
+		Sleep( G->config->polling * 1000 );
+		
 		/* swap pointers to previous and current snapshot stores.
 		this is better than continually freeing and creating the stores.
 		the current snapshot becomes the previous, and the former previous is set 
@@ -168,11 +178,13 @@ int gethooks()
 			exit( 1 );
 		}
 		
-		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
+		if( G->config->verbose >= 8 )
+			print_snapshot_store( current );
 		
-		Sleep( G->config->polling * 1000 );
+		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
 	}
 	
+cleanup:
 	free_snapshot_store( &previous );
 	free_snapshot_store( &current );
 	
@@ -231,7 +243,10 @@ int main( int argc, char **argv )
 	
 	/* G->desktops has been initialized */
 	
-	/* The global stores have been initialized */
+	/* The global store is initialized */
+	if( G->config->verbose >= 7 )
+		print_global_store();
+	
 	
 	/* Call gethooks() to take snapshots and print differences */
 	return !gethooks();

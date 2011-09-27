@@ -95,6 +95,11 @@ int is_hook_wanted(
 	const struct hook *const hook   // in
 );
 
+void print_brief_thread_info(
+	const struct hook *const hook,   // in
+	const enum threadtype threadtype   // in
+);
+
 int print_diff_hook( 
 	const struct hook *const a,   // in
 	const struct hook *const b,   // in

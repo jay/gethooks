@@ -268,6 +268,8 @@ static void print_prog_store(
 	printf( "store->dwOSMinorVersion: %lu\n", store->dwOSMinorVersion );
 	printf( "store->dwOSBuild: %lu\n", store->dwOSBuild );
 	printf( "store->pwszWinstaName: %ls\n", store->pwszWinstaName );
+	printf( "*store->pcHandleEntries: %lu\n", *store->pcHandleEntries );
+	PRINT_PTR( store->aheList );
 	
 	PRINT_DBLSEP_END( objname );
 	

@@ -65,6 +65,8 @@ these functions are documented in the comment block above their definitions in g
 */
 void create_global_store( void );
 
+void print_global_store( void );
+
 void free_global_store( void );
 
 
