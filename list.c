@@ -273,7 +273,7 @@ existing_item:
 /* print_list_item()
 Print an item from a list store's linked list.
 
-if the list item pointer is != NULL print the item
+if 'item' is NULL this function returns without having printed anything.
 */
 void print_list_item( 
 	const struct list_item *const item   // in
@@ -309,7 +309,7 @@ void print_list_item(
 /* print_list_store()
 Print a list store and all its descendants.
 
-if the list store pointer != NULL print the store
+if 'store' is NULL this function returns without having printed anything.
 */
 void print_list_store( 
 	const struct list *const store   // in

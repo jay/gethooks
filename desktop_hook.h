@@ -60,13 +60,13 @@ struct hook
 	HOOK object;
 	
 	/* the thread that owns the handle entry to the HOOK */
-	struct gui *owner;
+	const struct gui *owner;
 	
 	/* the thread where the HOOK originated */
-	struct gui *origin;
+	const struct gui *origin;
 	
 	/* the thread that's hooked */
-	struct gui *target;
+	const struct gui *target;
 };
 
 
@@ -139,11 +139,15 @@ int compare_hook(
 );
 
 int init_desktop_hook_store( 
-	struct snapshot *const parent   // in
+	const struct snapshot *const parent   // in
 );
 
 void print_hook(
 	const struct hook *const hook   // in
+);
+
+void print_hook_array(
+	const struct desktop_hook_item *const item   // in
 );
 
 void print_desktop_hook_item( 

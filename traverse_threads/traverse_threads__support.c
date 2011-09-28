@@ -118,13 +118,13 @@ void *get_teb(
 	
 	if( !NtQueryInformationThread )
 	{
-		SetLastError( 0 );
+		SetLastError( 0 ); // error code is evaluated on success
 		*(FARPROC *)&NtQueryInformationThread = 
 			(FARPROC)GetProcAddress( GetModuleHandleA( "ntdll" ), "NtQueryInformationThread" );
 		
 		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 		{
-			printf( "GetProcAddress() %s. GLE: %I32u, NtQueryInformationThread: 0x%p.\n", 
+			printf( "GetProcAddress() %s. GLE: %lu, NtQueryInformationThread: 0x%p.\n", 
 				( NtQueryInformationThread ? "success" : "error" ), 
 				GetLastError(), 
 				NtQueryInformationThread 
@@ -135,15 +135,15 @@ void *get_teb(
 			goto cleanup;
 	}
 	
-	SetLastError( 0 );
+	SetLastError( 0 ); // error code is evaluated on success
 	thread = OpenThread( THREAD_QUERY_INFORMATION, FALSE, tid );
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "OpenThread() %s. GLE: %I32u, Handle: 0x%IX.\n", 
+		printf( "OpenThread() %s. GLE: %lu, Handle: 0x%p.\n", 
 			( thread ? "success" : "error" ), 
 			GetLastError(), 
-			(size_t)thread 
+			thread 
 		);
 	}
 	
@@ -172,15 +172,15 @@ cleanup:
 	{
 		BOOL ret = 0;
 		
-		SetLastError( 0 );
+		SetLastError( 0 ); // error code is evaluated on success
 		ret = CloseHandle( thread );
 		
 		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 		{
-			printf( "CloseHandle(0x%p) %s. GLE: %I32u.\n", 
-				thread, 
+			printf( "CloseHandle() %s. GLE: %lu, Handle: 0x%p\n", 
 				( ret ? "success" : "error" ), 
-				GetLastError() 
+				GetLastError(), 
+				thread
 			);
 		}
 		

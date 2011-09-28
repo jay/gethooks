@@ -31,9 +31,33 @@ Create a program store and its descendants or die.
 -
 
 -
+get_SharedInfo()
+
+Return the address of Microsoft's SHAREDINFO structure (aka gSharedInfo) or die.
+-
+
+-
 init_global_prog_store()
 
 Initialize the global program store by storing command line arguments, OS version, etc.
+-
+
+-
+print_SharedInfo()
+
+Print some pointers from the SHAREDINFO struct.
+-
+
+-
+print_prog_store()
+
+Print a program store and all its descendants.
+-
+
+-
+print_global_prog_store()
+
+Print the global program store and all its descendants.
 -
 
 -
@@ -164,7 +188,6 @@ void init_global_prog_store(
 	char **argv   // in deref
 )
 {
-	SHAREDINFO *SharedInfo = NULL;
 	unsigned offsetof_cHandleEntries = 0;
 	
 	FAIL_IF( !G );   // The global store must exist.
@@ -176,9 +199,9 @@ void init_global_prog_store(
 	This function loads user32.dll and must be called before any other pointer to GUI related info 
 	is initialized.
 	*/
-	SharedInfo = get_SharedInfo();
-
-
+	G->prog->pSharedInfo = get_SharedInfo();
+	
+	
 	G->prog->argc = argc;
 	G->prog->argv = argv;
 	
@@ -196,6 +219,7 @@ void init_global_prog_store(
 	else
 		G->prog->pszBasename = "<unknown>";
 	
+	
 	/* main thread id */
 	G->prog->dwMainThreadId = GetCurrentThreadId();
 	
@@ -207,13 +231,13 @@ void init_global_prog_store(
 		( G->prog->dwOSVersion < 0x80000000 ) ? ( G->prog->dwOSVersion >> 16 ) : 0;
 	
 	/* the name of this program's window station */
-	SetLastError( 0 );  //gle may or may not be set on error
 	if( !get_user_obj_name( &G->prog->pwszWinstaName, GetProcessWindowStation() ) )
 	{
 		MSG_FATAL_GLE( "get_user_obj_name() failed." );
 		printf( "Failed to get this program's window station name.\n" );
 		exit( 1 );
 	}
+	
 	
 	/* Determine the offset of cHandleEntries in SERVERINFO.
 	In NT4 the offset is 4 but this program isn't for NT4 so ignore.
@@ -226,12 +250,7 @@ void init_global_prog_store(
 	Add offsetof_cHandleEntries to the SERVERINFO pointer to get the address of cHandleEntries.
 	*/
 	G->prog->pcHandleEntries = 
-		(volatile DWORD *)( (char *)SharedInfo->psi + offsetof_cHandleEntries );
-	
-	/* The second member of SHAREDINFO is a pointer to an array of HANDLEENTRY structs. 
-	Maybe this should be volatile? aheList is the allocation base. Does it ever change hm
-	*/
-	G->prog->aheList = SharedInfo->aheList;
+		(volatile DWORD *)( (char *)G->prog->pSharedInfo->psi + offsetof_cHandleEntries );
 	
 	
 	/* G->prog has been initialized */
@@ -241,8 +260,39 @@ void init_global_prog_store(
 
 
 
+/* print_SharedInfo()
+Print some pointers from the SHAREDINFO struct.
+
+if 'pSharedInfo' is NULL this function returns without having printed anything.
+*/
+void print_SharedInfo( 
+	const SHAREDINFO *const pSharedInfo   // in
+)
+{
+	const char *const objname = "SHAREDINFO struct";
+	
+	
+	if( !pSharedInfo )
+		return;
+	
+	PRINT_SEP_BEGIN( objname );
+	
+	PRINT_PTR( pSharedInfo->psi );
+	PRINT_PTR( pSharedInfo->aheList );
+	PRINT_PTR( pSharedInfo->pDisplayInfo );
+	PRINT_PTR( pSharedInfo->ulSharedDelta );
+	
+	PRINT_SEP_END( objname );
+	
+	return;
+}
+
+
+
 /* print_prog_store()
 Print a program store and all its descendants.
+
+if 'store' is NULL this function returns without having printed anything.
 */
 static void print_prog_store( 
 	struct prog *store   // in
@@ -268,8 +318,8 @@ static void print_prog_store(
 	printf( "store->dwOSMinorVersion: %lu\n", store->dwOSMinorVersion );
 	printf( "store->dwOSBuild: %lu\n", store->dwOSBuild );
 	printf( "store->pwszWinstaName: %ls\n", store->pwszWinstaName );
+	print_SharedInfo( store->pSharedInfo );
 	printf( "*store->pcHandleEntries: %lu\n", *store->pcHandleEntries );
-	PRINT_PTR( store->aheList );
 	
 	PRINT_DBLSEP_END( objname );
 	

@@ -57,7 +57,7 @@ Take a snapshot of the system state. This initializes a snapshot store.
 -
 print_gui_brief()
 
-Print some brief information on a GUI thread's process name, process id, thread id, etc. No newline.
+Print some brief info from a gui struct: thread id, process name/id and Win32ThreadInfo. No newline.
 -
 
 -
@@ -69,13 +69,13 @@ Print a gui struct.
 -
 print_gui_array()
 
-Print a snapshot store's gui array.
+Print a snapshot store's array of gui structs.
 -
 
 -
 print_spi_array_brief()
 
-Print some basic information from a snapshot store's spi array.
+Print some brief information from a snapshot store's spi array.
 -
 
 -
@@ -241,19 +241,10 @@ static int callback_add_gui(
 	// whether or not the process has already been passed to the callback. 1 if true, 0 if false.
 	const unsigned process_is_new = ( !sti || ( sti == (void *)&spi->Threads ) ); // new spi
 	
+	FAIL_IF( !sti );
+	FAIL_IF( !ci );
+	FAIL_IF( !ci->store );
 	
-	if( !sti || !ci || !ci->store )
-	{
-		/* a parameter required by this callback is missing. 
-		this shouldn't happen. abort 
-		*/
-		dbg_printf( "Parameter validation failed:\n" );
-		dbg_printf( "sti: %IX\n", sti );
-		dbg_printf( "ci: %IX\n", ci );
-		dbg_printf( "ci->store: %IX\n", ci->store );
-		return_code = TRAVERSE_CALLBACK_ABORT;
-		goto cleanup;
-	}
 	
 	/*	traverse_threads() writes the spi array before the first time it calls a callback function.
 	the first time this callback is called is the earliest time that the spi init can be recorded.
@@ -292,10 +283,10 @@ static int callback_add_gui(
 			goto cleanup;
 		}
 		
-		SetLastError( 0 ); // set because error code may not be set on success
+		SetLastError( 0 ); // error code is evaluated on success
 		ci->process = OpenProcess( PROCESS_VM_READ, FALSE, (DWORD)spi->UniqueProcessId );
 		
-		dbg_printf( "OpenProcess() %s. GLE: %I32u, Handle: 0x%IX.\n", 
+		dbg_printf( "OpenProcess() %s. GLE: %lu, Handle: 0x%p.\n", 
 			( ci->process ? "success" : "error" ), 
 			GetLastError(), 
 			ci->process 
@@ -341,7 +332,7 @@ static int callback_add_gui(
 		pvTeb = get_teb( (DWORD)sti->ClientId.UniqueThread, flags );
 	}
 	
-	dbg_printf( "TEB: 0x%IX\n", pvTeb );
+	dbg_printf( "TEB: 0x%p\n", pvTeb );
 	
 	/* if there's no TEB associated with the thread then continue to the next thread. */
 	if( !pvTeb )
@@ -357,6 +348,7 @@ static int callback_add_gui(
 	{
 		BOOL ret = 0;
 		
+		SetLastError( 0 ); // error code is evaluated on success
 		ret = ReadProcessMemory( 
 			ci->process, 
 			(char *)pvTeb + 0x040, /* pvTeb + offsetof W32ThreadInfo. 0x40 TEB32, 0x78 TEB64 */
@@ -365,7 +357,7 @@ static int callback_add_gui(
 			NULL 
 		);
 		
-		dbg_printf( "ReadProcessMemory() %s. GLE: %I32u, Handle: 0x%IX.\n", 
+		dbg_printf( "ReadProcessMemory() %s. GLE: %lu, Handle: 0x%p.\n", 
 			( ret ? "success" : "error" ), 
 			GetLastError(), 
 			ci->process 
@@ -375,7 +367,7 @@ static int callback_add_gui(
 			pvWin32ThreadInfo = 0;
 	}
 	
-	dbg_printf( "Win32ThreadInfo: 0x%IX\n", pvWin32ThreadInfo );
+	dbg_printf( "Win32ThreadInfo: 0x%p\n", pvWin32ThreadInfo );
 	
 	/* if there's no Win32ThreadInfo then this thread is not a GUI thread.
 	continue to the next thread
@@ -391,9 +383,16 @@ static int callback_add_gui(
 	*/
 	if( ci->store->gui_count >= ci->store->gui_max ) // all array elements filled
 	{
-		dbg_printf( "ci->store->gui_count >= ci->store->gui_max\n" );
-		dbg_printf( "ci->store->gui_count: %u\n", ci->store->gui_count );
-		dbg_printf( "ci->store->gui_max: %u\n", ci->store->gui_max );
+		MSG_ERROR( "Too many GUI objects!\n" );
+		printf( "ci->store->gui_count: %u\n", ci->store->gui_count );
+		printf( "ci->store->gui_max: %u\n", ci->store->gui_max );
+		
+		if( ci->store->gui_count > ci->store->gui_max )
+		{
+			printf( "Setting gui_count to gui_max.\n" );
+			ci->store->gui_count = ci->store->gui_max;
+		}
+		
 		return_code = TRAVERSE_CALLBACK_ABORT;
 		goto cleanup;
 	}
@@ -423,13 +422,13 @@ cleanup:
 		BOOL ret = 0;
 		
 		
-		SetLastError( 0 ); // set because error code may not be set on success
+		SetLastError( 0 ); // error code is evaluated on success
 		ret = CloseHandle( ci->process ); // it's ok if the handle is already closed/invalid
 		
-		dbg_printf( "CloseHandle(0x%IX) %s. GLE: %I32u.\n", 
-			ci->process, 
+		dbg_printf( "CloseHandle() %s. GLE: %lu, Handle: 0x%p\n", 
 			( ret ? "success" : "error" ), 
-			GetLastError() 
+			GetLastError(), 
+			ci->process
 		);
 		
 		ci->process = NULL;
@@ -475,11 +474,13 @@ Search a snapshot store's array of gui threads for a Win32ThreadInfo address.
 returns the gui struct that contains the matching pvWin32ThreadInfo
 */
 struct gui *find_Win32ThreadInfo( 
-	struct snapshot *const store,   // in
-	void *const pvWin32ThreadInfo   // in
+	const struct snapshot *const store,   // in
+	const void *const pvWin32ThreadInfo   // in
 )
 {
 	struct gui findme;
+	
+	FAIL_IF( store->gui_count > store->gui_max );
 	
 	
 	ZeroMemory( &findme, sizeof( findme ) );
@@ -604,30 +605,30 @@ int init_snapshot_store(
 	/* search for invalid or duplicate Win32ThreadInfo */
 	for( i = 1; i < store->gui_count; ++i )
 	{
-		struct gui *a = &store->gui[ i - 1 ];
-		struct gui *b = &store->gui[ i ];
+		const struct gui *const a = &store->gui[ i - 1 ];
+		const struct gui *const b = &store->gui[ i ];
 		
 		
 		if( a->pvWin32ThreadInfo == b->pvWin32ThreadInfo )
 		{
-			MSG_FATAL( "Duplicate pvWin32ThreadInfo." );
+			MSG_ERROR( "Duplicate pvWin32ThreadInfo." );
 			print_gui( a );
 			print_gui( b );
-			exit( 1 );
+			return FALSE;
 		}
 		
 		if( !a->pvWin32ThreadInfo )
 		{
-			MSG_FATAL( "Invalid pvWin32ThreadInfo." );
+			MSG_ERROR( "Invalid pvWin32ThreadInfo." );
 			print_gui( a );
-			exit( 1 );
+			return FALSE;
 		}
 		
 		if( !b->pvWin32ThreadInfo )
 		{
-			MSG_FATAL( "Invalid pvWin32ThreadInfo." );
+			MSG_ERROR( "Invalid pvWin32ThreadInfo." );
 			print_gui( b );
-			exit( 1 );
+			return FALSE;
 		}
 	}
 	
@@ -648,7 +649,9 @@ int init_snapshot_store(
 
 
 /* print_gui_brief()
-Print some brief information on a GUI thread's process name, process id, thread id, etc. No newline.
+Print some brief info from a gui struct: thread id, process name/id and Win32ThreadInfo. No newline.
+
+if 'gui' is NULL this function prints "<unknown>"
 */
 void print_gui_brief( 
 	const struct gui *const gui   // in
@@ -671,11 +674,65 @@ void print_gui_brief(
 		printf( "<unknown>" );
 	
 	printf( " (" );
-	printf( "PID %Iu", (size_t)( gui->spi ? gui->spi->UniqueProcessId : 0 ) );
-	printf( ", TID %Iu", (size_t)( gui->sti ? gui->sti->ClientId.UniqueThread : 0 ) );
+	
+	printf( "PID " );
+	if( gui->spi )
+		printf( "%Iu", (size_t)gui->spi->UniqueProcessId );
+	else
+		printf( "<unknown>" );
+	
+	printf( ", " );
+	
+	printf( "TID " );
+	if( gui->sti )
+		printf( "%Iu", (size_t)gui->sti->ClientId.UniqueThread );
+	else
+		printf( "<unknown>" );
+	
 	printf( " @ " );
 	PRINT_BARE_PTR( gui->pvWin32ThreadInfo );
+	
 	printf( ")" );
+	
+	return;
+}
+
+
+
+/* print_gui_array_brief()
+Print some brief information from a snapshot store's gui array.
+
+if 'store' is NULL this function returns without having printed anything.
+*/
+void print_gui_array_brief(
+	const struct snapshot *const store   // in
+)
+{
+	const char *const objname = "array of gui structs (brief)";
+	unsigned i = 0;
+	
+	if( !store )
+		return;
+	
+	PRINT_SEP_BEGIN( objname );
+	
+	printf( "store->gui_max: %u\n", store->gui_max );
+	printf( "store->gui_count: %u\n", store->gui_count );
+	
+	if( store->gui )
+	{
+		for( i = 0; ( ( i < store->gui_count ) && ( i < store->gui_max ) ); ++i )
+		{
+			print_gui_brief( &store->gui[ i ] );
+			printf( "\n" );
+		}
+	}
+	else
+	{
+		printf( "store->gui: NULL\n" );
+	}
+	
+	PRINT_SEP_END( objname );
 	
 	return;
 }
@@ -685,7 +742,7 @@ void print_gui_brief(
 /* print_gui()
 Print a gui struct.
 
-if the gui struct pointer is != NULL then print the gui struct
+if 'gui' is NULL this function returns without having printed anything.
 */
 void print_gui(
 	const struct gui *const gui   // in
@@ -723,7 +780,9 @@ void print_gui(
 
 
 /* print_gui_array()
-Print a snapshot store's gui array.
+Print a snapshot store's array of gui structs.
+
+if 'store' is NULL this function returns without having printed anything.
 */
 void print_gui_array(
 	const struct snapshot *const store   // in
@@ -740,8 +799,16 @@ void print_gui_array(
 	
 	printf( "store->gui_max: %u\n", store->gui_max );
 	printf( "store->gui_count: %u\n", store->gui_count );
-	for( i = 0; i < store->gui_count; ++i )
-		print_gui( &store->gui[ i ] );
+	
+	if( store->gui )
+	{
+		for( i = 0; ( ( i < store->gui_count ) && ( i < store->gui_max ) ); ++i )
+			print_gui( &store->gui[ i ] );
+	}
+	else
+	{
+		printf( "store->gui: NULL\n" );
+	}
 	
 	PRINT_SEP_END( objname );
 	
@@ -751,7 +818,9 @@ void print_gui_array(
 
 
 /* print_spi_array_brief()
-Print some basic information from a snapshot store's spi array.
+Print some brief information from a snapshot store's spi array.
+
+if 'store' is NULL this function returns without having printed anything.
 */
 void print_spi_array_brief(
 	const struct snapshot *const store   // in
@@ -804,7 +873,7 @@ void print_spi_array_brief(
 /* print_snapshot_store()
 Print a snapshot store and all its descendants.
 
-if the snapshot store pointer != NULL print the store
+if 'store' is NULL this function returns without having printed anything.
 */
 void print_snapshot_store( 
 	const struct snapshot *const store   // in

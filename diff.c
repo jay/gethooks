@@ -452,9 +452,16 @@ static void print_hook_notice_begin(
 	print_HOOK_id( hook->object.iHook );
 	printf( "\n" );
 	
-	printf( "Desktop: %ls\n", deskname );
+	//printf( "%p, %p, %p\n", hook->owner, hook->origin, hook->target );
 	
-	printf( "%p, %p, %p\n", hook->owner, hook->origin, hook->target );
+	if( hook->object.flags )
+	{
+		printf( "Flags: " );
+		print_HOOK_flags( hook->object.flags );
+		printf( "\n" );
+	}
+	
+	printf( "Desktop: %ls\n", deskname );
 	
 	/**
 	When the desktop hook store is initialized this program matches the Win32ThreadInfo kernel 
@@ -557,8 +564,8 @@ static int print_diff_gui(
 	WCHAR empty2[] = L"<unknown>";
 	struct
 	{
-		void *pvWin32ThreadInfo;
-		void *pvTeb;
+		const void *pvWin32ThreadInfo;
+		const void *pvTeb;
 		HANDLE tid;
 		HANDLE pid;
 		struct
@@ -951,6 +958,7 @@ void print_initial_desktop_hook_item(
 	FAIL_IF( !b );
 	FAIL_IF( !b->desktop );
 	FAIL_IF( !b->hook_max );
+	FAIL_IF( b->hook_count > b->hook_max );
 	
 	
 	for( i = 0; i < b->hook_count; ++i )
@@ -989,6 +997,8 @@ void print_diff_desktop_hook_items(
 	FAIL_IF( !b->desktop );
 	FAIL_IF( a->desktop != b->desktop );
 	FAIL_IF( a->hook_max != b->hook_max );
+	FAIL_IF( a->hook_count > a->hook_max );
+	FAIL_IF( b->hook_count > b->hook_max );
 	
 	
 	deskname = b->desktop->pwszDesktopName;

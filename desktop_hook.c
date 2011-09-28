@@ -56,6 +56,12 @@ Print a hook struct.
 -
 
 -
+print_hook_array()
+
+Print a desktop hook item's array of hook structs.
+-
+
+-
 print_desktop_hook_item()
 
 Print an item from a desktop hook store's linked list.
@@ -245,7 +251,7 @@ stores except other snapshot stores.
 returns nonzero on success
 */
 int init_desktop_hook_store( 
-	struct snapshot *const parent   // in
+	const struct snapshot *const parent   // in
 )
 {
 	unsigned i = 0;
@@ -295,8 +301,15 @@ int init_desktop_hook_store(
 		/* copy the HANDLEENTRY struct from the list of entries in the shared info section.
 		the info may change so it can't just be pointed to.
 		*/
-		HANDLEENTRY entry = G->prog->aheList[ i ];
+		HANDLEENTRY entry = G->prog->pSharedInfo->aheList[ i ];
 		struct hook *hook = NULL;
+		
+		if( G->config->verbose >= 9 )
+		{
+			printf( "\n*G->prog->pcHandleEntries: %lu\n", *G->prog->pcHandleEntries );
+			printf( "Now printing G->prog->pSharedInfo->aheList[ %u ]\n", i );
+			print_HANDLEENTRY( &entry );
+		}
 		
 		if( entry.bType != TYPE_HOOK ) /* not for a HOOK object */
 			continue;
@@ -311,7 +324,21 @@ int init_desktop_hook_store(
 		}
 		
 		if( !item ) /* The HOOK is on an inaccessible desktop */
+		{
+			if( G->config->verbose >= 9 )
+				printf( "The above HANDLEENTRY points to a HOOK on an inaccessible desktop.\n" );
+			
 			continue;
+		}
+		else
+		{
+			if( G->config->verbose >= 9 )
+			{
+				printf( "The above HANDLEENTRY points to a HOOK on desktop '%ls'.\n", 
+					item->desktop->pwszDesktopName 
+				);
+			}
+		}
 		
 		hook = &item->hook[ item->hook_count ];
 		
@@ -332,10 +359,17 @@ int init_desktop_hook_store(
 		item->hook_count++;
 		if( item->hook_count >= item->hook_max )
 		{
-			MSG_FATAL( "Too many HOOK objects!" );
+			MSG_ERROR( "Too many HOOK objects!" );
 			printf( "item->hook_count: %u\n", item->hook_count );
 			printf( "item->hook_max: %u\n", item->hook_max );
-			exit( 1 );
+			
+			if( item->hook_count > item->hook_max )
+			{
+				printf( "Setting hook_count to hook_max.\n" );
+				item->hook_count = item->hook_max;
+			}
+			
+			return FALSE;
 		}
 	}
 	
@@ -354,30 +388,30 @@ int init_desktop_hook_store(
 		/* search for invalid or duplicate entry.pHead */
 		for( i = 1; i < item->hook_count; ++i )
 		{
-			struct hook *a = &item->hook[ i  - 1 ];
-			struct hook *b = &item->hook[ i ];
+			const struct hook *const a = &item->hook[ i  - 1 ];
+			const struct hook *const b = &item->hook[ i ];
 			
 			
 			if( a->entry.pHead == b->entry.pHead )
 			{
-				MSG_FATAL( "Duplicate pHead." );
+				MSG_ERROR( "Duplicate pHead." );
 				print_hook( a );
 				print_hook( b );
-				exit( 1 );
+				return FALSE;
 			}
 			
 			if( !a->entry.pHead )
 			{
-				MSG_FATAL( "Invalid pHead." );
+				MSG_ERROR( "Invalid pHead." );
 				print_hook( a );
-				exit( 1 );
+				return FALSE;
 			}
 			
 			if( !b->entry.pHead )
 			{
-				MSG_FATAL( "Invalid pHead." );
+				MSG_ERROR( "Invalid pHead." );
 				print_hook( b );
-				exit( 1 );
+				return FALSE;
 			}
 		}
 	}
@@ -393,7 +427,7 @@ int init_desktop_hook_store(
 /* print_hook()
 Print a hook struct.
 
-if the hook struct pointer is != NULL then print the hook struct
+if 'hook' is NULL this function returns without having printed anything.
 */
 void print_hook(
 	const struct hook *const hook   // in
@@ -438,17 +472,55 @@ void print_hook(
 
 
 
+/* print_hook_array()
+Print a desktop hook item's array of hook structs.
+
+if 'item' is NULL this function returns without having printed anything.
+*/
+void print_hook_array(
+	const struct desktop_hook_item *const item   // in
+)
+{
+	const char *const objname = "array of hook structs";
+	unsigned i = 0;
+	
+	
+	if( !item )
+		return;
+	
+	PRINT_SEP_BEGIN( objname );
+	
+	printf( "item->hook_max: %u\n", item->hook_max );
+	printf( "item->hook_count: %u\n", item->hook_count );
+	
+	if( item->hook )
+	{
+		for( i = 0; ( ( i < item->hook_count ) && ( i < item->hook_max ) ); ++i )
+			print_hook( &item->hook[ i ] );
+	}
+	else
+	{
+		printf( "item->hook: NULL\n" );
+	}
+	
+	PRINT_SEP_END( objname );
+	
+	return;
+}
+
+
+
 /* print_desktop_hook_item()
 Print an item from a desktop hook store's linked list.
 
-if the desktop hook item pointer is != NULL print the item
+if 'item' is NULL this function returns without having printed anything.
 */
 void print_desktop_hook_item( 
 	const struct desktop_hook_item *const item   // in
 )
 {
 	const char *const objname = "Desktop Hook Item";
-	unsigned i = 0;
+	
 	
 	if( !item )
 		return;
@@ -460,10 +532,7 @@ void print_desktop_hook_item(
 	else
 		MSG_ERROR( "item->desktop == NULL" );
 	
-	printf( "item->hook_max: %u\n", item->hook_max );
-	printf( "item->hook_count: %u\n", item->hook_count );
-	for( i = 0; i < item->hook_count; ++i )
-		print_hook( item->hook );
+	print_hook_array( item );
 	
 	PRINT_SEP_END( objname );
 	
@@ -475,7 +544,7 @@ void print_desktop_hook_item(
 /* print_desktop_hook_store()
 Print a desktop hook store and all its descendants.
 
-if the desktop hook store pointer != NULL print the store
+if 'store' is NULL this function returns without having printed anything.
 */
 void print_desktop_hook_store( 
 	const struct desktop_hook_list *const store   // in

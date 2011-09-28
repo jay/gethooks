@@ -55,13 +55,13 @@ struct prog
 	
 	/* the name of the window station */
 	WCHAR *pwszWinstaName;   // calloc(), free()
-
-	/* an array of HANDLEENTRY structs */
-	HANDLEENTRY *aheList;
-
-	/* aheList count */
-	volatile ULONG *pcHandleEntries;
-
+	
+	/* A pointer to Microsoft's SHAREDINFO struct gSharedInfo */
+	const SHAREDINFO *pSharedInfo;
+	
+	/* gSharedInfo.aheList[] count */
+	const volatile ULONG *pcHandleEntries;
+	
 	/* the system utc time in FILETIME format immediately after this store has been initialized.
 	this is nonzero when this store has been initialized.
 	*/
@@ -82,6 +82,10 @@ SHAREDINFO *get_SharedInfo( void );
 void init_global_prog_store( 
 	int argc,   // in
 	char **argv   // in deref
+);
+
+void print_SharedInfo( 
+	const SHAREDINFO *const pSharedInfo   // in
 );
 
 void print_global_prog_store( void );

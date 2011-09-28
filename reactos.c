@@ -145,6 +145,8 @@ void print_HANDLEENTRY_type(
 
 /* print_HANDLEENTRY_flags()
 Print user-readable names of a HANDLEENTRY's flags. No newline.
+
+if 'bFlags' is 0 this function returns without having printed anything.
 */
 void print_HANDLEENTRY_flags( 
 	const BYTE bFlags   // in
@@ -182,7 +184,7 @@ void print_HANDLEENTRY_flags(
 /* print_HANDLEENTRY()
 Print a HANDLEENTRY struct.
 
-if the HANDLEENTRY pointer is != NULL then print the HANDLEENTRY
+if 'entry' is NULL this function returns without having printed anything.
 */
 void print_HANDLEENTRY(
 	const HANDLEENTRY *const entry   // in
@@ -264,11 +266,16 @@ void print_HOOK_id(
 
 /* print_HOOK_flags()
 Print user-readable names of a HOOK's flags. No newline.
+
+if 'flags' is NULL this function returns without having printed anything.
 */
 void print_HOOK_flags( 
 	const DWORD flags   // in
 )
 {
+	if( !flags )
+		return;
+	
 	if( flags & HF_GLOBAL )
 		printf( "HF_GLOBAL " );
 	
@@ -304,7 +311,7 @@ void print_HOOK_flags(
 /* print_HOOK()
 Print a HOOK struct.
 
-if the HOOK pointer is != NULL then print the HOOK
+if 'object' is NULL this function returns without having printed anything.
 */
 void print_HOOK(
 	const HOOK *const object   // in

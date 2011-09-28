@@ -277,7 +277,7 @@ int get_user_obj_name(
 	FAIL_IF( !object );
 	
 	
-	SetLastError( 0 );
+	SetLastError( 0 ); // error code may be evaluated on success
 	GetUserObjectInformationW( object, UOI_NAME, NULL, 0, &bytes_needed );
 	if( ( GetLastError() != ERROR_INSUFFICIENT_BUFFER )
 		|| ( bytes_needed < sizeof( WCHAR ) )
@@ -289,7 +289,7 @@ int get_user_obj_name(
 	
 	*name = must_calloc( bytes_needed, 1 );
 	
-	SetLastError( 0 );
+	SetLastError( 0 ); // error code may be evaluated on success
 	if( !GetUserObjectInformationW( object, UOI_NAME, *name, bytes_needed, NULL ) )
 	{
 		free( *name );

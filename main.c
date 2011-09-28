@@ -131,6 +131,7 @@ int gethooks()
 	struct snapshot *previous = NULL;
 	struct snapshot *current = NULL;
 	struct snapshot *temp = NULL;
+	int ret = 0;
 	
 	FAIL_IF( !G );   // The global store must exist.
 	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
@@ -142,21 +143,26 @@ int gethooks()
 	create_snapshot_store( &previous );
 	
 	
-	if( !init_snapshot_store( current ) )
+	ret = init_snapshot_store( current );
+	
+	if( G->config->verbose >= 8 )
+		print_snapshot_store( current );
+	
+	if( !ret )
 	{
 		MSG_FATAL( "The snapshot store failed to initialize." );
 		exit( 1 );
 	}
-	
-	if( G->config->verbose >= 8 )
-		print_snapshot_store( current );
 	
 	print_initial_desktop_hook_list( current->desktop_hooks );
 	
 	if( G->config->polling < 0 )
 		goto cleanup;
 	
-	printf( "\nMonitor mode enabled. Monitoring for changes...\n" );
+	printf( 
+		"\nMonitor mode enabled. Checking for changes every %d seconds...\n", 
+		G->config->polling 
+	);
 	fflush( stdout );
 	
 	for( ;; )
@@ -172,14 +178,16 @@ int gethooks()
 		previous = current;
 		current = temp;
 		
-		if( !init_snapshot_store( current ) )
+		ret = init_snapshot_store( current );
+		
+		if( G->config->verbose >= 8 )
+			print_snapshot_store( current );
+		
+		if( !ret )
 		{
 			MSG_FATAL( "The snapshot store failed to initialize." );
 			exit( 1 );
 		}
-		
-		if( G->config->verbose >= 8 )
-			print_snapshot_store( current );
 		
 		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
 	}
@@ -244,10 +252,10 @@ int main( int argc, char **argv )
 	/* G->desktops has been initialized */
 	
 	/* The global store is initialized */
-	if( G->config->verbose >= 7 )
+	
+	if( G->config->verbose >= 5 )
 		print_global_store();
 	
-	
-	/* Call gethooks() to take snapshots and print differences */
-	return !gethooks();
+	/* If not in testmode run gethooks() to take snapshots and print differences */
+	return ( ( G->config->testmode ) ? !testmode() : !gethooks() );
 }

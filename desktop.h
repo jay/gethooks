@@ -56,33 +56,33 @@ struct desktop_item
 	DWORD dwThreadId;
 	
 	/* A pointer to the thread's TEB. */
-	void *pvTeb;
+	const void *pvTeb;
 	
 	/* &TEB.Win32ClientInfo   (ULONG Win32ClientInfo[62])
 	A pointer to the thread's CLIENTINFO.
 	*/
-	void *pvWin32ClientInfo;
+	const void *pvWin32ClientInfo;
 	
 	/* CLIENTINFO.pDeskInfo   (PDESKTOPINFO pDeskInfo)
 	A pointer to the thread's DESKTOPINFO.
 	*/
-	void *pvDeskInfo;
+	const void *pvDeskInfo;
 	
 	/* DESKTOPINFO.pvDesktopBase   (PVOID pvDesktopBase)
 	The start address (kernel) of the desktop's heap 
 	*/
-	void *pvDesktopBase;
+	const void *pvDesktopBase;
 	
 	/* DESKTOPINFO.pvDesktopLimit   (PVOID pvDesktopLimit)
 	The end address (kernel) of the desktop's heap.
 	*/
-	void *pvDesktopLimit;
+	const void *pvDesktopLimit;
 	
 	/* CLIENTINFO.ulClientDelta   (ULONG ulClientDelta)
 	The difference between the desktop's heap kernel addresses and 
 	where the heap is mapped for this program to access it. 
 	*/
-	void *pvClientDelta;
+	const void *pvClientDelta;
 	
 	/* The next item in the list */
 	struct desktop_item *next;

@@ -54,13 +54,13 @@ struct gui
 	The address is taken from TEB's Win32ThreadInfo.
 	THREADINFO is unreachable from user mode, as far as I can tell.
 	*/
-	void *pvWin32ThreadInfo;
+	const void *pvWin32ThreadInfo;
 	
 	/* The address of the thread's TEB. The address is taken from either 
 	THREAD_BASIC_INFORMATION's TebBaseAddress (Win2k+), or
 	SYSTEM_EXTENDED_THREAD_INFORMATION's TebAddress (Vista+, and only if EXTENDED flag)
 	*/
-	void *pvTeb;
+	const void *pvTeb;
 	
 	/* The thread's process' process info.
 	The memory pointed to is in the spi buffer in the parent snapshot store.
@@ -170,8 +170,8 @@ void create_snapshot_store(
 );
 
 struct gui *find_Win32ThreadInfo( 
-	struct snapshot *const store,   // in
-	void *const pvWin32ThreadInfo   // in
+	const struct snapshot *const store,   // in
+	const void *const pvWin32ThreadInfo   // in
 );
 
 int init_snapshot_store( 

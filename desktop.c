@@ -417,7 +417,7 @@ static unsigned __stdcall thread(
 	if( hEventTerminate ) // this worker thread's init was successful. it is attached to a desktop.
 	{
 		/* wait for the main thread to signal for this thread's termination */
-		SetLastError( 0 );
+		SetLastError( 0 ); // error code is not set by WaitForSingleObject() unless WAIT_FAILED
 		if( WaitForSingleObject( hEventTerminate, INFINITE ) )
 		{
 			MSG_FATAL_GLE( "WaitForSingleObject() failed." );
@@ -478,7 +478,6 @@ static struct desktop_item *add_desktop_item(
 	}
 	
 	/* Get the main thread's desktop name */
-	SetLastError( 0 );
 	if( !get_user_obj_name( &pwszMainDesktopName, hMainDesktop ) )
 	{
 		MSG_FATAL_GLE( "get_user_obj_name() failed." );
@@ -545,7 +544,7 @@ static struct desktop_item *add_desktop_item(
 			exit( 1 );
 		}
 		
-		SetLastError( 0 );
+		SetLastError( 0 ); // error code is not set by WaitForSingleObject() unless WAIT_FAILED
 		if( WaitForSingleObject( stuff.hEventInitialized, INFINITE ) )
 		{
 			MSG_FATAL_GLE( "WaitForSingleObject() failed." );
@@ -722,7 +721,7 @@ static int add_all_desktops(
 	}
 	
 	/* Enumerate the window station's desktop names */
-	SetLastError( 0 );  //gle may or may not be set on error
+	SetLastError( 0 ); // error code may not be set by EnumDesktopsW() on error
 	if( !EnumDesktopsW( station, EnumDesktopProc, (LPARAM)store ) )
 	{
 		MSG_FATAL_GLE( "EnumDesktopsW() failed." );
@@ -829,7 +828,7 @@ void init_global_desktop_store( void )
 /* print_desktop_item()
 Print an item from a desktop store's linked list.
 
-if the desktop item pointer is != NULL print the item
+if 'item' is NULL this function returns without having printed anything.
 */
 void print_desktop_item( 
 	const struct desktop_item *const item   // in
@@ -865,7 +864,7 @@ void print_desktop_item(
 /* print_desktop_store()
 Print a desktop store and all its descendants.
 
-if the desktop store pointer != NULL print the store
+if 'store' is NULL this function returns without having printed anything.
 */
 static void print_desktop_store( 
 	const struct desktop_list *const store   // in
@@ -960,7 +959,7 @@ static void free_desktop_item(
 		}
 		
 		/* wait for the worker thread to terminate. maybe always do this. */
-		SetLastError( 0 );
+		SetLastError( 0 ); // error code is not set by WaitForSingleObject() unless WAIT_FAILED
 		if( WaitForSingleObject( (*in)->hThread, INFINITE ) )
 		{
 			MSG_FATAL_GLE( "WaitForSingleObject() failed." );
@@ -978,7 +977,7 @@ static void free_desktop_item(
 	
 	/* the handle to the desktop should be closed after the thread's other resources are freed */
 	if( (*in)->hDesktop )
-		FAIL_IF( !CloseDesktop( (*in)->hDesktop ) );///
+		FAIL_IF( !CloseDesktop( (*in)->hDesktop ) ); // thread has terminated so this should work
 	
 	free( (*in) );
 	*in = NULL;

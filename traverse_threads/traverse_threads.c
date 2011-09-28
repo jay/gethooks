@@ -243,11 +243,11 @@ int traverse_threads(
 	
 	if( !NtQuerySystemInformation )
 	{
-		SetLastError( 0 );
+		SetLastError( 0 ); // error code is evaluated on success
 		*(FARPROC *)&NtQuerySystemInformation = 
 			(FARPROC)GetProcAddress( GetModuleHandleA( "ntdll" ), "NtQuerySystemInformation" );
 		
-		dbg_printf( "GetProcAddress() %s. GLE: %I32u, NtQuerySystemInformation: 0x%p.\n", 
+		dbg_printf( "GetProcAddress() %s. GLE: %lu, NtQuerySystemInformation: 0x%p.\n", 
 			( NtQuerySystemInformation ? "success" : "error" ), 
 			GetLastError(), 
 			NtQuerySystemInformation 

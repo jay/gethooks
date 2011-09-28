@@ -225,8 +225,13 @@ void print_more_examples_and_exit( void )
 	
 	printf( "\n"
 		"The higher the verbosity level the more information that is printed.\n"
-		"Currently the verbosity to dump each whole HOOK struct is at level 6.\n"
-		"The verbosity to dump all major structs is level 9. Output to a file.\n"
+		"When verbosity is enabled the lowest level is 1 and the highest level is 9.\n"
+		/*
+		level 5 prints store info
+		level 6 prints HOOK struct for each hook notice
+		level 7 prints each hook struct 
+		level 8 
+		*/
 	);
 	
 	
@@ -760,6 +765,8 @@ void init_global_config_store( void )
 
 /* print_config_store()
 Print a configuration store and all its descendants.
+
+if 'store' is NULL this function returns without having printed anything.
 */
 static void print_config_store( 
 	struct config *store   // in
@@ -784,13 +791,13 @@ static void print_config_store(
 	
 	printf( "store->verbose: %d\n", store->verbose );
 	
-	//printf( "Printing list store of user specified hooks:" );
+	printf( "\nPrinting list store of user specified hooks:\n" );
 	print_list_store( store->hooklist );
 	
-	//printf( "Printing list store of user specified programs:" );
+	printf( "\nPrinting list store of user specified programs:\n" );
 	print_list_store( store->proglist );
 	
-	//printf( "Printing list store of user specified desktops:" );
+	printf( "\nPrinting list store of user specified desktops:\n" );
 	print_list_store( store->desklist );
 	
 	PRINT_DBLSEP_END( objname );

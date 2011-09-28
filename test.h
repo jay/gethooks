@@ -18,8 +18,8 @@ You should have received a copy of the GNU General Public License
 along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DIFF_H
-#define _DIFF_H
+#ifndef _TEST_H
+#define _TEST_H
 
 #include <windows.h>
 
@@ -69,59 +69,10 @@ enum threadtype
 
 
 /** 
-these functions are documented in the comment block above their definitions in diff.c
+these functions are documented in the comment block above their definitions in test.c
 */
-int match_gui_process_name(
-	const struct gui *const gui,   // in
-	const WCHAR *const name   // in
-);
-
-int match_hook_process_name(
-	const struct hook *const hook,   // in
-	const WCHAR *const name   // in
-);
-
-int match_gui_process_pid(
-	const struct gui *const gui,   // in
-	const int pid   // in
-);
-
-int match_hook_process_pid(
-	const struct hook *const hook,   // in
-	const int pid   // in
-);
-
-int is_hook_wanted( 
-	const struct hook *const hook   // in
-);
-
-void print_brief_thread_info(
-	const struct hook *const hook,   // in
-	const enum threadtype threadtype   // in
-);
-
-int print_diff_hook( 
-	const struct hook *const a,   // in
-	const struct hook *const b,   // in
-	const WCHAR *const deskname   // in
-);
-
-void print_initial_desktop_hook_item( 
-	const struct desktop_hook_item *const b   // in
-);
-
-void print_diff_desktop_hook_items( 
-	const struct desktop_hook_item *const a,   // in
-	const struct desktop_hook_item *const b   // in
-);
-
-void print_initial_desktop_hook_list( 
-	const struct desktop_hook_list *const list2   // in
-);
-
-void print_diff_desktop_hook_lists( 
-	const struct desktop_hook_list *const list1,   // in
-	const struct desktop_hook_list *const list2   // in
+void poll_handle_count(
+	int seconds   // in
 );
 
 
@@ -129,4 +80,4 @@ void print_diff_desktop_hook_lists(
 }
 #endif
 
-#endif // _DIFF_H
+#endif // _TEST_H
