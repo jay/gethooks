@@ -35,6 +35,12 @@ Must _wcsdup() or die.
 -
 
 -
+str_to_int64()
+
+Convert a decimal string to a 64-bit integer.
+-
+
+-
 str_to_int()
 
 Convert a decimal string to an integer.
@@ -137,27 +143,27 @@ WCHAR *must_wcsdup(
 
 
 
-/* str_to_int()
-Convert a decimal string to an integer.
+/* str_to_int64()
+Convert a decimal string to a 64-bit integer.
 
 'str' is the integer representation as a string
 
 returns nonzero on success.
-if success then '*num' has received the integer.
-if fail then '*num' has received INT_MAX.
+if success then '*num' has received the 64-bit integer.
+if fail then '*num' has received I64_MAX.
 */
-int str_to_int( 
-	int *const num,   // out
+int str_to_int64( 
+	__int64 *const num,   // out
 	const char *const str   // in
 )
 {
-	int i = 0;
+	unsigned i = 0;
 	
 	FAIL_IF( !num );
 	FAIL_IF( !str );
 	
 	
-	*num = INT_MAX;
+	*num = I64_MAX;
 	
 	/* skip whitespace */
 	for( i = 0; ( ( str[ i ] == ' ' ) || ( str[ i ] == '\t' ) ); ++i )
@@ -185,10 +191,10 @@ int str_to_int(
 		/* if decimal then convert */
 		if( ( str[ i ] >= '1' ) && ( str[ i ] <= '9' ) )
 		{
-			long x = 0;
+			__int64 x = 0;
 			char *endptr = NULL;
 			
-			x = strtol( str, &endptr, 10 );
+			x = _strtoi64( str, &endptr, 10 );
 			
 			if( endptr )
 			{
@@ -197,10 +203,45 @@ int str_to_int(
 				;
 			}
 			
-			if( ( !endptr || !*endptr ) && x && ( x > INT_MIN ) && ( x < INT_MAX ) )
-				*num = (int)x;
+			if( ( !endptr || !*endptr ) && x && ( x > I64_MIN ) && ( x < I64_MAX ) )
+				*num = x;
 		}
 	}
+	
+	return ( *num != I64_MAX );
+}
+
+
+
+/* str_to_int()
+Convert a decimal string to an integer.
+
+'str' is the integer representation as a string
+
+returns nonzero on success.
+if success then '*num' has received the integer.
+if fail then '*num' has received INT_MAX.
+*/
+int str_to_int( 
+	int *const num,   // out
+	const char *const str   // in
+)
+{
+	__int64 x = 0;
+	
+	FAIL_IF( !num );
+	FAIL_IF( !str );
+	
+	
+	str_to_int64( &x, str );
+	
+	if( ( x == I64_MAX ) 
+		|| ( x <= INT_MIN )
+		|| ( x >= INT_MAX )
+	) // conversion failed or is out of range
+		*num = INT_MAX;
+	else
+		*num = (int)x;
 	
 	return ( *num != INT_MAX );
 }

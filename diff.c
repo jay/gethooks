@@ -206,13 +206,13 @@ returns nonzero on success ('pid' matches the GUI thread's process id)
 */
 int match_gui_process_pid(
 	const struct gui *const gui,   // in
-	const int pid   // in
+	const __int64 pid   // in
 )
 {
 	FAIL_IF( !gui );
 	
 	
-	if( gui->spi && ( pid == (int)( (DWORD)gui->spi->UniqueProcessId ) ) )
+	if( gui->spi && ( pid == (__int64)gui->spi->UniqueProcessId ) )
 		return TRUE;
 	else
 		return FALSE;
@@ -227,7 +227,7 @@ returns nonzero on success ('pid' matched one of the hook struct's GUI thread pr
 */
 int match_hook_process_pid(
 	const struct hook *const hook,   // in
-	const int pid   // in
+	const __int64 pid   // in
 )
 {
 	FAIL_IF( !hook );

@@ -130,6 +130,9 @@ void create_config_store(
 	/* allocate the list store for the linked list of programs to filter */
 	create_list_store( &config->proglist );
 	
+	/* allocate the list store for the linked list of test parameters */
+	create_list_store( &config->testlist );
+	
 	
 	*out = config;
 	return;
@@ -274,7 +277,7 @@ unsigned get_next_arg(
 	
 	for( ;; )
 	{
-		int num = 0;
+		__int64 num = 0;
 		
 		/* increment index to the next argument */
 		++*index;
@@ -290,7 +293,7 @@ unsigned get_next_arg(
 			
 			return END;
 		}
-		else if( str_to_int( &num, G->prog->argv[ *index ] ) && ( num < 0 ) )
+		else if( str_to_int64( &num, G->prog->argv[ *index ] ) && ( num < 0 ) )
 		{
 			/* the command line argument is a negative number, not an option.
 			a negative number would only be an option's argument
@@ -400,7 +403,7 @@ void init_global_config_store( void )
 			
 			
 			/**
-			desktop option
+			desktop include option
 			*/
 			case 'd':
 			case 'D':
@@ -423,7 +426,7 @@ void init_global_config_store( void )
 					/* make the desktop name as a wide character string */
 					if( !get_wstr_from_mbstr( &name, G->prog->argv[ i ] ) )
 					{
-						MSG_FATAL( "make_wstr_from_mbstr() failed." );
+						MSG_FATAL( "get_wstr_from_mbstr() failed." );
 						printf( "desktop: %s\n", G->prog->argv[ i ] );
 						exit( 1 );
 					}
@@ -437,7 +440,7 @@ void init_global_config_store( void )
 					}
 					
 					/* if add_list_item() was successful then it made a duplicate of the 
-					wide string pointed to by name. name should now be freed.
+					wide string pointed to by name. in any case name should now be freed.
 					*/
 					free( name );
 					name = NULL;
@@ -547,11 +550,11 @@ void init_global_config_store( void )
 				
 				while( arf == OPTARG ) /* option argument found */
 				{
-					int id = 0;
+					__int64 id = 0;
 					WCHAR *name = NULL;
 					
 					/* if the string is not an integer then its a hook name not an id */
-					if( !str_to_int( &id, G->prog->argv[ i ] ) )
+					if( !str_to_int64( &id, G->prog->argv[ i ] ) )
 					{
 						id = 0;
 						
@@ -575,7 +578,7 @@ void init_global_config_store( void )
 					}
 					
 					/* if add_list_item() was successful then it made a duplicate of the 
-					wide string pointed to by name. name should now be freed.
+					wide string pointed to by name. in any case name should now be freed.
 					*/
 					free( name );
 					name = NULL;
@@ -629,7 +632,7 @@ void init_global_config_store( void )
 				
 				while( arf == OPTARG ) /* option argument found */
 				{
-					int id = 0;
+					__int64 id = 0;
 					WCHAR *name = NULL;
 					const char *p = G->prog->argv[ i ];
 					
@@ -647,14 +650,14 @@ void init_global_config_store( void )
 					or it is and the integer is negative, then assume program name
 					*/
 					if( ( p != G->prog->argv[ i ] ) 
-						|| !str_to_int( &id, G->prog->argv[ i ] ) 
+						|| !str_to_int64( &id, G->prog->argv[ i ] ) 
 						|| ( id < 0 ) 
 					)
 					{
 						/* make the program name as a wide character string */
 						if( !get_wstr_from_mbstr( &name, p ) )
 						{
-							MSG_FATAL( "make_wstr_from_mbstr() failed." );
+							MSG_FATAL( "get_wstr_from_mbstr() failed." );
 							printf( "prog: %s\n", G->prog->argv[ i ] );
 							exit( 1 );
 						}
@@ -677,7 +680,7 @@ void init_global_config_store( void )
 					}
 					
 					/* if add_list_item() was successful then it made a duplicate of the 
-					wide string pointed to by name. name should now be freed.
+					wide string pointed to by name. in any case name should now be freed.
 					*/
 					free( name );
 					name = NULL;
@@ -685,6 +688,100 @@ void init_global_config_store( void )
 					/* get the option's next argument, which is optional */
 					arf = get_next_arg( &i, OPT | OPTARG );
 				}
+				
+				continue;
+			}
+			
+			
+			
+			/** 
+			test mode include option
+			*/
+			case 't':
+			case 'T':
+			{
+				__int64 id = I64_MIN; // I64_MIN signals to the test suite that no id was specified
+				WCHAR *name = NULL;
+				
+				
+				G->config->testlist->type = LIST_INCLUDE_TEST;
+				
+				/* the 't' option requires one associated argument (optarg), and a second which is 
+				optional. if the first optarg is not found get_next_arg() will exit(1)
+				*/
+				arf = get_next_arg( &i, OPTARG ); // get the first optarg, which is required
+				
+				/* make the test name as a wide character string */
+				if( !get_wstr_from_mbstr( &name, G->prog->argv[ i ] ) )
+				{
+					MSG_FATAL( "get_wstr_from_mbstr() failed." );
+					printf( "name: %s\n", G->prog->argv[ i ] );
+					exit( 1 );
+				}
+				
+				arf = get_next_arg( &i, OPT | OPTARG ); // get the second optarg, which is optional
+				
+				/* at least one option argument (optarg) was found */
+				
+				/* if a second optarg was found it's the id. */
+				if( arf == OPTARG )
+				{
+					/* 'id' varies depending on the test function called. It could be a parameter 
+					used as a negative number, or a kernel address.
+					
+					_strtoi64() can't read in positive hex > I64_MAX (0x7FFFFFFFFFFFFFFF).
+					This is a problem because the user might specify a kernel address, and those 
+					addresses are always going to be greater than I64_MAX.
+					
+					_strtoui64() can read in positive hex > I64_MAX. Also it will convert negative 
+					as well, because it wraps around, converting a negative integer to unsigned in 
+					accordance with the standard, ie _UI64_MAX + 1 - somenumber.
+					
+					That will be a problem detecting overflow on a negative number:
+					_strtoi64("-9999999999999999999") -9223372036854775808. detected
+					_strtoui64("-9999999999999999999") 8446744073709551617. undetected
+					
+					Therefore the best way is to first check with _strtoi64(), and if that result 
+					is I64_MIN then the negative number is out of range. If the result is I64_MAX 
+					then try again with _strtoui64(). If the result is _UI64_MAX then the positive 
+					number is out of range. This makes the effective range:
+					from (I64_MIN+1) to (_UI64_MAX-1)
+					min "-9223372036854775807", "-0x7FFFFFFFFFFFFFFF"
+					max "18446744073709551614", "0xFFFFFFFFFFFFFFFE"
+					*/
+					id = _strtoi64( G->prog->argv[ i ], NULL, 0 );
+					if( id == I64_MIN )
+					{
+						MSG_FATAL( "_strtoi64() failed. id <= I64_MIN" );
+						printf( "id: %s\n", G->prog->argv[ i ] );
+						exit( 1 );
+					}
+					if( id == I64_MAX )
+					{
+						id = (__int64)_strtoui64( G->prog->argv[ i ], NULL, 0 );
+						if( (unsigned __int64)id == _UI64_MAX )
+						{
+							MSG_FATAL( "_strtoi64() failed. id >= _UI64_MAX" );
+							printf( "id: %s\n", G->prog->argv[ i ] );
+							exit( 1 );
+						}
+					}
+				}
+				
+				/* append to the linked list */
+				if( !add_list_item( G->config->testlist, id, name ) )
+				{
+					MSG_FATAL( "add_list_item() failed." );
+					printf( "test id: 0x%IX\n", id );
+					printf( "test name: %ls\n", name );
+					exit( 1 );
+				}
+				
+				/* if add_list_item() was successful then it made a duplicate of the 
+				wide string pointed to by name. in any case name should now be freed.
+				*/
+				free( name );
+				name = NULL;
 				
 				continue;
 			}
@@ -754,6 +851,9 @@ void init_global_config_store( void )
 	
 	if( ( G->config->desklist->type == LIST_INCLUDE_DESK ) )
 		GetSystemTimeAsFileTime( (FILETIME *)&G->config->desklist->init_time );
+	
+	if( ( G->config->testlist->type == LIST_INCLUDE_TEST ) )
+		GetSystemTimeAsFileTime( (FILETIME *)&G->config->testlist->init_time );
 	
 	
 	/* G->config has been initialized */
@@ -834,6 +934,7 @@ void free_config_store(
 		return;
 	
 	/* free the list stores */
+	free_list_store( &(*in)->testlist );
 	free_list_store( &(*in)->proglist );
 	free_list_store( &(*in)->hooklist );
 	free_list_store( &(*in)->desklist );

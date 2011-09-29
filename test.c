@@ -36,7 +36,7 @@ print (and optionally poll) user handle counts of free, invalid, valid, menu, an
 
 #include "reactos.h"
 
-#include "jay.h"
+#include "test.h"
 
 /* the global stores */
 #include "global.h"
@@ -49,6 +49,7 @@ print (and optionally poll) user handle counts of free, invalid, valid, menu, an
 
 if 'seconds' > 0 poll at interval 
 if 'seconds' == 0 do not poll
+if 'seconds' < 0 fatal
 */
 void print_handle_count( 
 	int seconds   // in
@@ -103,5 +104,20 @@ run user-specified tests
 */
 void testmode( void )
 {
+	FAIL_IF( !G );   // The global store must exist.
+	FAIL_IF( !G->prog->init_time );   // The program store must be initialized.
+	FAIL_IF( !G->config->init_time );   // The configuration store must be initialized.
+	FAIL_IF( !G->desktops->init_time );   // The desktop store must be initialized.
 	
+	FAIL_IF( !G->config->testlist->init_time );   // The testlist must be initialized.
+	
+	/*
+	if( !G->config->testlist->head ) // no specific tests were specified. run all.
+		run_all_tests
+	*/
+	
+	
+	
+	
+	return;
 }

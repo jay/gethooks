@@ -85,30 +85,34 @@ void create_list_store(
 /* add_list_item()
 Append an item to a list store's linked list.
 
-this function appends an item to a list if the id/name is not already in the list.
+this function appends an item to a list if the id and/or name (depending on list type) is not 
+already in the list. any comparison of 'name' is case insensitive.
 
 'store' is the generic list store to append the item to.
 whether 'id' and/or 'name' is used depends on the type of list. refer to list_item struct in list.h
 
 hook:
-if 'name' then its corresponding id will be used instead of the passed in 'id'.
-if not 'name' then the corresponding name (if any) of the passed in 'id' will be used.
+'name' is optional. 'id' is required.
+if 'name' then its corresponding id will be used for id instead of the passed in 'id'.
+if not 'name' then the corresponding name (if any) of the passed in 'id' will be used for name.
 
 prog:
-'name' and 'id' are mutually exclusive. if 'name' use name, else use 'id'.
+'name' and 'id' are mutually exclusive. if 'name' use name and ignore 'id', else use 'id'.
 
 desktop:
 'name' required. 'id' is ignored.
 
+test:
+'name' required. 'id' required.
+
 the item's name will point to a duplicate of the passed in 'name'.
 
-returns on success a pointer to the list item that was added to the list.
-if there is already an existing item with the same id/name a pointer to it is returned.
-returns NULL on fail
+returns on success a pointer to the list item that was added to the list. if there is already an 
+existing item with the same id and/or name (depending on list type) a pointer to it is returned.
 */
 struct list_item *add_list_item( 
 	struct list *const store,   // in
-	int id,   // in, optional
+	__int64 id,   // in, optional
 	const WCHAR *name   // in, optional
 )
 {
@@ -128,17 +132,21 @@ struct list_item *add_list_item(
 	{
 		if( name )
 		{
+			int hookid = 0;
+			
 			/* it is considered fatal if there's no id associated with a name. 
 			it's possible this program's list of hooks is outdated, but in that case the user 
 			would have to specify by id instead of name
 			*/
-			if( !get_hook_id_from_name( &id, name ) )
+			if( !get_HOOK_id_from_name( &hookid, name ) )
 			{
-				MSG_ERROR( "get_hook_id_from_name() failed." );
+				MSG_ERROR( "get_HOOK_id_from_name() failed." );
 				printf( "Unknown id for hook name: %ls\n", name );
 				item = NULL;
 				goto existing_item;
 			}
+			
+			id = hookid;
 		}
 		else
 		{
@@ -146,10 +154,10 @@ struct list_item *add_list_item(
 			maybe the user specified some undocumented hook ids in use without a name?
 			hookname points to allocated memory and must be freed if a new item will not be created.
 			*/
-			if( !get_hook_name_from_id( &hookname, id ) )
+			if( !get_HOOK_name_from_id( &hookname, (int)id ) )
 			{
-				MSG_WARNING( "get_hook_name_from_id() failed." );
-				printf( "Unknown name for hook id: %d\n", id );
+				MSG_WARNING( "get_HOOK_name_from_id() failed." );
+				printf( "Unknown name for hook id: %I64d\n", id );
 			}
 		}
 		
@@ -162,7 +170,7 @@ struct list_item *add_list_item(
 			if( id == item->id ) /* hook id in list */
 			{
 				MSG_WARNING( "Hook id already in list." );
-				printf( "Hook id: %d\n", item->id );
+				print_list_item( item );
 				goto existing_item;
 			}
 		}
@@ -184,7 +192,7 @@ struct list_item *add_list_item(
 				if( item->name && !_wcsicmp( item->name, name ) ) /* name in list */
 				{
 					MSG_WARNING( "Program name already in list." );
-					printf( "Program name: %ls\n", item->name );
+					print_list_item( item );
 					goto existing_item;
 				}
 			}
@@ -198,7 +206,7 @@ struct list_item *add_list_item(
 				if( !item->name && id == item->id ) /* pid in list */
 				{
 					MSG_WARNING( "Program id already in list." );
-					printf( "Program id: %d\n", item->id );
+					print_list_item( item );
 					goto existing_item;
 				}
 			}
@@ -217,7 +225,27 @@ struct list_item *add_list_item(
 			if( item->name && !_wcsicmp( item->name, name ) ) /* name in list */
 			{
 				MSG_WARNING( "Desktop name already in list." );
-				printf( "Desktop name: %ls\n", item->name );
+				print_list_item( item );
+				goto existing_item;
+			}
+		}
+		
+		goto new_item;
+	}
+	else if( store->type == LIST_INCLUDE_TEST )
+	{
+		FAIL_IF( !name );
+		// id can be 0
+		
+		/* for a test list both name and id are used. check if it's already in the list */
+		for( item = store->head; item; item = item->next )
+		{
+			if( ( item->id && id )
+				&& ( item->name && !_wcsicmp( item->name, name ) )
+			) // name/id combo already in list
+			{
+				MSG_WARNING( "Test name/id combo already in list." );
+				print_list_item( item );
 				goto existing_item;
 			}
 		}
@@ -287,17 +315,8 @@ void print_list_item(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	/* currently there are three different list types optionally used by gethooks, 
-	a desktop include list,
-	a program include/exclude list,
-	a hook include/exclude list.
-	
-	if a list item does not have a name then its id is printed instead
-	*/
-	if( item->name )
-		printf( "item->name: %ls\n", item->name );
-	else
-		printf( "item->id: %d\n", item->id );
+	printf( "item->name: %ls\n", item->name );
+	printf( "item->id: %I64d (0x%I64X)", item->id, item->id );
 	
 	PRINT_SEP_END( objname );
 	
@@ -315,8 +334,8 @@ void print_list_store(
 	const struct list *const store   // in
 )
 {
-	struct list_item *item = NULL;
 	const char *const objname = "Generic List Store";
+	struct list_item *item = NULL;
 	
 	
 	if( !store )
@@ -330,6 +349,9 @@ void print_list_store(
 	{
 		case LIST_INVALID_TYPE:
 			printf( "LIST_INVALID_TYPE (the user-specified list type hasn't been set.)" );
+			break;
+		case LIST_INCLUDE_TEST:
+			printf( "LIST_INCLUDE_TEST (user-specified list of tests to include.)" );
 			break;
 		case LIST_INCLUDE_DESK:
 			printf( "LIST_INCLUDE_DESK (user-specified list of desktops to include.)" );
@@ -356,7 +378,7 @@ void print_list_store(
 	
 	for( item = store->head; item; item = item->next )
 	{
-		PRINT_PTR( item );
+		//PRINT_PTR( item );
 		print_list_item( item );
 	}
 	

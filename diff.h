@@ -83,12 +83,12 @@ int match_hook_process_name(
 
 int match_gui_process_pid(
 	const struct gui *const gui,   // in
-	const int pid   // in
+	const __int64 pid   // in
 );
 
 int match_hook_process_pid(
 	const struct hook *const hook,   // in
-	const int pid   // in
+	const __int64 pid   // in
 );
 
 int is_hook_wanted( 

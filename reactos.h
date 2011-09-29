@@ -228,12 +228,12 @@ void print_HOOK(
 	const HOOK *const object   // in
 );
 
-int get_hook_name_from_id( 
+int get_HOOK_name_from_id( 
 	const WCHAR **const name,   // out deref
 	const int id   // in
 );
 
-int get_hook_id_from_name( 
+int get_HOOK_id_from_name( 
 	int *const id,   // out
 	const WCHAR *const name   // in
 );

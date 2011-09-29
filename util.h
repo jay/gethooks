@@ -22,6 +22,7 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 #define _UTIL_H
 
 #include <windows.h>
+#include <limits.h>
 
 
 
@@ -36,6 +37,15 @@ http://code.google.com/p/dream-of-idle/source/browse/trunk/Dream/CELayoutEditor-
 */
 #if !defined( _MSC_VER ) // || ( _MSC_VER < 1500 )
 #define __pragma(x)
+#endif
+
+
+/* I64_MAX and I64_MIN are supposed to be defined in limits.h but often they aren't */
+#ifndef I64_MAX
+#define I64_MAX _I64_MAX
+#endif
+#ifndef I64_MIN
+#define I64_MIN _I64_MIN
 #endif
 
 
@@ -155,6 +165,11 @@ void *must_calloc(
 
 WCHAR *must_wcsdup( 
 	const WCHAR *const strSource   // in
+);
+
+int str_to_int64( 
+	__int64 *const num,   // out
+	const char *const str   // in
 );
 
 int str_to_int( 

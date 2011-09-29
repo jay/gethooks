@@ -256,6 +256,8 @@ int main( int argc, char **argv )
 	if( G->config->verbose >= 5 )
 		print_global_store();
 	
-	/* If not in testmode run gethooks() to take snapshots and print differences */
-	return ( ( G->config->testmode ) ? !testmode() : !gethooks() );
+	/* If the testlist is initialized the user requested testmode to run tests.
+	Else run gethooks() to take snapshots and print differences.
+	*/
+	return ( ( G->config->testlist->init_time ) ? !testmode() : !gethooks() );
 }

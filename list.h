@@ -32,21 +32,24 @@ extern "C" {
 
 /** This is the info needed for each item in a generic list.
 What members are valid depends on the type of list.
-GetHooks config currently uses three lists:
+GetHooks config currently uses four lists:
+
+test include list:
+name is required. id is required.
 
 desktop include list:
-a desktop's name is required. id is unused.
+name is required. id is unused.
 
 hook include/exclude list:
-a hook's id is always required but its name is optional.
+name is optional. id is required.
 
 program include/exclude list:
-a program's name and id are currently handled elsewhere as mutually exclusive.
+name and id are currently handled elsewhere as mutually exclusive.
 if( name ) then the name is used, but if( !name ) then the id is used
 */
 struct list_item
 {
-	int id;
+	__int64 id;
 	WCHAR *name;   // _wcsdup(), free()
 	
 	/* The next item in the list */
@@ -61,6 +64,7 @@ The different types of lists that can be held by the store.
 enum list_type
 {
 	LIST_INVALID_TYPE,   // 0 is an invalid type
+	LIST_INCLUDE_TEST,   // list of tests to include
 	LIST_INCLUDE_DESK,   // list of desktops to include
 	LIST_INCLUDE_HOOK,   // list of hooks to include
 	LIST_INCLUDE_PROG,   // list of programs to include
@@ -101,7 +105,7 @@ void create_list_store(
 
 struct list_item *add_list_item( 
 	struct list *const store,   // in
-	int id,   // in, optional
+	__int64 id,   // in, optional
 	const WCHAR *name   // in, optional
 );
 

@@ -57,6 +57,9 @@ struct config
 	/* a linked list of program names/ids to include/exclude */
 	struct list *proglist;   // create_list_store(), free_list_store()
 	
+	/* a linked list of test parameters for test mode */
+	struct list *testlist;
+	
 	/* the system utc time in FILETIME format immediately after this store has been initialized.
 	this is nonzero when this store has been initialized.
 	*/

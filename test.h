@@ -75,6 +75,8 @@ void poll_handle_count(
 	int seconds   // in
 );
 
+void testmode( void );
+
 
 #ifdef __cplusplus
 }

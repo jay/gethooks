@@ -71,15 +71,15 @@ Print a HOOK struct.
 -
 
 -
-get_hook_name_from_id()
+get_HOOK_name_from_id()
 
-Get the hook name from its id.
+Get the HOOK name from its id.
 -
 
 -
-get_hook_id_from_name()
+get_HOOK_id_from_name()
 
-Get the hook id from its name.
+Get the HOOK id from its name.
 -
 
 */
@@ -350,16 +350,16 @@ void print_HOOK(
 
 
 
-/* get_hook_name_from_id()
-Get the hook name from its id.
+/* get_HOOK_name_from_id()
+Get the HOOK name from its id.
 
-'id' is the hook id you want the name of.
+'id' is the HOOK id you want the name of.
 
 returns nonzero on success.
-if success then '*name' has received a pointer to the hook name. free() when done.
+if success then '*name' has received a pointer to the HOOK name. free() when done.
 if fail then '*name' has received NULL.
 */
-int get_hook_name_from_id( 
+int get_HOOK_name_from_id( 
 	const WCHAR **const name,   // out deref
 	const int id   // in
 )
@@ -379,16 +379,16 @@ int get_hook_name_from_id(
 
 
 
-/* get_hook_id_from_name()
-Get the hook id from its name.
+/* get_HOOK_id_from_name()
+Get the HOOK id from its name.
 
-'name' is the hook name you want the id of.
+'name' is the HOOK name you want the id of.
 
 returns nonzero on success.
-if success then '*id' has received the id.
+if success then '*id' has received the HOOK id.
 if fail then '*id' has received INT_MAX.
 */
-int get_hook_id_from_name( 
+int get_HOOK_id_from_name( 
 	int *const id,   // out
 	const WCHAR *const name   // in
 )
