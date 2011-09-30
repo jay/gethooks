@@ -47,9 +47,15 @@ Match a hook struct's associated GUI threads' process pids to the passed in pid.
 -
 
 -
+is_HOOK_id_wanted()
+
+Check the user-specified configuration to determine if a HOOK id should be processed.
+-
+
+-
 is_hook_wanted()
 
-Check the user-specified configuration to determine if the hook struct should be processed.
+Check the user-specified configuration to determine if a hook struct should be processed.
 -
 
 -
@@ -244,8 +250,44 @@ int match_hook_process_pid(
 
 
 
+/* is_HOOK_id_wanted()
+Check the user-specified configuration to determine if a HOOK id should be processed.
+
+The user can filter hook ids (eg WH_MOUSE).
+
+returns nonzero if the HOOK id should be processed
+*/
+int is_HOOK_id_wanted( 
+	const int id   // in
+)
+{
+	/* if there is a list of HOOK ids to include/exclude */
+	if( G->config->hooklist->init_time 
+		&& ( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
+			|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
+		)
+	)
+	{
+		unsigned yes = 0;
+		const struct list_item *item = NULL;
+		
+		
+		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
+			yes = ( item->id == id ); // match HOOK id
+		
+		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
+			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
+		)
+			return FALSE; // the HOOK id is not wanted
+	}
+	
+	return TRUE; // the HOOK id is wanted
+}
+
+
+
 /* is_hook_wanted()
-Check the user-specified configuration to determine if the hook struct should be processed.
+Check the user-specified configuration to determine if a hook struct should be processed.
 
 The user can filter hooks (eg WH_MOUSE) and programs (eg notepad.exe).
 
@@ -283,28 +325,7 @@ int is_hook_wanted(
 			return FALSE; // the hook is not wanted
 	}
 	
-	
-	/* if there is a list of HOOK ids to include/exclude */
-	if( G->config->hooklist->init_time 
-		&& ( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
-			|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
-		)
-	)
-	{
-		unsigned yes = 0;
-		const struct list_item *item = NULL;
-		
-		
-		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
-			yes = ( item->id == hook->object.iHook ); // match HOOK id
-		
-		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
-			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
-		)
-			return FALSE; // the hook is not wanted
-	}
-	
-	return TRUE; // the hook is wanted
+	return is_HOOK_id_wanted( hook->object.iHook );
 }
 
 

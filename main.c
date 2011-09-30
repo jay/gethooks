@@ -55,6 +55,8 @@ Create and initialize the global stores, print the license and version and then 
 
 #include "diff.h"
 
+#include "test.h"
+
 /* the global stores */
 #include "global.h"
 

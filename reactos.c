@@ -201,13 +201,13 @@ void print_HANDLEENTRY(
 	PRINT_PTR( entry->pHead );
 	PRINT_PTR( entry->pOwner );
 	
-	printf( "entry->bType: " );
+	printf( "entry->bType: %u ( ", (unsigned)entry->bType );
 	print_HANDLEENTRY_type( entry->bType );
-	printf( "\n" );
+	printf( ")\n" );
 	
-	printf( "entry->bFlags: " );
+	printf( "entry->bFlags: 0x%02X ( ", (unsigned)entry->bFlags );
 	print_HANDLEENTRY_flags( entry->bFlags );
-	printf( "\n" );
+	printf( ")\n" );
 	
 	printf( "entry->wUniq: %u\n", (unsigned)entry->wUniq );
 	
@@ -252,7 +252,7 @@ void print_HOOK_id(
 	const INT iHook   // in
 )
 {
-	const unsigned index = (unsigned)( iHook + 1 ); /* the index in the array is the same as the id + 1 */
+	const unsigned index = (unsigned)( iHook + 1 ); /* the array index is the same as id + 1 */
 
 	if( index < w_hooknames_count )
 		printf( "%ls ", w_hooknames[ index ] );
@@ -332,11 +332,20 @@ void print_HOOK(
 	PRINT_PTR( object->rpdesk1 );
 	PRINT_PTR( object->pSelf );
 	PRINT_PTR( object->phkNext );
-	printf( "object->iHook: %d\n", object->iHook );
+	
+	printf( "object->iHook: %d ( ", object->iHook );
+	print_HOOK_id( object->iHook );
+	printf( ")\n" );
+	
 	printf( "object->offPfn: 0x%08lX\n", object->offPfn );
 	
-	printf( "object->flags: " );
-	print_HOOK_flags( object->flags );
+	printf( "object->flags: 0x%08lX", object->flags );
+	if( object->flags )
+	{
+		printf( " ( " );
+		print_HOOK_flags( object->flags );
+		printf( ")" );
+	}
 	printf( "\n" );
 	
 	printf( "object->ihmod: %d\n", object->ihmod );
@@ -364,7 +373,7 @@ int get_HOOK_name_from_id(
 	const int id   // in
 )
 {
-	const unsigned index = (unsigned)( id + 1 ); /* the index in the array is the same as the id + 1 */
+	const unsigned index = (unsigned)( id + 1 ); /* the array index is the same as id + 1 */
 	
 	FAIL_IF( !name );
 	

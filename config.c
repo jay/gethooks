@@ -82,6 +82,8 @@ Free a configuration store and all its descendants.
 
 #include "util.h"
 
+#include "test.h"
+
 #include "config.h"
 
 /* the global stores */
@@ -707,9 +709,14 @@ void init_global_config_store( void )
 				G->config->testlist->type = LIST_INCLUDE_TEST;
 				
 				/* the 't' option requires one associated argument (optarg), and a second which is 
-				optional. if the first optarg is not found get_next_arg() will exit(1)
+				optional.
 				*/
-				arf = get_next_arg( &i, OPTARG ); // get the first optarg, which is required
+				arf = get_next_arg( &i, OPT | OPTARG );
+				if( arf != OPTARG )
+				{
+					print_testmode_usage();
+					exit( 1 );
+				}
 				
 				/* make the test name as a wide character string */
 				if( !get_wstr_from_mbstr( &name, G->prog->argv[ i ] ) )
@@ -731,11 +738,11 @@ void init_global_config_store( void )
 					
 					_strtoi64() can't read in positive hex > I64_MAX (0x7FFFFFFFFFFFFFFF).
 					This is a problem because the user might specify a kernel address, and those 
-					addresses are always going to be greater than I64_MAX.
+					addresses can be greater than I64_MAX.
 					
 					_strtoui64() can read in positive hex > I64_MAX. Also it will convert negative 
 					as well, because it wraps around, converting a negative integer to unsigned in 
-					accordance with the standard, ie _UI64_MAX + 1 - somenumber.
+					accordance with the standard, ie negnum + _UI64_MAX + 1.
 					
 					That will be a problem detecting overflow on a negative number:
 					_strtoi64("-9999999999999999999") -9223372036854775808. detected
@@ -772,7 +779,7 @@ void init_global_config_store( void )
 				if( !add_list_item( G->config->testlist, id, name ) )
 				{
 					MSG_FATAL( "add_list_item() failed." );
-					printf( "test id: 0x%IX\n", id );
+					printf( "test id: 0x%I64X\n", id );
 					printf( "test name: %ls\n", name );
 					exit( 1 );
 				}

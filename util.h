@@ -132,26 +132,23 @@ __pragma(warning(pop))
 
 
 #define PRINT_SEP_BEGIN(msg)   \
-	printf( "\n--------------------------- [begin] %s\n", ( msg ) );
+	printf( "\n--------------------------- [begin] %s\n", ( msg ) )
 
 #define PRINT_HASHSEP_BEGIN(msg)   \
-	printf( "\n########################### [begin] %s\n", ( msg ) );
+	printf( "\n########################### [begin] %s\n", ( msg ) )
 
 #define PRINT_DBLSEP_BEGIN(msg)   \
-	printf( "\n=========================== [begin] %s\n", ( msg ) );
+	printf( "\n=========================== [begin] %s\n", ( msg ) )
 
 
 #define PRINT_SEP_END(msg)   \
-	printf( "--------------------------- [end] %s\n", ( msg ) ); \
-	fflush( stdout );
+	( printf( "--------------------------- [end] %s\n", ( msg ) ), fflush( stdout ) )
 
 #define PRINT_HASHSEP_END(msg)   \
-	printf( "########################### [end] %s\n", ( msg ) ); \
-	fflush( stdout );
+	( printf( "########################### [end] %s\n", ( msg ) ), fflush( stdout ) )
 
 #define PRINT_DBLSEP_END(msg)   \
-	printf( "=========================== [end] %s\n", ( msg ) ); \
-	fflush( stdout );
+	( printf( "=========================== [end] %s\n", ( msg ) ), fflush( stdout ) )
 
 
 

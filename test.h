@@ -23,12 +23,6 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows.h>
 
-/* snapshot store (system process info, gui threads, desktop hooks) */
-#include "snapshot.h"
-
-/* desktop hook store (linked list of desktop and hook information) */
-#include "desktop_hook.h"
-
 
 
 #ifdef __cplusplus
@@ -36,46 +30,29 @@ extern "C" {
 #endif
 
 
-/* the diff types */
-enum difftype
-{ 
-	/* every HOOK in the initial snapshot is "found" */
-	HOOK_FOUND = 1, 
-	
-	/* a HOOK that is present in the current snapshot but not in the previous */
-	HOOK_ADDED, 
-	
-	/* a HOOK that is present in both the previous and current snapshots but has changed */
-	HOOK_MODIFIED, 
-	
-	/* a HOOK that is present in the previous snapshot but not in the current */
-	HOOK_REMOVED
-};
-
-
-/* thread info as it pertains to a HOOK */
-enum threadtype
-{
-	/* the thread that owns the HOOK */
-	THREAD_OWNER = 1, 
-	
-	/* the thread that the HOOK originated from */
-	THREAD_ORIGIN, 
-	
-	/* the thread that is hooked */
-	THREAD_TARGET 
-};
-
-
-
 /** 
 these functions are documented in the comment block above their definitions in test.c
 */
-void poll_handle_count(
-	int seconds   // in
+__int64 print_handle_count( 
+	__int64 seconds   // in
 );
 
-void testmode( void );
+__int64 print_kernel_HOOK(
+	__int64 addr   // in
+);
+
+__int64 print_kernel_HOOK_chain(
+	__int64 addr   // in
+);
+
+__int64 print_desktop_HOOK_chains( 
+	__int64 unused   // unused
+);
+
+
+void print_testmode_usage( void );
+
+int testmode( void );
 
 
 #ifdef __cplusplus

@@ -91,6 +91,10 @@ int match_hook_process_pid(
 	const __int64 pid   // in
 );
 
+int is_HOOK_id_wanted( 
+	const int id   // in
+);
+
 int is_hook_wanted( 
 	const struct hook *const hook   // in
 );
