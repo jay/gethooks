@@ -169,6 +169,7 @@ static struct desktop_hook_item *add_desktop_hook_item(
 	/* the allocated/maximum number of elements in the array pointed to by hook.
 	
 	65535 is the maximum number of user objects
+	http://msdn.microsoft.com/en-us/library/ms725486%28VS.85%29.aspx
 	http://blogs.technet.com/b/markrussinovich/archive/2010/02/24/3315174.aspx
 	*/
 	item->hook_max = 65535;
@@ -317,8 +318,8 @@ int init_desktop_hook_store(
 		/* Check to see if the HOOK is located on a desktop we're attached to */
 		for( item = store->head; item; item = item->next )
 		{
-			if( ( (void *)entry.pHead >= item->desktop->pvDesktopBase )
-				&& ( (void *)entry.pHead < item->desktop->pvDesktopLimit )
+			if( ( (void *)entry.pHead >= item->desktop->pDeskInfo->pvDesktopBase )
+				&& ( (void *)entry.pHead < item->desktop->pDeskInfo->pvDesktopLimit )
 			) /* The HOOK is on an accessible desktop */
 				break;
 		}

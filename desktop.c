@@ -262,9 +262,9 @@ static int attach(
 	/* Get the pointer to the DESKTOPINFO struct.
 	(char *)&TEB.Win32ClientInfo + offsetof(struct CLIENTINFO, pDeskInfo ).
 	*/
-	d->pvDeskInfo = *(void **)( (char *)d->pvWin32ClientInfo + offsetof_pDeskInfo );
+	d->pDeskInfo = *(void **)( (char *)d->pvWin32ClientInfo + offsetof_pDeskInfo );
 	
-	if( !d->pvDeskInfo )
+	if( !d->pDeskInfo )
 	{
 		if( G->config->verbose >= 1 )
 		{
@@ -273,13 +273,6 @@ static int attach(
 		
 		goto fail;
 	}
-	
-	/* The start address (kernel) of the desktop's heap, aka DESKTOPINFO.pvDesktopBase */
-	d->pvDesktopBase = *(void **)( (char *)d->pvDeskInfo + 0 );
-	
-	/* The end address (kernel) of the desktop's heap, aka DESKTOPINFO.pvDesktopLimit */
-	d->pvDesktopLimit = *(void **)( (char *)d->pvDeskInfo + sizeof( void * ) );
-	
 	
 	/* ulClientDelta is the next member after pDeskInfo in CLIENTINFO */
 	offsetof_ulClientDelta = offsetof_pDeskInfo + sizeof( void * );
@@ -294,19 +287,19 @@ static int attach(
 	d->pvClientDelta = *(void **)( (char *)d->pvWin32ClientInfo + offsetof_ulClientDelta );
 	
 	
-	if( !d->pvDesktopBase 
-		|| !d->pvDesktopLimit 
-		|| !d->pvClientDelta 
-		|| ( d->pvDesktopBase >= d->pvDesktopLimit )
-		|| ( d->pvClientDelta > d->pvDesktopBase ) 
+	if( !d->pvClientDelta
+		|| !d->pDeskInfo->pvDesktopBase 
+		|| !d->pDeskInfo->pvDesktopLimit 
+		|| ( d->pDeskInfo->pvDesktopBase >= d->pDeskInfo->pvDesktopLimit )
+		|| ( d->pvClientDelta > d->pDeskInfo->pvDesktopBase ) 
 	)
 	{
 		if( G->config->verbose >= 1 )
 		{
 			MSG_ERROR( "Desktop heap info is invalid." );
-			PRINT_PTR( d->pvDesktopBase );
-			PRINT_PTR( d->pvDesktopLimit );
 			PRINT_PTR( d->pvClientDelta );
+			PRINT_PTR( d->pDeskInfo->pvDesktopBase );
+			PRINT_PTR( d->pDeskInfo->pvDesktopLimit );
 		}
 		
 		goto fail;
@@ -849,10 +842,10 @@ void print_desktop_item(
 	printf( "item->dwThreadId: %lu\n", item->dwThreadId );
 	PRINT_PTR( item->pvTeb );
 	PRINT_PTR( item->pvWin32ClientInfo );
-	PRINT_PTR( item->pvDeskInfo );
-	PRINT_PTR( item->pvDesktopBase );
-	PRINT_PTR( item->pvDesktopLimit );
 	PRINT_PTR( item->pvClientDelta );
+	PRINT_PTR( item->pDeskInfo );
+	PRINT_PTR( item->pDeskInfo->pvDesktopBase );
+	PRINT_PTR( item->pDeskInfo->pvDesktopLimit );
 	
 	PRINT_SEP_END( objname );
 	

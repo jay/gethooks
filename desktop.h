@@ -23,6 +23,8 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows.h>
 
+#include "reactos.h"
+
 
 
 #ifdef __cplusplus
@@ -63,26 +65,17 @@ struct desktop_item
 	*/
 	const void *pvWin32ClientInfo;
 	
-	/* CLIENTINFO.pDeskInfo   (PDESKTOPINFO pDeskInfo)
-	A pointer to the thread's DESKTOPINFO.
-	*/
-	const void *pvDeskInfo;
-	
-	/* DESKTOPINFO.pvDesktopBase   (PVOID pvDesktopBase)
-	The start address (kernel) of the desktop's heap 
-	*/
-	const void *pvDesktopBase;
-	
-	/* DESKTOPINFO.pvDesktopLimit   (PVOID pvDesktopLimit)
-	The end address (kernel) of the desktop's heap.
-	*/
-	const void *pvDesktopLimit;
-	
 	/* CLIENTINFO.ulClientDelta   (ULONG ulClientDelta)
 	The difference between the desktop's heap kernel addresses and 
 	where the heap is mapped for this program to access it. 
 	*/
 	const void *pvClientDelta;
+	
+	/* CLIENTINFO.pDeskInfo   (PDESKTOPINFO pDeskInfo)
+	A pointer to the thread's DESKTOPINFO.
+	*/
+	//const void *pDeskInfo;
+	const DESKTOPINFO *pDeskInfo;
 	
 	/* The next item in the list */
 	struct desktop_item *next;
