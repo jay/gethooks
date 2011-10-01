@@ -319,6 +319,7 @@ static void print_prog_store(
 	printf( "store->dwOSBuild: %lu\n", store->dwOSBuild );
 	printf( "store->pwszWinstaName: %ls\n", store->pwszWinstaName );
 	print_SharedInfo( store->pSharedInfo );
+	printf( "\n" );
 	printf( "*store->pcHandleEntries: %lu\n", *store->pcHandleEntries );
 	
 	PRINT_DBLSEP_END( objname );

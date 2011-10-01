@@ -316,7 +316,11 @@ void print_list_item(
 	PRINT_SEP_BEGIN( objname );
 	
 	printf( "item->name: %ls\n", item->name );
-	printf( "item->id: %I64d (0x%I64X)", item->id, item->id );
+	//printf( "item->id: %I64d (0x%I64X)\n", item->id, item->id );
+	printf( "item->id (signed): %I64d\n", item->id );
+	printf( "item->id (unsigned): %I64u\n", item->id );
+	printf( "item->id (hex): 0x%I64X\n", item->id );
+	
 	
 	PRINT_SEP_END( objname );
 	

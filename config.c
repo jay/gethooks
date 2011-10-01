@@ -907,6 +907,9 @@ static void print_config_store(
 	printf( "\nPrinting list store of user specified desktops:\n" );
 	print_list_store( store->desklist );
 	
+	printf( "\nPrinting list store of user specified tests:\n" );
+	print_list_store( store->testlist );
+	
 	PRINT_DBLSEP_END( objname );
 	
 	return;

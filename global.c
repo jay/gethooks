@@ -98,8 +98,11 @@ void print_global_store( void )
 	if( !G )
 		return;
 	
+	printf( "\n" );
 	print_global_prog_store();
+	printf( "\n" );
 	print_global_config_store();
+	printf( "\n" );
 	print_global_desktop_store();
 	printf( "\n" );
 	

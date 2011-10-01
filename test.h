@@ -41,11 +41,12 @@ __int64 print_kernel_HOOK(
 	__int64 addr   // in
 );
 
+
 __int64 print_kernel_HOOK_chain(
 	__int64 addr   // in
 );
 
-__int64 print_desktop_HOOK_chains( 
+__int64 print_kernel_HOOK_desktop_chains( 
 	__int64 unused   // unused
 );
 
