@@ -40,15 +40,6 @@ http://code.google.com/p/dream-of-idle/source/browse/trunk/Dream/CELayoutEditor-
 #endif
 
 
-/* I64_MAX and I64_MIN are supposed to be defined in limits.h but often they aren't */
-#ifndef I64_MAX
-#define I64_MAX _I64_MAX
-#endif
-#ifndef I64_MIN
-#define I64_MIN _I64_MIN
-#endif
-
-
 /* this is a basic function-like macro to print an error message and its location in code */
 #define MSG_LOCATION(type,msg)   \
 	do \
@@ -162,16 +153,6 @@ void *must_calloc(
 
 WCHAR *must_wcsdup( 
 	const WCHAR *const strSource   // in
-);
-
-int str_to_int64( 
-	__int64 *const num,   // out
-	const char *const str   // in
-);
-
-int str_to_int( 
-	int *const num,   // out
-	const char *const str   // in
 );
 
 int get_wstr_from_mbstr( 
