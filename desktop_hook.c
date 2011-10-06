@@ -38,6 +38,30 @@ Create a desktop hook item and append it to the desktop hook store's linked list
 -
 
 -
+match_hook_process_name()
+
+Match a hook struct's associated GUI threads' process names to the passed in name.
+-
+
+-
+match_hook_process_pid()
+
+Match a hook struct's associated GUI threads' process pids to the passed in pid.
+-
+
+-
+is_HOOK_id_wanted()
+
+Check the user-specified configuration to determine if a HOOK id should be processed.
+-
+
+-
+is_hook_wanted()
+
+Check the user-specified configuration to determine if a hook struct should be processed.
+-
+
+-
 compare_hook()
 
 Compare two hook structs according their HANDLEENTRY info.
@@ -47,6 +71,12 @@ Compare two hook structs according their HANDLEENTRY info.
 init_desktop_hook_store()
 
 Initialize the desktop hook store by recording the hooks for each desktop.
+-
+
+-
+print_hook_anomalies()
+
+Print any anomalies found in a hook struct.
 -
 
 -
@@ -192,6 +222,143 @@ static struct desktop_hook_item *add_desktop_hook_item(
 	}
 	
 	return item;
+}
+
+
+
+/* match_hook_process_name()
+Match a hook struct's associated GUI threads' process names to the passed in name.
+
+returns nonzero on success ('name' matched one of the hook struct's GUI thread process names)
+*/
+int match_hook_process_name(
+	const struct hook *const hook,   // in
+	const WCHAR *const name   // in
+)
+{
+	FAIL_IF( !hook );
+	FAIL_IF( !name );
+	
+	
+	if( ( hook->owner && match_gui_process_name( hook->owner, name ) )
+		|| ( hook->origin && match_gui_process_name( hook->origin, name ) )
+		|| ( hook->target && match_gui_process_name( hook->target, name ) )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* match_hook_process_pid()
+Match a hook struct's associated GUI threads' process pids to the passed in pid.
+
+returns nonzero on success ('pid' matched one of the hook struct's GUI thread process pids)
+*/
+int match_hook_process_pid(
+	const struct hook *const hook,   // in
+	const unsigned __int64 pid   // in
+)
+{
+	FAIL_IF( !hook );
+	
+	
+	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
+		|| ( hook->origin && match_gui_process_pid( hook->origin, pid ) )
+		|| ( hook->target && match_gui_process_pid( hook->target, pid ) )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* is_HOOK_id_wanted()
+Check the user-specified configuration to determine if a HOOK id should be processed.
+
+The user can filter hook ids (eg WH_MOUSE).
+
+returns nonzero if the HOOK id should be processed
+*/
+int is_HOOK_id_wanted( 
+	const int id   // in
+)
+{
+	/* if there is a list of HOOK ids to include/exclude */
+	if( G->config->hooklist->init_time 
+		&& ( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
+			|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
+		)
+	)
+	{
+		unsigned yes = 0;
+		const struct list_item *item = NULL;
+		
+		
+		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
+			yes = ( item->id == id ); // match HOOK id
+		
+		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
+			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
+		)
+			return FALSE; // the HOOK id is not wanted
+	}
+	
+	return TRUE; // the HOOK id is wanted
+}
+
+
+
+/* is_hook_wanted()
+Check the user-specified configuration to determine if a hook struct should be processed.
+
+The user can filter hooks (eg WH_MOUSE) and programs (eg notepad.exe).
+
+init_desktop_hook_store() calls this function to set hook->ignore when initializing each hook.
+
+returns nonzero if the hook struct should be processed
+*/
+int is_hook_wanted( 
+	const struct hook *const hook   // in
+)
+{
+	FAIL_IF( !hook );
+	
+	
+	/* If ignore is set there is some reason that this hook is not wanted
+	eg maybe this function was already called and it was determined the hook is not wanted
+	*/
+	if( hook->ignore )
+		return FALSE;
+	
+	/* if there is a list of programs to include/exclude */
+	if( G->config->proglist->init_time 
+		&& ( ( G->config->proglist->type == LIST_INCLUDE_PROG )
+			|| ( G->config->proglist->type == LIST_EXCLUDE_PROG )
+		)
+	)
+	{
+		unsigned yes = 0;
+		const struct list_item *item = NULL;
+		
+		
+		for( item = G->config->proglist->head; ( item && !yes ); item = item->next )
+		{
+			if( item->name ) // match program name
+				yes = !!match_hook_process_name( hook, item->name );
+			else // match program id
+				yes = !!match_hook_process_pid( hook, (unsigned __int64)item->id );
+		}
+		
+		if( ( yes && ( G->config->proglist->type == LIST_EXCLUDE_PROG ) )
+			|| ( !yes && ( G->config->proglist->type == LIST_INCLUDE_PROG ) )
+		)
+			return FALSE; // the hook is not wanted
+	}
+	
+	return is_HOOK_id_wanted( hook->object.iHook );
 }
 
 
@@ -357,6 +524,8 @@ int init_desktop_hook_store(
 		hook->origin = find_Win32ThreadInfo( parent, hook->object.pti );
 		hook->target = find_Win32ThreadInfo( parent, hook->object.ptiHooked );
 		
+		hook->ignore = !is_hook_wanted( hook );
+		
 		item->hook_count++;
 		if( item->hook_count >= item->hook_max )
 		{
@@ -421,6 +590,55 @@ int init_desktop_hook_store(
 	/* the desktop hook store has been initialized */
 	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time );
 	return TRUE;
+}
+
+
+
+/* print_hook_anomalies()
+Print any anomalies found in a hook struct.
+
+if 'hook' is NULL this function returns without having printed anything.
+*/
+void print_hook_anomalies(
+	const struct hook *const hook   // in
+)
+{
+	if( !hook )
+		return;
+	
+	if( hook->entry.pHead && hook->object.pSelf && ( hook->entry.pHead != hook->object.pSelf ) )
+	{
+		printf( "ERROR: The HOOK's pointer to itself is incorrect.\n" );
+		PRINT_PTR( hook->entry.pHead );
+		PRINT_PTR( hook->object.pSelf );
+	}
+	
+	print_HOOK_anomalies( &hook->object );
+	
+	if( ( hook->object.flags & HF_GLOBAL ) && hook->target )
+	{
+		printf( "ERROR: The global HOOK " );
+		PRINT_BARE_PTR( hook->object.head.h );
+		printf( " @ " );
+		PRINT_BARE_PTR( hook->entry.pHead );
+		printf( " has a target address even though global HOOKs aren't supposed to have them.\n" );
+	}
+	
+	if( hook->entry.pHead ) // there is a HANDLEENTRY for this HOOK
+	{
+		if( ( ( (DWORD)hook->object.head.h & 0xFFFF ) != hook->entry_index )
+			|| ( ( (DWORD)hook->object.head.h >> 16 ) != hook->entry.wUniq )
+		)
+		{
+			printf( "ERROR: The handle check failed for HOOK handle " );
+			PRINT_BARE_PTR( hook->object.head.h );
+			printf( " @ " );
+			PRINT_BARE_PTR( hook->entry.pHead );
+			printf( ".\n" );
+		}
+	}
+	
+	return;
 }
 
 

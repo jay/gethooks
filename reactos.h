@@ -224,6 +224,10 @@ void print_HOOK_flags(
 	const DWORD flags   // in
 );
 
+void print_HOOK_anomalies(
+	const HOOK *const object   // in
+);
+
 void print_HOOK(
 	const HOOK *const object   // in
 );

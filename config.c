@@ -80,6 +80,8 @@ Free a configuration store and all its descendants.
 
 #include <stdio.h>
 
+#include "str_to_int.h"
+
 #include "util.h"
 
 #include "test.h"
@@ -702,7 +704,7 @@ void init_global_config_store( void )
 			case 't':
 			case 'T':
 			{
-				__int64 id = I64_MIN; // I64_MIN signals to the test suite that no id was specified
+				unsigned __int64 id = 0;
 				WCHAR *name = NULL;
 				
 				
@@ -730,53 +732,16 @@ void init_global_config_store( void )
 				
 				/* at least one option argument (optarg) was found */
 				
-				/* if a second optarg was found it's the id. */
+				/* if a second optarg was found it's the id. the value of id will be UI64_MAX if 
+				the conversion fails or there's no second optarg.
+				*/
 				if( arf == OPTARG )
-				{
-					/* 'id' varies depending on the test function called. It could be a parameter 
-					used as a negative number, or a kernel address.
-					
-					_strtoi64() can't read in positive hex > I64_MAX (0x7FFFFFFFFFFFFFFF).
-					This is a problem because the user might specify a kernel address, and those 
-					addresses can be greater than I64_MAX.
-					
-					_strtoui64() can read in positive hex > I64_MAX. Also it will convert negative 
-					as well, because it wraps around, converting a negative integer to unsigned in 
-					accordance with the standard, ie negnum + _UI64_MAX + 1.
-					
-					That will be a problem detecting overflow on a negative number:
-					_strtoi64("-9999999999999999999") -9223372036854775808. detected
-					_strtoui64("-9999999999999999999") 8446744073709551617. undetected
-					
-					Therefore the best way is to first check with _strtoi64(), and if that result 
-					is I64_MIN then the negative number is out of range. If the result is I64_MAX 
-					then try again with _strtoui64(). If the result is _UI64_MAX then the positive 
-					number is out of range. This makes the effective range:
-					from (I64_MIN+1) to (_UI64_MAX-1)
-					min "-9223372036854775807", "-0x7FFFFFFFFFFFFFFF"
-					max "18446744073709551614", "0xFFFFFFFFFFFFFFFE"
-					*/
-					id = _strtoi64( G->prog->argv[ i ], NULL, 0 );
-					if( id == I64_MIN )
-					{
-						MSG_FATAL( "_strtoi64() failed. id <= I64_MIN" );
-						printf( "id: %s\n", G->prog->argv[ i ] );
-						exit( 1 );
-					}
-					if( id == I64_MAX )
-					{
-						id = (__int64)_strtoui64( G->prog->argv[ i ], NULL, 0 );
-						if( (unsigned __int64)id == _UI64_MAX )
-						{
-							MSG_FATAL( "_strtoi64() failed. id >= _UI64_MAX" );
-							printf( "id: %s\n", G->prog->argv[ i ] );
-							exit( 1 );
-						}
-					}
-				}
+					str_to_uint64( &id, G->prog->argv[ i ] );
+				else
+					id = UI64_MAX;
 				
 				/* append to the linked list */
-				if( !add_list_item( G->config->testlist, id, name ) )
+				if( !add_list_item( G->config->testlist, (__int64)id, name ) )
 				{
 					MSG_FATAL( "add_list_item() failed." );
 					printf( "test id: 0x%I64X\n", id );

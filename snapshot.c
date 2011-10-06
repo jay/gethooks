@@ -31,6 +31,18 @@ Create a snapshot store and its descendants or die.
 -
 
 -
+match_gui_process_name()
+
+Compare a GUI thread's process name to the passed in name.
+-
+
+-
+match_gui_process_pid()
+
+Compare a GUI thread's process id to the passed in process id.
+-
+
+-
 callback_add_gui()
 
 If the passed in thread info is for a GUI thread add it to the passed in snapshot's gui array.
@@ -186,6 +198,52 @@ void create_snapshot_store(
 	
 	*out = snapshot;
 	return;
+}
+
+
+
+/* match_gui_process_name()
+Compare a GUI thread's process name to the passed in name.
+
+returns nonzero on success ('name' matches the GUI thread's process name)
+*/
+int match_gui_process_name(
+	const struct gui *const gui,   // in
+	const WCHAR *const name   // in
+)
+{
+	FAIL_IF( !gui );
+	FAIL_IF( !name );
+	
+	
+	if( gui->spi 
+		&& gui->spi->ImageName.Buffer 
+		&& !_wcsicmp( gui->spi->ImageName.Buffer, name )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* match_gui_process_pid()
+Compare a GUI thread's process id to the passed in process id.
+
+returns nonzero on success ('pid' matches the GUI thread's process id)
+*/
+int match_gui_process_pid(
+	const struct gui *const gui,   // in
+	const unsigned __int64 pid   // in
+)
+{
+	FAIL_IF( !gui );
+	
+	
+	if( gui->spi && ( pid == (unsigned __int64)gui->spi->UniqueProcessId ) )
+		return TRUE;
+	else
+		return FALSE;
 }
 
 

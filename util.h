@@ -103,7 +103,7 @@ __pragma(warning(pop))
 
 
 #define PRINT_BARE_PTR(addr)   \
-	printf( "0x%0*IX", (int)( sizeof( size_t ) * 2 ), (size_t)( addr ) );
+	( printf( "0x%0*IX", (int)( sizeof( size_t ) * 2 ), (size_t)( addr ) ) )
 
 #define PRINT_NAME_FOR_PTR(name,addr)   \
 	do \

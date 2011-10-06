@@ -65,6 +65,12 @@ Print user-readable names of a HOOK's flags. No newline.
 -
 
 -
+print_HOOK_anomalies()
+
+Print any anomalies found in a HOOK struct.
+-
+
+-
 print_HOOK()
 
 Print a HOOK struct.
@@ -205,9 +211,14 @@ void print_HANDLEENTRY(
 	print_HANDLEENTRY_type( entry->bType );
 	printf( ")\n" );
 	
-	printf( "entry->bFlags: 0x%02X ( ", (unsigned)entry->bFlags );
-	print_HANDLEENTRY_flags( entry->bFlags );
-	printf( ")\n" );
+	printf( "entry->bFlags: 0x%02X", (unsigned)entry->bFlags );
+	if( entry->bFlags )
+	{
+		printf( " ( " );
+		print_HANDLEENTRY_flags( entry->bFlags );
+		printf( ")" );
+	}
+	printf( "\n" );
 	
 	printf( "entry->wUniq: %u\n", (unsigned)entry->wUniq );
 	
@@ -302,6 +313,44 @@ void print_HOOK_flags(
 	
 	if( flags & ~(DWORD)HF_VALID )
 		printf( "<0x%08lX> ", (DWORD)( flags & ~(DWORD)HF_VALID ) );
+	
+	return;
+}
+
+
+
+/* print_HOOK_anomalies()
+Print any anomalies found in a HOOK struct.
+
+if 'object' is NULL this function returns without having printed anything.
+*/
+void print_HOOK_anomalies(
+	const HOOK *const object   // in
+)
+{
+	if( !object )
+		return;
+	
+	if( !( object->flags & HF_GLOBAL )
+		&& ( ( object->iHook == WH_JOURNALPLAYBACK )
+			|| ( object->iHook == WH_JOURNALRECORD )
+			|| ( object->iHook == WH_KEYBOARD_LL )
+			|| ( object->iHook == WH_MOUSE_LL )
+			|| ( object->iHook == WH_SYSMSGFILTER )
+		)
+	)
+	{
+		printf( "ERROR: The HOOK @ " );
+		PRINT_BARE_PTR( object->pSelf );
+		printf( " is supposed to be global-only but is missing the HF_GLOBAL flag!\n" );
+	}
+	
+	if( ( object->flags & HF_GLOBAL ) && object->ptiHooked )
+	{
+		printf( "ERROR: The global HOOK @ " );
+		PRINT_BARE_PTR( object->pSelf );
+		printf( " has a target address even though global HOOKs aren't supposed to have them.\n" );
+	}
 	
 	return;
 }

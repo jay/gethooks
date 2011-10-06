@@ -130,6 +130,7 @@ if polling is enabled this function will loop continuously and never return.
 */
 int gethooks()
 {
+	const char *const objname = "GetHooks";
 	struct snapshot *previous = NULL;
 	struct snapshot *current = NULL;
 	struct snapshot *temp = NULL;
@@ -141,9 +142,11 @@ int gethooks()
 	FAIL_IF( !G->desktops->init_time );   // The desktop store must be initialized.
 	
 	
+	if( G->config->verbose >= 5 )
+		PRINT_HASHSEP_BEGIN( objname );
+	
 	create_snapshot_store( &current );
 	create_snapshot_store( &previous );
-	
 	
 	ret = init_snapshot_store( current );
 	
@@ -194,12 +197,32 @@ int gethooks()
 		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
 	}
 	
+	
 cleanup:
 	free_snapshot_store( &previous );
 	free_snapshot_store( &current );
 	
+	if( G->config->verbose >= 5 )
+		PRINT_HASHSEP_END( objname );
+	
 	return TRUE;
 }
+
+
+
+#ifdef _MSC_VER
+#pragma optimize( "g", off ) /* disable global optimizations */
+#pragma auto_inline( off ) /* disable automatic inlining */
+#endif
+static void pause( void )
+{
+	system( "pause" );
+	return;
+}
+#ifdef _MSC_VER
+#pragma auto_inline( on ) /* revert automatic inlining setting */
+#pragma optimize( "g", on ) /* revert global optimizations setting */
+#endif
 
 
 
@@ -208,6 +231,27 @@ Create and initialize the global stores, print the license and version and then 
 */
 int main( int argc, char **argv )
 {
+	/* If the program is started in its own window pause before exit
+	(eg user clicks on gethooks.exe in explorer, or vs debugger initiated program)
+	*/
+	{
+		HANDLE hOutput = GetStdHandle( STD_OUTPUT_HANDLE );
+		CONSOLE_SCREEN_BUFFER_INFO csbi;
+		
+		
+		ZeroMemory( &csbi, sizeof( csbi ) );
+		
+		if( ( hOutput != INVALID_HANDLE_VALUE )
+			&& ( GetFileType( hOutput ) == FILE_TYPE_CHAR )
+			&& GetConsoleScreenBufferInfo( hOutput, &csbi )
+			&& !csbi.dwCursorPosition.X 
+			&& !csbi.dwCursorPosition.Y
+			&& ( csbi.dwSize.X > 0 )
+			&& ( csbi.dwSize.Y > 0 )
+		)
+			atexit( pause );
+	}
+	
 	_set_printf_count_output( 1 ); // enable support for %n.
 	
 	
@@ -253,10 +297,12 @@ int main( int argc, char **argv )
 	
 	/* G->desktops has been initialized */
 	
+	
 	/* The global store is initialized */
 	
 	if( G->config->verbose >= 5 )
 		print_global_store();
+	
 	
 	/* If the testlist is initialized the user requested testmode to run tests.
 	Else run gethooks() to take snapshots and print differences.

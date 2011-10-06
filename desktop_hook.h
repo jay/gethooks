@@ -50,6 +50,9 @@ For each HANDLEENTRY traversed if its bType == TYPE_HOOK then the handle entry i
 */
 struct hook 
 {
+	/* nonzero if this hook is filtered out by the user-specified configuration lists */
+	unsigned ignore;
+	
 	/* what was the HANDLEENTRY's index position in the list of user handles */
 	unsigned entry_index;
 	
@@ -133,6 +136,24 @@ void create_desktop_hook_store(
 	struct desktop_hook_list **const out   // out deref
 );
 
+int match_hook_process_name(
+	const struct hook *const hook,   // in
+	const WCHAR *const name   // in
+);
+
+int match_hook_process_pid(
+	const struct hook *const hook,   // in
+	const unsigned __int64 pid   // in
+);
+
+int is_HOOK_id_wanted( 
+	const int id   // in
+);
+
+int is_hook_wanted( 
+	const struct hook *const hook   // in
+);
+
 int compare_hook( 
 	const void *const p1,   // in
 	const void *const p2   // in
@@ -140,6 +161,10 @@ int compare_hook(
 
 int init_desktop_hook_store( 
 	const struct snapshot *const parent   // in
+);
+
+void print_hook_anomalies(
+	const struct hook *const hook   // in
 );
 
 void print_hook(

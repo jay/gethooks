@@ -33,21 +33,21 @@ extern "C" {
 /** 
 these functions are documented in the comment block above their definitions in test.c
 */
-__int64 print_handle_count( 
-	__int64 seconds   // in
+unsigned __int64 print_handle_count( 
+	unsigned __int64 seconds   // in
 );
 
-__int64 print_kernel_HOOK(
-	__int64 addr   // in
+unsigned __int64 print_kernel_HOOK(
+	unsigned __int64 addr   // in
 );
 
 
-__int64 print_kernel_HOOK_chain(
-	__int64 addr   // in
+unsigned __int64 print_kernel_HOOK_chain(
+	unsigned __int64 addr   // in
 );
 
-__int64 print_kernel_HOOK_desktop_chains( 
-	__int64 unused   // unused
+unsigned __int64 print_kernel_HOOK_desktop_chains( 
+	unsigned __int64 unused   // unused
 );
 
 

@@ -142,6 +142,7 @@ struct list_item *add_list_item(
 			{
 				MSG_ERROR( "get_HOOK_id_from_name() failed." );
 				printf( "Unknown id for hook name: %ls\n", name );
+				printf( "\n" );
 				item = NULL;
 				goto existing_item;
 			}
@@ -158,6 +159,7 @@ struct list_item *add_list_item(
 			{
 				MSG_WARNING( "get_HOOK_name_from_id() failed." );
 				printf( "Unknown name for hook id: %I64d\n", id );
+				printf( "\n" );
 			}
 		}
 		
@@ -171,6 +173,7 @@ struct list_item *add_list_item(
 			{
 				MSG_WARNING( "Hook id already in list." );
 				print_list_item( item );
+				printf( "\n" );
 				goto existing_item;
 			}
 		}
@@ -193,6 +196,7 @@ struct list_item *add_list_item(
 				{
 					MSG_WARNING( "Program name already in list." );
 					print_list_item( item );
+					printf( "\n" );
 					goto existing_item;
 				}
 			}
@@ -207,6 +211,7 @@ struct list_item *add_list_item(
 				{
 					MSG_WARNING( "Program id already in list." );
 					print_list_item( item );
+					printf( "\n" );
 					goto existing_item;
 				}
 			}
@@ -226,6 +231,7 @@ struct list_item *add_list_item(
 			{
 				MSG_WARNING( "Desktop name already in list." );
 				print_list_item( item );
+				printf( "\n" );
 				goto existing_item;
 			}
 		}
@@ -246,6 +252,7 @@ struct list_item *add_list_item(
 			{
 				MSG_WARNING( "Test name/id combo already in list." );
 				print_list_item( item );
+				printf( "\n" );
 				goto existing_item;
 			}
 		}

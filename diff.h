@@ -71,38 +71,18 @@ enum threadtype
 /** 
 these functions are documented in the comment block above their definitions in diff.c
 */
-int match_gui_process_name(
-	const struct gui *const gui,   // in
-	const WCHAR *const name   // in
-);
-
-int match_hook_process_name(
-	const struct hook *const hook,   // in
-	const WCHAR *const name   // in
-);
-
-int match_gui_process_pid(
-	const struct gui *const gui,   // in
-	const __int64 pid   // in
-);
-
-int match_hook_process_pid(
-	const struct hook *const hook,   // in
-	const __int64 pid   // in
-);
-
-int is_HOOK_id_wanted( 
-	const int id   // in
-);
-
-int is_hook_wanted( 
-	const struct hook *const hook   // in
-);
-
 void print_brief_thread_info(
 	const struct hook *const hook,   // in
 	const enum threadtype threadtype   // in
 );
+
+void print_hook_notice_begin(
+	const struct hook *const hook,   // in
+	const WCHAR *const deskname,   // in
+	const enum difftype difftype   // in
+);
+
+void print_hook_notice_end( void );
 
 int print_diff_hook( 
 	const struct hook *const a,   // in
@@ -110,16 +90,16 @@ int print_diff_hook(
 	const WCHAR *const deskname   // in
 );
 
-void print_initial_desktop_hook_item( 
-	const struct desktop_hook_item *const b   // in
-);
-
 void print_diff_desktop_hook_items( 
 	const struct desktop_hook_item *const a,   // in
 	const struct desktop_hook_item *const b   // in
 );
 
-void print_initial_desktop_hook_list( 
+unsigned print_initial_desktop_hook_item( 
+	const struct desktop_hook_item *const b   // in
+);
+
+unsigned print_initial_desktop_hook_list( 
 	const struct desktop_hook_list *const list2   // in
 );
 

@@ -23,42 +23,6 @@ This file contains functions for comparing two snapshots for differences in hook
 Each function is documented in the comment block above its definition.
 
 -
-match_gui_process_name()
-
-Compare a GUI thread's process name to the passed in name.
--
-
--
-match_hook_process_name()
-
-Match a hook struct's associated GUI threads' process names to the passed in name.
--
-
--
-match_gui_process_pid()
-
-Compare a GUI thread's process id to the passed in process id.
--
-
--
-match_hook_process_pid()
-
-Match a hook struct's associated GUI threads' process pids to the passed in pid.
--
-
--
-is_HOOK_id_wanted()
-
-Check the user-specified configuration to determine if a HOOK id should be processed.
--
-
--
-is_hook_wanted()
-
-Check the user-specified configuration to determine if a hook struct should be processed.
--
-
--
 print_unknown_address()
 
 Print a pointed to address as unknown. No newline.
@@ -95,15 +59,15 @@ Compare two hook structs, both for the same HOOK object, and print any significa
 -
 
 -
-print_initial_desktop_hook_item()
-
-Print the HOOKs that have been found on a single attached to desktop.
--
-
--
 print_diff_desktop_hook_items()
 
 Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
+-
+
+-
+print_initial_desktop_hook_item()
+
+Print the HOOKs that have been found on a single attached to desktop.
 -
 
 -
@@ -137,14 +101,6 @@ static void print_unknown_address(
 	const void *const address   // in, optional
 );
 
-static void print_hook_notice_begin(
-	const struct hook *const hook,   // in
-	const WCHAR *const deskname,   // in
-	const enum difftype difftype   // in
-);
-
-static void print_hook_notice_end( void );
-
 static int print_diff_gui(
 	const struct hook *const oldhook,   // in
 	const struct hook *const newhook,   // in
@@ -152,181 +108,6 @@ static int print_diff_gui(
 	const WCHAR *const deskname,   // in
 	unsigned *const modified_header   // in, out
 );
-
-
-
-/* match_gui_process_name()
-Compare a GUI thread's process name to the passed in name.
-
-returns nonzero on success ('name' matches the GUI thread's process name)
-*/
-int match_gui_process_name(
-	const struct gui *const gui,   // in
-	const WCHAR *const name   // in
-)
-{
-	FAIL_IF( !gui );
-	FAIL_IF( !name );
-	
-	
-	if( gui->spi 
-		&& gui->spi->ImageName.Buffer 
-		&& !_wcsicmp( gui->spi->ImageName.Buffer, name )
-	)
-		return TRUE;
-	else
-		return FALSE;
-}
-
-
-
-/* match_hook_process_name()
-Match a hook struct's associated GUI threads' process names to the passed in name.
-
-returns nonzero on success ('name' matched one of the hook struct's GUI thread process names)
-*/
-int match_hook_process_name(
-	const struct hook *const hook,   // in
-	const WCHAR *const name   // in
-)
-{
-	FAIL_IF( !hook );
-	FAIL_IF( !name );
-	
-	
-	if( ( hook->owner && match_gui_process_name( hook->owner, name ) )
-		|| ( hook->origin && match_gui_process_name( hook->origin, name ) )
-		|| ( hook->target && match_gui_process_name( hook->target, name ) )
-	)
-		return TRUE;
-	else
-		return FALSE;
-}
-
-
-
-/* match_gui_process_pid()
-Compare a GUI thread's process id to the passed in process id.
-
-returns nonzero on success ('pid' matches the GUI thread's process id)
-*/
-int match_gui_process_pid(
-	const struct gui *const gui,   // in
-	const __int64 pid   // in
-)
-{
-	FAIL_IF( !gui );
-	
-	
-	if( gui->spi && ( pid == (__int64)gui->spi->UniqueProcessId ) )
-		return TRUE;
-	else
-		return FALSE;
-}
-
-
-
-/* match_hook_process_pid()
-Match a hook struct's associated GUI threads' process pids to the passed in pid.
-
-returns nonzero on success ('pid' matched one of the hook struct's GUI thread process pids)
-*/
-int match_hook_process_pid(
-	const struct hook *const hook,   // in
-	const __int64 pid   // in
-)
-{
-	FAIL_IF( !hook );
-	
-	
-	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
-		|| ( hook->origin && match_gui_process_pid( hook->origin, pid ) )
-		|| ( hook->target && match_gui_process_pid( hook->target, pid ) )
-	)
-		return TRUE;
-	else
-		return FALSE;
-}
-
-
-
-/* is_HOOK_id_wanted()
-Check the user-specified configuration to determine if a HOOK id should be processed.
-
-The user can filter hook ids (eg WH_MOUSE).
-
-returns nonzero if the HOOK id should be processed
-*/
-int is_HOOK_id_wanted( 
-	const int id   // in
-)
-{
-	/* if there is a list of HOOK ids to include/exclude */
-	if( G->config->hooklist->init_time 
-		&& ( ( G->config->hooklist->type == LIST_INCLUDE_HOOK )
-			|| ( G->config->hooklist->type == LIST_EXCLUDE_HOOK )
-		)
-	)
-	{
-		unsigned yes = 0;
-		const struct list_item *item = NULL;
-		
-		
-		for( item = G->config->hooklist->head; ( item && !yes ); item = item->next )
-			yes = ( item->id == id ); // match HOOK id
-		
-		if( ( yes && ( G->config->hooklist->type == LIST_EXCLUDE_HOOK ) )
-			|| ( !yes && ( G->config->hooklist->type == LIST_INCLUDE_HOOK ) )
-		)
-			return FALSE; // the HOOK id is not wanted
-	}
-	
-	return TRUE; // the HOOK id is wanted
-}
-
-
-
-/* is_hook_wanted()
-Check the user-specified configuration to determine if a hook struct should be processed.
-
-The user can filter hooks (eg WH_MOUSE) and programs (eg notepad.exe).
-
-returns nonzero if the hook struct should be processed
-*/
-int is_hook_wanted( 
-	const struct hook *const hook   // in
-)
-{
-	FAIL_IF( !hook );
-	
-	
-	/* if there is a list of programs to include/exclude */
-	if( G->config->proglist->init_time 
-		&& ( ( G->config->proglist->type == LIST_INCLUDE_PROG )
-			|| ( G->config->proglist->type == LIST_EXCLUDE_PROG )
-		)
-	)
-	{
-		unsigned yes = 0;
-		const struct list_item *item = NULL;
-		
-		
-		for( item = G->config->proglist->head; ( item && !yes ); item = item->next )
-		{
-			if( item->name ) // match program name
-				yes = !!match_hook_process_name( hook, item->name );
-			else // match program id
-				yes = !!match_hook_process_pid( hook, item->id );
-		}
-		
-		if( ( yes && ( G->config->proglist->type == LIST_EXCLUDE_PROG ) )
-			|| ( !yes && ( G->config->proglist->type == LIST_INCLUDE_PROG ) )
-		)
-			return FALSE; // the hook is not wanted
-	}
-	
-	return is_HOOK_id_wanted( hook->object.iHook );
-}
 
 
 
@@ -388,12 +169,7 @@ void print_brief_thread_info(
 		printf( "Target: " );
 		
 		if( hook->object.flags & HF_GLOBAL )
-		{
 			printf( "<GLOBAL> " );
-			
-			if( hook->target || hook->object.ptiHooked )
-				printf( "ERROR: This global HOOK has a target: " );
-		}
 		
 		if( hook->target )
 			print_gui_brief( hook->target );
@@ -421,7 +197,7 @@ Helper function to print a hook [begin] header with basic hook info.
 'deskname' is the desktop name
 'difftype' is the reported action, eg HOOK_ADDED, HOOK_MODIFIED, HOOK_REMOVED
 */
-static void print_hook_notice_begin(
+void print_hook_notice_begin(
 	const struct hook *const hook,   // in
 	const WCHAR *const deskname,   // in
 	const enum difftype difftype   // in
@@ -466,7 +242,11 @@ static void print_hook_notice_begin(
 	print_time();
 	printf( "]" );
 	
-	printf( "\n\n" );
+	printf( "\n" );
+	
+	print_hook_anomalies( hook );
+	
+	printf( "\n" );
 	
 	
 	printf( "Id: " );
@@ -540,7 +320,7 @@ static void print_hook_notice_begin(
 /* print_hook_notice_end()
 Helper function to print a hook [end] header.
 */
-static void print_hook_notice_end( void )
+void print_hook_notice_end( void )
 {
 	//PRINT_SEP_END( "" );
 	printf( "----------------------------------------------------------------------------[e]\n" );
@@ -967,35 +747,6 @@ int print_diff_hook(
 
 
 
-/* print_initial_desktop_hook_item()
-Print the HOOKs that have been found on a single attached to desktop.
-*/
-void print_initial_desktop_hook_item( 
-	const struct desktop_hook_item *const b   // in
-)
-{
-	unsigned i = 0;
-	
-	FAIL_IF( !b );
-	FAIL_IF( !b->desktop );
-	FAIL_IF( !b->hook_max );
-	FAIL_IF( b->hook_count > b->hook_max );
-	
-	
-	for( i = 0; i < b->hook_count; ++i )
-	{
-		if( is_hook_wanted( &b->hook[ i ] ) )
-		{
-			print_hook_notice_begin( &b->hook[ i ], b->desktop->pwszDesktopName, HOOK_FOUND );
-			print_hook_notice_end();
-		}
-	}
-	
-	return;
-}
-
-
-
 /* print_diff_desktop_hook_items()
 Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
 
@@ -1031,7 +782,7 @@ void print_diff_desktop_hook_items(
 		
 		if( ret < 0 ) // hook removed
 		{
-			if( is_hook_wanted( &a->hook[ a_hi ] ) )
+			if( !a->hook[ a_hi ].ignore )
 			{
 				print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
 				print_hook_notice_end();
@@ -1041,7 +792,7 @@ void print_diff_desktop_hook_items(
 		}
 		else if( ret > 0 ) // hook added
 		{
-			if( is_hook_wanted( &b->hook[ b_hi ] ) )
+			if( !b->hook[ b_hi ].ignore )
 			{
 				print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
 				print_hook_notice_end();
@@ -1055,7 +806,7 @@ void print_diff_desktop_hook_items(
 			In this case check there is no reason to print the HOOK again unless certain 
 			information has changed (like the hook is hung, etc).
 			*/
-			if( is_hook_wanted( &a->hook[ a_hi ] ) || is_hook_wanted( &b->hook[ b_hi ] ) )
+			if( !a->hook[ a_hi ].ignore || !b->hook[ b_hi ].ignore )
 				print_diff_hook( &a->hook[ a_hi ], &b->hook[ b_hi ], deskname );
 			
 			++a_hi;
@@ -1065,7 +816,7 @@ void print_diff_desktop_hook_items(
 	
 	while( a_hi < a->hook_count ) // hooks removed
 	{
-		if( is_hook_wanted( &a->hook[ a_hi ] ) )
+		if( !a->hook[ a_hi ].ignore )
 		{
 			print_hook_notice_begin( &a->hook[ a_hi ], deskname, HOOK_REMOVED );
 			print_hook_notice_end();
@@ -1076,7 +827,7 @@ void print_diff_desktop_hook_items(
 	
 	while( b_hi < b->hook_count ) // hooks added
 	{
-		if( is_hook_wanted( &b->hook[ b_hi ] ) )
+		if( !b->hook[ b_hi ].ignore )
 		{
 			print_hook_notice_begin( &b->hook[ b_hi ], deskname, HOOK_ADDED );
 			print_hook_notice_end();
@@ -1090,22 +841,58 @@ void print_diff_desktop_hook_items(
 
 
 
+/* print_initial_desktop_hook_item()
+Print the HOOKs that have been found on a single attached to desktop.
+
+returns the number of HOOKs printed
+*/
+unsigned print_initial_desktop_hook_item( 
+	const struct desktop_hook_item *const b   // in
+)
+{
+	unsigned i = 0;
+	unsigned printed = 0;
+	
+	FAIL_IF( !b );
+	FAIL_IF( !b->desktop );
+	FAIL_IF( !b->hook_max );
+	FAIL_IF( b->hook_count > b->hook_max );
+	
+	
+	for( i = 0; i < b->hook_count; ++i )
+	{
+		if( !b->hook[ i ].ignore )
+		{
+			print_hook_notice_begin( &b->hook[ i ], b->desktop->pwszDesktopName, HOOK_FOUND );
+			print_hook_notice_end();
+			++printed;
+		}
+	}
+	
+	return printed;
+}
+
+
+
 /* print_initial_desktop_hook_list()
 Print the HOOKs that have been found on all attached to desktops for a single snapshot.
+
+returns the number of HOOKs printed
 */
-void print_initial_desktop_hook_list( 
+unsigned print_initial_desktop_hook_list( 
 	const struct desktop_hook_list *const list2   // in
 )
 {
+	unsigned printed = 0;
 	struct desktop_hook_item *b = NULL;
 	
 	FAIL_IF( !list2 );
 	
 	
 	for( b = list2->head; b; b = b->next )
-		print_initial_desktop_hook_item( b );
+		printed += print_initial_desktop_hook_item( b );
 	
-	return;
+	return printed;
 }
 
 

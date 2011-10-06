@@ -444,3 +444,92 @@ fail:
 		*num = INT_MAX;
 	return NUM_FAIL;
 }
+
+
+
+/* test the functions in this file */
+#ifdef TESTME
+
+#include <stdio.h>
+
+#ifdef _MSC_VER
+#pragma optimize( "g", off ) /* disable global optimizations */
+#pragma auto_inline( off ) /* disable automatic inlining */
+#endif
+static void pause( void )
+{
+	system( "pause" );
+	return;
+}
+#ifdef _MSC_VER
+#pragma auto_inline( on ) /* revert automatic inlining setting */
+#pragma optimize( "g", on ) /* revert global optimizations setting */
+#endif
+
+int main( int argc, char *argv[] )
+{
+	unsigned __int64 x;
+	__int64 y;
+	
+	{
+		HANDLE hOutput = GetStdHandle( STD_OUTPUT_HANDLE );
+		CONSOLE_SCREEN_BUFFER_INFO csbi;
+		
+		
+		ZeroMemory( &csbi, sizeof( csbi ) );
+		
+		if( ( hOutput != INVALID_HANDLE_VALUE )
+			&& ( GetFileType( hOutput ) == FILE_TYPE_CHAR )
+			&& GetConsoleScreenBufferInfo( hOutput, &csbi )
+			&& !csbi.dwCursorPosition.X 
+			&& !csbi.dwCursorPosition.Y
+			&& ( csbi.dwSize.X > 0 )
+			&& ( csbi.dwSize.Y > 0 )
+		)
+			atexit( pause );
+	}
+	
+	
+	if( argc < 2 )
+		return 1;
+	
+	printf( "errno before: %d\n", errno );
+	x = _strtoui64( argv[ 1 ], NULL, 0 );
+	y = _strtoi64( argv[ 1 ], NULL, 0 );
+	printf( "errno after: %d\n", errno );
+	
+	printf( "_strtoui64 x %I64d %I64u\n", x, x );
+	printf( " _strtoi64 y %I64d %I64u\n", y, y );
+	printf( "\n\t\tsigned unsigned hex\n" );
+	printf( "_UI64_MAX\t%I64d %I64u %I64X\n", _UI64_MAX, _UI64_MAX, _UI64_MAX );
+	printf( "_I64_MAX\t%I64d %I64u %I64X\n", _I64_MAX, _I64_MAX, _I64_MAX );
+	printf( "_I64_MIN\t%I64d %I64u %I64X\n", _I64_MIN, _I64_MIN, _I64_MIN );
+	printf( "UINT_MAX\t%d %u %X\n", UINT_MAX, UINT_MAX, UINT_MAX );
+	printf( "INT_MAX\t%d %u %X\n", INT_MAX, INT_MAX, INT_MAX );
+	printf( "INT_MIN\t%d %u %X\n", INT_MIN, INT_MIN, INT_MIN );
+	
+	printf( "\n\n\n" );
+	{
+		int ret;
+		int a = 0;
+		unsigned b = 0;
+		__int64 c = 0;
+		unsigned __int64 d = 0;
+		
+		ret = str_to_uint64( &d, argv[ 1 ] );
+		printf( "%d str_to_uint64\t%I64u %I64X. %I64d\n", ret, d, d, d );
+		
+		ret = str_to_int64( &c, argv[ 1 ] );
+		printf( "%d str_to_int64\t%I64d %I64X\n", ret, c, c );
+		
+		ret = str_to_uint( &b, argv[ 1 ] );
+		printf( "%d str_to_uint\t%u %X. %d\n", ret, b, b, b );
+		
+		ret = str_to_int( &a, argv[ 1 ] );
+		printf( "%d str_to_int\t%d %X\n", ret, a, a );
+		
+	}
+	
+	return 0;
+}
+#endif //TESTME

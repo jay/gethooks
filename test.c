@@ -22,9 +22,10 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 This file contains functions used for testing purposes. 
 Each function is documented in the comment block above its definition.
 
-All of the user accessible test functions return an __int64 and also accept a single __int64 as a 
-parameter, which in most cases can be supplied by the user. The configuration parser passes the 
-value I64_MIN as a parameter for the function if the user did not specify a parameter.
+All of the user accessible test functions return an unsigned __int64 and also accept a single 
+unsigned __int64 as a parameter, which in most cases can be supplied by the user.
+The configuration parser passes the value UI64_MAX as a parameter for the function if the user did 
+not specify a parameter or parsing failed.
 
 -
 print_handle_count()
@@ -112,12 +113,12 @@ Run user-specified tests.
 
 static int find_kernel_HOOK( 
 	struct desktop_item **const out,   // out deref optional
-	const __int64 addr   // in
+	const unsigned __int64 addr   // in
 );
 
 static int find_most_preceding_kernel_HOOK( 
-	__int64 *const out,   // out
-	const __int64 addr   // in
+	unsigned __int64 *const out,   // out
+	const unsigned __int64 addr   // in
 );
 
 static void print_function_usage( 
@@ -134,8 +135,8 @@ if 'seconds' > 0 then poll
 
 returns nonzero in any case
 */
-__int64 print_handle_count( 
-	__int64 seconds   // in
+unsigned __int64 print_handle_count( 
+	unsigned __int64 seconds   // in
 )
 {
 	FAIL_IF( seconds >= INT_MAX );
@@ -187,14 +188,15 @@ __int64 print_handle_count(
 /* print_kernel_HOOK()
 Print a HOOK. Pass in a pointer to the kernel address of a HOOK.
 
-'addr' is the kernel address of a HOOK. cast to __int64
+'addr' is the kernel address of a HOOK. cast to unsigned __int64
 
 returns a pointer to the next HOOK in the chain or 0
 */
-__int64 print_kernel_HOOK(
-	__int64 addr   // in
+unsigned __int64 print_kernel_HOOK(
+	unsigned __int64 addr   // in
 )
 {
+	unsigned i = 0;
 	struct hook hook;
 	struct snapshot *snapshot = NULL;
 	struct desktop_item *desktop = NULL;
@@ -225,7 +227,7 @@ __int64 print_kernel_HOOK(
 	
 	hook.object = *(HOOK *)( (size_t)addr - (size_t)desktop->pvClientDelta );
 	
-	if( addr != (__int64)hook.object.pSelf )
+	if( addr != (unsigned __int64)hook.object.pSelf )
 	{
 		MSG_WARNING( "Probable invalid HOOK address." );
 		printf( "pSelf is not the same as the passed in address.\n\n" );
@@ -234,18 +236,53 @@ __int64 print_kernel_HOOK(
 	create_snapshot_store( &snapshot );
 	if( init_snapshot_store( snapshot ) )
 	{
+		struct desktop_hook_item *dh = NULL;
+		
+		
+		/* for each desktop in the list of attached to desktops */
+		for( dh = snapshot->desktop_hooks->head; ( dh && !hook.owner ); dh = dh->next )
+		{
+			/* skip if not the desktop on which the HOOK was found */
+			if( desktop != dh->desktop )
+				continue;
+			
+			/* for each hook info in the desktop's array of hook info structs */
+			for( i = 0; i < dh->hook_count; ++i )
+			{
+				/* This is a best guess to find the HANDLEENTRY that owns the HOOK,
+				if the HOOK is in the snapshot.
+				*/
+				if( ( addr == (unsigned __int64)dh->hook[ i ].entry.pHead )
+					&& ( ( (DWORD)hook.object.head.h & 0xFFFF ) == dh->hook[ i ].entry_index )
+					&& ( ( (DWORD)hook.object.head.h >> 16 ) == dh->hook[ i ].entry.wUniq )
+					&& ( hook.object.pti == dh->hook[ i ].object.pti )
+					&& ( hook.object.ptiHooked == dh->hook[ i ].object.ptiHooked )
+				)
+				{
+					hook.entry_index = dh->hook[ i ].entry_index;
+					hook.entry = dh->hook[ i ].entry;
+					hook.owner = dh->hook[ i ].owner;
+					break;
+				}
+			}
+		}
+		
+		/* Regardless of whether or not the HOOK is in the snapshot the target and origin 
+		information is acquired here by searching through the snapshot's Win32ThreadInfos
+		*/
 		hook.origin = find_Win32ThreadInfo( snapshot, hook.object.pti );
 		hook.target = find_Win32ThreadInfo( snapshot, hook.object.ptiHooked );
 	}
 	else
+	{
 		MSG_WARNING( "Could not initialize the snapshot store." );
+	}
 	
-	print_brief_thread_info( &hook, THREAD_ORIGIN );
-	print_brief_thread_info( &hook, THREAD_TARGET );
-	print_HOOK( &hook.object );
+	print_hook_notice_begin( &hook, desktop->pwszDesktopName, HOOK_FOUND );
+	print_hook_notice_end();
 	
 	free_snapshot_store( &snapshot );
-	return (__int64)hook.object.phkNext;
+	return (unsigned __int64)hook.object.phkNext;
 }
 
 
@@ -253,7 +290,7 @@ __int64 print_kernel_HOOK(
 /* find_kernel_HOOK()
 Take a snapshot and search it for the passed in HOOK.
 
-'addr' is the kernel address of a HOOK. cast to __int64
+'addr' is the kernel address of a HOOK. cast to unsigned __int64
 '*out' receives a pointer to the attached to desktop that contains the HOOK.
 
 returns nonzero if the HOOK was found in the snapshot.
@@ -261,7 +298,7 @@ returns zero otherwise and '*out' receives NULL.
 */
 static int find_kernel_HOOK( 
 	struct desktop_item **const out,   // out deref optional
-	const __int64 addr   // in
+	const unsigned __int64 addr   // in
 )
 {
 	unsigned i = 0;
@@ -286,7 +323,7 @@ static int find_kernel_HOOK(
 		/* for each hook info in the desktop's array of hook info structs */
 		for( i = 0; i < dh->hook_count; ++i )
 		{
-			if( addr == (__int64)dh->hook[ i ].entry.pHead )
+			if( addr == (unsigned __int64)dh->hook[ i ].entry.pHead )
 			{
 				desktop = dh->desktop;
 				goto cleanup;
@@ -307,15 +344,15 @@ cleanup:
 /* find_most_preceding_kernel_HOOK()
 Take a snapshot and search it for the HOOK that most precedes the passed in HOOK in its chain.
 
-'addr' is the kernel address of a HOOK. cast to __int64
+'addr' is the kernel address of a HOOK. cast to unsigned __int64
 '*out' receives the kernel address of the HOOK that most precedes 'addr' in its chain.
 
 returns nonzero if a preceding HOOK was found.
 returns zero otherwise and '*out' receives 0.
 */
 static int find_most_preceding_kernel_HOOK( 
-	__int64 *const out,   // out
-	const __int64 addr   // in
+	unsigned __int64 *const out,   // out
+	const unsigned __int64 addr   // in
 )
 {
 	unsigned i = 0, j = 0;
@@ -323,7 +360,7 @@ static int find_most_preceding_kernel_HOOK(
 	struct desktop_hook_item *dh = NULL;
 	
 	/* The kernel address of the most preceding HOOK */
-	__int64 phk = 0;
+	unsigned __int64 phk = 0;
 	
 	/* This function will search through a HOOK chain of maximum length 'chainmax' */
 	const unsigned chainmax = 100;
@@ -345,7 +382,7 @@ static int find_most_preceding_kernel_HOOK(
 	
 	for( phk = addr, j = 0; j < chainmax; ++j )
 	{
-		__int64 found = 0;
+		unsigned __int64 found = 0;
 		
 		/* for each desktop in the list of attached to desktops */
 		for( dh = snapshot->desktop_hooks->head; dh; dh = dh->next )
@@ -356,26 +393,26 @@ static int find_most_preceding_kernel_HOOK(
 				/* if there is a HOOK that points to HOOK address 'phk' then a preceding HOOK has 
 				been found.
 				*/
-				if( phk == (__int64)dh->hook[ i ].object.phkNext )
+				if( phk == (unsigned __int64)dh->hook[ i ].object.phkNext )
 				{
 					/* dh->hook[ i ] has the HOOK preceding HOOK 'phk' in a chain */
 					
 					/* if a different HOOK that also points to 'phk' was already found then alert 
 					the user. this shouldn't ever happen. 
 					*/
-					if( found && ( found != (__int64)dh->hook[ i ].entry.pHead ) )
+					if( found && ( found != (unsigned __int64)dh->hook[ i ].entry.pHead ) )
 					{
 						PRINT_DBLSEP_BEGIN( "wtf?" );
 						
 						MSG_ERROR( "Two different HOOKs point to the same link in a chain.\n" );
-						print_kernel_HOOK( (__int64)found );
-						print_kernel_HOOK( (__int64)dh->hook[ i ].entry.pHead );
+						print_kernel_HOOK( (unsigned __int64)found );
+						print_kernel_HOOK( (unsigned __int64)dh->hook[ i ].entry.pHead );
 						
 						PRINT_DBLSEP_END( "wtf?" );
 						continue;
 					}
 					
-					found = (__int64)dh->hook[ i ].entry.pHead;
+					found = (unsigned __int64)dh->hook[ i ].entry.pHead;
 				}
 			}
 		}
@@ -408,17 +445,17 @@ cleanup:
 /* print_kernel_HOOK_chain()
 Print a HOOK chain. Pass in a pointer to the kernel address of a HOOK.
 
-'addr' is the kernel address of a HOOK. cast to __int64
+'addr' is the kernel address of a HOOK. cast to unsigned __int64
 
 returns nonzero in any case
 */
-__int64 print_kernel_HOOK_chain(
-	__int64 addr   // in
+unsigned __int64 print_kernel_HOOK_chain(
+	unsigned __int64 addr   // in
 )
 {
 	const char *const objname = "HOOK chain";
 	unsigned i = 0;
-	__int64 head = 0;
+	unsigned __int64 head = 0;
 	struct desktop_item *desktop = NULL;
 	
 	
@@ -468,8 +505,8 @@ Print the HOOK chains in DESKTOPINFO.aphkStart[] for each attached to desktop.
 
 returns nonzero in any case
 */
-__int64 print_kernel_HOOK_desktop_chains( 
-	__int64 unused   // unused
+unsigned __int64 print_kernel_HOOK_desktop_chains( 
+	unsigned __int64 unused   // unused
 )
 {
 	int i = 0;
@@ -499,7 +536,7 @@ __int64 print_kernel_HOOK_desktop_chains(
 			PRINT_BARE_PTR( desktop->pDeskInfo->aphkStart[ i ] );
 			printf( " on desktop '%ls'.", desktop->pwszDesktopName );
 			
-			print_kernel_HOOK_chain( (__int64)desktop->pDeskInfo->aphkStart[ i ] );
+			print_kernel_HOOK_chain( (unsigned __int64)desktop->pDeskInfo->aphkStart[ i ] );
 		}
 	}
 	
@@ -510,7 +547,7 @@ __int64 print_kernel_HOOK_desktop_chains(
 
 const struct
 {
-	__int64 (*pfn)(__int64);
+	unsigned __int64 (*pfn)(unsigned __int64);
 	const WCHAR *name; // function name as it should be specified by the user
 	const WCHAR *description; // function description
 	const WCHAR *param_name; // parameter name
@@ -666,8 +703,8 @@ int testmode( void )
 		for( i = 0; i < function_count; ++i )
 		{
 			if( function[ i ].name 
-				&& item->name
-				&& !_wcsicmp( function[ i ].name, item->name )
+				&& item->name 
+				&& !_wcsicmp( function[ i ].name, item->name ) 
 			)
 			{
 				printf( "\nCalling test function '%ls'.\n", function[ i ].name );

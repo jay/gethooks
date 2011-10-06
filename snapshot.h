@@ -169,6 +169,16 @@ void create_snapshot_store(
 	struct snapshot **const out   // out deref
 );
 
+int match_gui_process_name(
+	const struct gui *const gui,   // in
+	const WCHAR *const name   // in
+);
+
+int match_gui_process_pid(
+	const struct gui *const gui,   // in
+	const unsigned __int64 pid   // in
+);
+
 struct gui *find_Win32ThreadInfo( 
 	const struct snapshot *const store,   // in
 	const void *const pvWin32ThreadInfo   // in
