@@ -453,10 +453,7 @@ int traverse_threads(
 		}
 		
 		/* check for STATUS_INFO_LENGTH_MISMATCH failure */
-		if( ( retlen > buffer_bcount )
-			|| ( retlen < sizeof( SYSTEM_PROCESS_INFORMATION ) )
-			|| ( *status == (LONG)0xC0000004L )
-		)
+		if( ( retlen > buffer_bcount ) || ( *status == (LONG)0xC0000004L ) )
 		{
 			dbg_printf( "Error: the buffer is too small.\n" );
 			dbg_printf( 
@@ -471,7 +468,7 @@ int traverse_threads(
 		}
 		
 		/* check for some other status code. it would not be safe to continue */
-		if( *status ) /* != STATUS_SUCCESS */
+		if( *status || ( retlen < sizeof( SYSTEM_PROCESS_INFORMATION ) ) )
 		{
 			dbg_printf( "Error: NtQuerySystemInformation() failed.\n" );
 			dbg_printf( "status: 0x%08X\n", (unsigned)*status );
@@ -504,7 +501,8 @@ int traverse_threads(
 		/* how many bytes are needed to hold the reported size of the 
 		SYSTEM_THREAD_INFORMATION struct array in this spi
 		*/
-		unsigned __int64 threads_bcount = (unsigned __int64)spi->NumberOfThreads * sti_bcount;
+		unsigned __int64 threads_bcount = 
+			(unsigned __int64)(ULONG)spi->NumberOfThreads * sti_bcount;
 		
 		/* how many SYSTEM_THREAD_INFORMATION structs are in the currently pointed to 
 		SYSTEM_PROCESS_INFORMATION struct (spi)
