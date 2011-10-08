@@ -59,8 +59,10 @@ Print the local time and date. No newline.
 -
 
 */
-
+#pragma warning(disable:4996) /* 'function': was declared deprecated */
 #define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_DEPRECATE
+
 
 #include <stdio.h>
 #include <limits.h>

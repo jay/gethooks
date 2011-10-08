@@ -126,7 +126,7 @@ static void print_unknown_address(
 )
 {
 	printf( " <unknown> (<unknown> @ " );
-	PRINT_BARE_PTR( address );
+	PRINT_HEX_BARE( address );
 	printf( ")" );
 	
 	return;
@@ -233,9 +233,12 @@ void print_hook_notice_begin(
 	printf( "[%s]", diffname );
 	
 	printf( " [HOOK " );
-	PRINT_BARE_PTR( hook->object.head.h );
+	PRINT_HEX_BARE( hook->object.head.h );
 	printf( " @ " );
-	PRINT_BARE_PTR( hook->entry.pHead );
+	if( hook->entry.pHead )
+		PRINT_HEX_BARE( hook->entry.pHead );
+	else
+		printf( "<unknown>" );
 	printf( "]" );
 	
 	printf( " [" );
@@ -333,8 +336,8 @@ void print_hook_notice_end( void )
 /* print_diff_gui()
 Compare two gui structs and print any significant differences. Helper function for print_diff_hook()
 
-'oldhook' is the old hook info (optional)
-'newhook' is the new hook info (optional)
+'oldhook' is the old hook info
+'newhook' is the new hook info
 'threadtype' is the gui thread info in the hook struct to compare eg THREAD_TARGET (hook->target)
 'deskname' is the name of the desktop the hook is on
 
@@ -580,8 +583,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nThe HOOK's handle has changed.\n" );
-		PRINT_NAME_FOR_PTR( "Old", a->object.head.h );
-		PRINT_NAME_FOR_PTR( "New", b->object.head.h );
+		PRINT_HEX_NAME( "Old", a->object.head.h );
+		PRINT_HEX_NAME( "New", b->object.head.h );
 	}
 	
 	if( a->object.head.cLockObj != b->object.head.cLockObj )
@@ -609,8 +612,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nrpdesk1 has changed. The desktop that the HOOK is on has changed?\n" );
-		PRINT_NAME_FOR_PTR( "Old", a->object.rpdesk1 );
-		PRINT_NAME_FOR_PTR( "New", b->object.rpdesk1 );
+		PRINT_HEX_NAME( "Old", a->object.rpdesk1 );
+		PRINT_HEX_NAME( "New", b->object.rpdesk1 );
 	}
 	
 	if( a->object.pSelf != b->object.pSelf )
@@ -622,8 +625,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nThe HOOK's kernel address has changed.\n" );
-		PRINT_NAME_FOR_PTR( "Old", a->object.pSelf );
-		PRINT_NAME_FOR_PTR( "New", b->object.pSelf );
+		PRINT_HEX_NAME( "Old", a->object.pSelf );
+		PRINT_HEX_NAME( "New", b->object.pSelf );
 	}
 	
 	if( a->object.phkNext != b->object.phkNext )
@@ -635,8 +638,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nThe HOOK's chain has been modified.\n" );
-		PRINT_NAME_FOR_PTR( "Old", a->object.phkNext );
-		PRINT_NAME_FOR_PTR( "New", b->object.phkNext );
+		PRINT_HEX_NAME( "Old", a->object.phkNext );
+		PRINT_HEX_NAME( "New", b->object.phkNext );
 	}
 	
 	if( a->object.iHook != b->object.iHook )
@@ -667,8 +670,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nThe HOOK's function offset has changed.\n" );
-		PRINT_NAME_FOR_PTR( "Old", a->object.offPfn );
-		PRINT_NAME_FOR_PTR( "New", b->object.offPfn );
+		PRINT_HEX_NAME( "Old", a->object.offPfn );
+		PRINT_HEX_NAME( "New", b->object.offPfn );
 	}
 	
 	if( a->object.flags != b->object.flags )
@@ -734,8 +737,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nrpdesk2 has changed. HOOK locked, owner destroyed?\n" );
-		PRINT_NAME_FOR_PTR( "Old", a->object.rpdesk2 );
-		PRINT_NAME_FOR_PTR( "New", b->object.rpdesk2 );
+		PRINT_HEX_NAME( "Old", a->object.rpdesk2 );
+		PRINT_HEX_NAME( "New", b->object.rpdesk2 );
 	}
 	
 	
@@ -841,6 +844,38 @@ void print_diff_desktop_hook_items(
 
 
 
+/* print_diff_desktop_hook_lists()
+Print the HOOKs that have been added/removed from all attached to desktops between snapshots.
+
+'list1' is the previous snapshot's desktop hook list
+'list2' is the current snapshot's desktop hook list
+*/
+void print_diff_desktop_hook_lists( 
+	const struct desktop_hook_list *const list1,   // in
+	const struct desktop_hook_list *const list2   // in
+)
+{
+	struct desktop_hook_item *a = NULL;
+	struct desktop_hook_item *b = NULL;
+	
+	FAIL_IF( !list1 );
+	FAIL_IF( !list2 );
+	
+	
+	for( a = list1->head, b = list2->head; ( a && b ); a = a->next, b = b->next )
+		print_diff_desktop_hook_items( a, b );
+	
+	if( a || b )
+	{
+		MSG_FATAL( "The desktop hook stores could not be fully compared." );
+		exit( 1 );
+	}
+	
+	return;
+}
+
+
+
 /* print_initial_desktop_hook_item()
 Print the HOOKs that have been found on a single attached to desktop.
 
@@ -894,37 +929,3 @@ unsigned print_initial_desktop_hook_list(
 	
 	return printed;
 }
-
-
-
-/* print_diff_desktop_hook_lists()
-Print the HOOKs that have been added/removed from all attached to desktops between snapshots.
-
-'list1' is the previous snapshot's desktop hook list
-'list2' is the current snapshot's desktop hook list
-*/
-void print_diff_desktop_hook_lists( 
-	const struct desktop_hook_list *const list1,   // in
-	const struct desktop_hook_list *const list2   // in
-)
-{
-	struct desktop_hook_item *a = NULL;
-	struct desktop_hook_item *b = NULL;
-	
-	FAIL_IF( !list1 );
-	FAIL_IF( !list2 );
-	
-	
-	for( a = list1->head, b = list2->head; ( a && b ); a = a->next, b = b->next )
-		print_diff_desktop_hook_items( a, b );
-	
-	if( a || b )
-	{
-		MSG_FATAL( "The desktop hook stores could not be fully compared." );
-		exit( 1 );
-	}
-	
-	return;
-}
-
-

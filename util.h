@@ -35,10 +35,13 @@ extern "C" {
 however the keyword apparently exists undocumented in VS2005 and VS2003 as well
 http://code.google.com/p/dream-of-idle/source/browse/trunk/Dream/CELayoutEditor-0.7.1/inc/Config.h?spec=svn6&r=6#427
 */
-#if !defined( _MSC_VER ) // || ( _MSC_VER < 1500 )
+#if !defined( _MSC_VER ) || ( _MSC_VER < 1300 ) // || ( _MSC_VER < 1500 )
 #define __pragma(x)
 #endif
 
+#if defined( _MSC_VER ) && ( _MSC_VER < 1310  )
+typedef uintptr_t size_t;
+#endif
 
 /* this is a basic function-like macro to print an error message and its location in code */
 #define MSG_LOCATION(type,msg)   \
@@ -102,16 +105,34 @@ __pragma(warning(disable:4127)) \
 __pragma(warning(pop))
 
 
-#define PRINT_BARE_PTR(addr)   \
-	( printf( "0x%0*IX", (int)( sizeof( size_t ) * 2 ), (size_t)( addr ) ) )
+#define PRINT_HEX_BARE(addr)   \
+	do \
+	{ \
+		size_t bytes = sizeof( addr ); \
+		 \
+		if( bytes == sizeof(BYTE) ) \
+			printf( "0x%0*I64X", (int)( sizeof( BYTE ) * 2 ), (UINT64)(*(BYTE *)&addr ) ); \
+		else if( bytes == sizeof(WORD) ) \
+			printf( "0x%0*I64X", (int)( sizeof( WORD ) * 2 ), (UINT64)(*(WORD *)&addr ) ); \
+		else if( bytes == sizeof(DWORD) ) \
+			printf( "0x%0*I64X", (int)( sizeof( DWORD ) * 2 ), (UINT64)(*(DWORD *)&addr ) ); \
+		else if( bytes == sizeof(UINT64) ) \
+			printf( "0x%0*I64X", (int)( sizeof( UINT64 ) * 2 ), (UINT64)(*(UINT64 *)&addr ) ); \
+		else \
+			printf( "<unimplemented>" ); \
+		 \
+__pragma(warning(push)) \
+__pragma(warning(disable:4127)) \
+	} while( 0 ) \
+__pragma(warning(pop))
 
-#define PRINT_NAME_FOR_PTR(name,addr)   \
+#define PRINT_HEX_NAME(name,addr)   \
 	do \
 	{ \
 		const char *str = NULL; \
 		str = ( name ); \
 		printf( "%s%s", ( str ? str : "" ), ( ( str && str[ 0 ] ) ? ": " : "" ) ); \
-		PRINT_BARE_PTR( ( addr ) ); \
+		PRINT_HEX_BARE( ( addr ) ); \
 		printf( "\n" ); \
 		 \
 __pragma(warning(push)) \
@@ -119,7 +140,7 @@ __pragma(warning(disable:4127)) \
 	} while( 0 ) \
 __pragma(warning(pop))
 
-#define PRINT_PTR(addr)   PRINT_NAME_FOR_PTR( #addr, ( addr ) )
+#define PRINT_HEX(addr)   PRINT_HEX_NAME( #addr, ( addr ) )
 
 
 #define PRINT_SEP_BEGIN(msg)   \

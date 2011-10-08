@@ -95,16 +95,16 @@ void print_diff_desktop_hook_items(
 	const struct desktop_hook_item *const b   // in
 );
 
+void print_diff_desktop_hook_lists( 
+	const struct desktop_hook_list *const list1,   // in
+	const struct desktop_hook_list *const list2   // in
+);
+
 unsigned print_initial_desktop_hook_item( 
 	const struct desktop_hook_item *const b   // in
 );
 
 unsigned print_initial_desktop_hook_list( 
-	const struct desktop_hook_list *const list2   // in
-);
-
-void print_diff_desktop_hook_lists( 
-	const struct desktop_hook_list *const list1,   // in
 	const struct desktop_hook_list *const list2   // in
 );
 

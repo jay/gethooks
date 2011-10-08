@@ -385,15 +385,15 @@ void print_list_store(
 	printf( "\n" );
 	
 	//printf( "\nNow printing the desktop items in the list from head to tail.\n " );
-	PRINT_PTR( store->head );
+	PRINT_HEX( store->head );
 	
 	for( item = store->head; item; item = item->next )
 	{
-		//PRINT_PTR( item );
+		//PRINT_HEX( item );
 		print_list_item( item );
 	}
 	
-	PRINT_PTR( store->tail );
+	PRINT_HEX( store->tail );
 	
 	PRINT_DBLSEP_END( objname );
 	

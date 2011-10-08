@@ -207,14 +207,14 @@ unsigned __int64 print_kernel_HOOK(
 	/* Check to see if the HOOK is located on a desktop we're attached to */
 	for( desktop = G->desktops->head; desktop; desktop = desktop->next )
 	{
-		if( ( (size_t)addr < ( (size_t)desktop->pDeskInfo->pvDesktopLimit - sizeof( HOOK ) ) )
-			&& ( (size_t)addr >= (size_t)desktop->pDeskInfo->pvDesktopBase )
+		if( ( (uintptr_t)addr < ( (uintptr_t)desktop->pDeskInfo->pvDesktopLimit - sizeof( HOOK ) ) )
+			&& ( (uintptr_t)addr >= (uintptr_t)desktop->pDeskInfo->pvDesktopBase )
 		) /* The HOOK is on an accessible desktop */
 			break;
 	}
 	
 	printf( "HOOK at kernel address " );
-	PRINT_BARE_PTR( addr );
+	PRINT_HEX_BARE( addr );
 	
 	if( !desktop )
 	{
@@ -225,9 +225,9 @@ unsigned __int64 print_kernel_HOOK(
 	
 	printf( " is on desktop '%ls'.\n", desktop->pwszDesktopName );
 	
-	hook.object = *(HOOK *)( (size_t)addr - (size_t)desktop->pvClientDelta );
+	hook.object = *(HOOK *)( (uintptr_t)addr - (uintptr_t)desktop->pvClientDelta );
 	
-	if( addr != (unsigned __int64)hook.object.pSelf )
+	if( addr != (uintptr_t)hook.object.pSelf )
 	{
 		MSG_WARNING( "Probable invalid HOOK address." );
 		printf( "pSelf is not the same as the passed in address.\n\n" );
@@ -252,7 +252,7 @@ unsigned __int64 print_kernel_HOOK(
 				/* This is a best guess to find the HANDLEENTRY that owns the HOOK,
 				if the HOOK is in the snapshot.
 				*/
-				if( ( addr == (unsigned __int64)dh->hook[ i ].entry.pHead )
+				if( ( addr == (uintptr_t)dh->hook[ i ].entry.pHead )
 					&& ( ( (DWORD)hook.object.head.h & 0xFFFF ) == dh->hook[ i ].entry_index )
 					&& ( ( (DWORD)hook.object.head.h >> 16 ) == dh->hook[ i ].entry.wUniq )
 					&& ( hook.object.pti == dh->hook[ i ].object.pti )
@@ -282,7 +282,7 @@ unsigned __int64 print_kernel_HOOK(
 	print_hook_notice_end();
 	
 	free_snapshot_store( &snapshot );
-	return (unsigned __int64)hook.object.phkNext;
+	return (uintptr_t)hook.object.phkNext;
 }
 
 
@@ -323,7 +323,7 @@ static int find_kernel_HOOK(
 		/* for each hook info in the desktop's array of hook info structs */
 		for( i = 0; i < dh->hook_count; ++i )
 		{
-			if( addr == (unsigned __int64)dh->hook[ i ].entry.pHead )
+			if( addr == (uintptr_t)dh->hook[ i ].entry.pHead )
 			{
 				desktop = dh->desktop;
 				goto cleanup;
@@ -393,26 +393,26 @@ static int find_most_preceding_kernel_HOOK(
 				/* if there is a HOOK that points to HOOK address 'phk' then a preceding HOOK has 
 				been found.
 				*/
-				if( phk == (unsigned __int64)dh->hook[ i ].object.phkNext )
+				if( phk == (uintptr_t)dh->hook[ i ].object.phkNext )
 				{
 					/* dh->hook[ i ] has the HOOK preceding HOOK 'phk' in a chain */
 					
 					/* if a different HOOK that also points to 'phk' was already found then alert 
 					the user. this shouldn't ever happen. 
 					*/
-					if( found && ( found != (unsigned __int64)dh->hook[ i ].entry.pHead ) )
+					if( found && ( found != (uintptr_t)dh->hook[ i ].entry.pHead ) )
 					{
 						PRINT_DBLSEP_BEGIN( "wtf?" );
 						
 						MSG_ERROR( "Two different HOOKs point to the same link in a chain.\n" );
-						print_kernel_HOOK( (unsigned __int64)found );
-						print_kernel_HOOK( (unsigned __int64)dh->hook[ i ].entry.pHead );
+						print_kernel_HOOK( found );
+						print_kernel_HOOK( (uintptr_t)dh->hook[ i ].entry.pHead );
 						
 						PRINT_DBLSEP_END( "wtf?" );
 						continue;
 					}
 					
-					found = (unsigned __int64)dh->hook[ i ].entry.pHead;
+					found = (uintptr_t)dh->hook[ i ].entry.pHead;
 				}
 			}
 		}
@@ -465,10 +465,10 @@ unsigned __int64 print_kernel_HOOK_chain(
 	{
 		/* head points to the most preceding HOOK found in the chain */
 		MSG_WARNING( "The HOOK address is not for the first HOOK in the chain." );
-		PRINT_PTR( addr );
+		PRINT_HEX( addr );
 		printf( "\n" );
 		printf( "The first HOOK in the chain according to a system snapshot is " );
-		PRINT_BARE_PTR( head );
+		PRINT_HEX_BARE( head );
 		printf( ".\n" );
 	}
 	
@@ -478,14 +478,14 @@ unsigned __int64 print_kernel_HOOK_chain(
 		if( find_kernel_HOOK( &desktop, addr ) )
 		{
 			printf( "HOOK " );
-			PRINT_BARE_PTR( addr );
+			PRINT_HEX_BARE( addr );
 			printf( " was found on desktop '%ls' in the snapshot.\n", desktop->pwszDesktopName );
 		}
 		else
 		{
 			MSG_WARNING( "Possible invalid HOOK." );
 			printf( "The address was not found in the snapshot.\n" );
-			PRINT_PTR( addr );
+			PRINT_HEX( addr );
 		}
 		
 		printf( "\nPosition in chain relative to passed in HOOK: %u\n", i );
@@ -533,10 +533,10 @@ unsigned __int64 print_kernel_HOOK_desktop_chains(
 			printf( "\n\naphkStart[ %d ]: ", i );
 			print_HOOK_id( WH_MIN + i );
 			printf( ": HOOK ");
-			PRINT_BARE_PTR( desktop->pDeskInfo->aphkStart[ i ] );
+			PRINT_HEX_BARE( desktop->pDeskInfo->aphkStart[ i ] );
 			printf( " on desktop '%ls'.", desktop->pwszDesktopName );
 			
-			print_kernel_HOOK_chain( (unsigned __int64)desktop->pDeskInfo->aphkStart[ i ] );
+			print_kernel_HOOK_chain( (uintptr_t)desktop->pDeskInfo->aphkStart[ i ] );
 		}
 	}
 	

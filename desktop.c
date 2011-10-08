@@ -297,9 +297,9 @@ static int attach(
 		if( G->config->verbose >= 1 )
 		{
 			MSG_ERROR( "Desktop heap info is invalid." );
-			PRINT_PTR( d->pvClientDelta );
-			PRINT_PTR( d->pDeskInfo->pvDesktopBase );
-			PRINT_PTR( d->pDeskInfo->pvDesktopLimit );
+			PRINT_HEX( d->pvClientDelta );
+			PRINT_HEX( d->pDeskInfo->pvDesktopBase );
+			PRINT_HEX( d->pDeskInfo->pvDesktopLimit );
 		}
 		
 		goto fail;
@@ -836,16 +836,16 @@ void print_desktop_item(
 	PRINT_SEP_BEGIN( objname );
 	
 	printf( "item->pwszDesktopName: %ls\n", item->pwszDesktopName );
-	PRINT_PTR( item->hDesktop );
-	PRINT_PTR( item->hThread );
-	PRINT_PTR( item->hEventTerminate );
+	PRINT_HEX( item->hDesktop );
+	PRINT_HEX( item->hThread );
+	PRINT_HEX( item->hEventTerminate );
 	printf( "item->dwThreadId: %lu\n", item->dwThreadId );
-	PRINT_PTR( item->pvTeb );
-	PRINT_PTR( item->pvWin32ClientInfo );
-	PRINT_PTR( item->pvClientDelta );
-	PRINT_PTR( item->pDeskInfo );
-	PRINT_PTR( item->pDeskInfo->pvDesktopBase );
-	PRINT_PTR( item->pDeskInfo->pvDesktopLimit );
+	PRINT_HEX( item->pvTeb );
+	PRINT_HEX( item->pvWin32ClientInfo );
+	PRINT_HEX( item->pvClientDelta );
+	PRINT_HEX( item->pDeskInfo );
+	PRINT_HEX( item->pDeskInfo->pvDesktopBase );
+	PRINT_HEX( item->pDeskInfo->pvDesktopLimit );
 	
 	PRINT_SEP_END( objname );
 	
@@ -894,15 +894,15 @@ static void print_desktop_store(
 	printf( "\n" );
 	
 	//printf( "\nNow printing the desktop items in the list from head to tail.\n " );
-	PRINT_PTR( store->head );
+	PRINT_HEX( store->head );
 	
 	for( item = store->head; item; item = item->next )
 	{
-		//PRINT_PTR( item );
+		//PRINT_HEX( item );
 		print_desktop_item( item );
 	}
 	
-	PRINT_PTR( store->tail );
+	PRINT_HEX( store->tail );
 	
 	PRINT_DBLSEP_END( objname );
 	

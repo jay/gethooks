@@ -485,8 +485,10 @@ int init_desktop_hook_store(
 		/* Check to see if the HOOK is located on a desktop we're attached to */
 		for( item = store->head; item; item = item->next )
 		{
-			if( ( (void *)entry.pHead >= item->desktop->pDeskInfo->pvDesktopBase )
-				&& ( (void *)entry.pHead < item->desktop->pDeskInfo->pvDesktopLimit )
+			if( ( (uintptr_t)entry.pHead 
+					< ( (uintptr_t)item->desktop->pDeskInfo->pvDesktopLimit - sizeof( HOOK ) ) 
+				)
+				&& ( (uintptr_t)entry.pHead >= (uintptr_t)item->desktop->pDeskInfo->pvDesktopBase )
 			) /* The HOOK is on an accessible desktop */
 				break;
 		}
@@ -517,7 +519,7 @@ int init_desktop_hook_store(
 		the info may change so it can't just be pointed to.
 		*/
 		hook->object = 
-			*(HOOK *)( (size_t)hook->entry.pHead - (size_t)item->desktop->pvClientDelta );
+			*(HOOK *)( (uintptr_t)hook->entry.pHead - (uintptr_t)item->desktop->pvClientDelta );
 		
 		/* search the gui threads to find the owner origin and target of the HOOK */
 		hook->owner = find_Win32ThreadInfo( parent, hook->entry.pOwner );
@@ -609,8 +611,8 @@ void print_hook_anomalies(
 	if( hook->entry.pHead && hook->object.pSelf && ( hook->entry.pHead != hook->object.pSelf ) )
 	{
 		printf( "ERROR: The HOOK's pointer to itself is incorrect.\n" );
-		PRINT_PTR( hook->entry.pHead );
-		PRINT_PTR( hook->object.pSelf );
+		PRINT_HEX( hook->entry.pHead );
+		PRINT_HEX( hook->object.pSelf );
 	}
 	
 	print_HOOK_anomalies( &hook->object );
@@ -618,9 +620,9 @@ void print_hook_anomalies(
 	if( ( hook->object.flags & HF_GLOBAL ) && hook->target )
 	{
 		printf( "ERROR: The global HOOK " );
-		PRINT_BARE_PTR( hook->object.head.h );
+		PRINT_HEX_BARE( hook->object.head.h );
 		printf( " @ " );
-		PRINT_BARE_PTR( hook->entry.pHead );
+		PRINT_HEX_BARE( hook->entry.pHead );
 		printf( " has a target address even though global HOOKs aren't supposed to have them.\n" );
 	}
 	
@@ -631,9 +633,9 @@ void print_hook_anomalies(
 		)
 		{
 			printf( "ERROR: The handle check failed for HOOK handle " );
-			PRINT_BARE_PTR( hook->object.head.h );
+			PRINT_HEX_BARE( hook->object.head.h );
 			printf( " @ " );
-			PRINT_BARE_PTR( hook->entry.pHead );
+			PRINT_HEX_BARE( hook->entry.pHead );
 			printf( ".\n" );
 		}
 	}
@@ -659,6 +661,8 @@ void print_hook(
 		return;
 	
 	PRINT_SEP_BEGIN( objname );
+	
+	printf( "hook->ignore: %s\n", ( hook->ignore ? "TRUE" : "FALSE" ) );
 	
 	printf( "\nhook->entry_index: %u\n", hook->entry_index );
 	print_HANDLEENTRY( &hook->entry );
@@ -779,16 +783,16 @@ void print_desktop_hook_store(
 	PRINT_DBLSEP_BEGIN( objname );
 	print_init_time( "store->init_time", store->init_time );
 	
-	PRINT_PTR( store->head );
+	PRINT_HEX( store->head );
 	
 	for( item = store->head; item; item = item->next )
 	{
-		PRINT_PTR( item );
+		PRINT_HEX( item );
 		print_desktop_hook_item( item );
 		printf( "\n" );
 	}
 	
-	PRINT_PTR( store->tail );
+	PRINT_HEX( store->tail );
 	
 	PRINT_DBLSEP_END( objname );
 	

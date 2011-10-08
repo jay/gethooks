@@ -312,8 +312,7 @@ unsigned get_next_arg(
 			
 			return OPTARG;
 		}
-		else if( (
-				( G->prog->argv[ *index ][ 0 ] == '-' ) 
+		else if( ( ( G->prog->argv[ *index ][ 0 ] == '-' ) 
 				|| ( G->prog->argv[ *index ][ 0 ] == '/' ) 
 			) 
 			&& G->prog->argv[ *index ][ 1 ] 
@@ -557,7 +556,7 @@ void init_global_config_store( void )
 					__int64 id = 0;
 					WCHAR *name = NULL;
 					
-					/* if the string is not an integer then its a hook name not an id */
+					/* if the string is not an integer then it's a hook name not an id */
 					if( !str_to_int64( &id, G->prog->argv[ i ] ) )
 					{
 						id = 0;
@@ -654,8 +653,7 @@ void init_global_config_store( void )
 					or it is and the integer is negative, then assume program name
 					*/
 					if( ( p != G->prog->argv[ i ] ) 
-						|| !str_to_int64( &id, G->prog->argv[ i ] ) 
-						|| ( id < 0 ) 
+						|| ( str_to_int64( &id, G->prog->argv[ i ] ) != NUM_POS )
 					)
 					{
 						/* make the program name as a wide character string */

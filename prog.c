@@ -277,10 +277,10 @@ void print_SharedInfo(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	PRINT_PTR( pSharedInfo->psi );
-	PRINT_PTR( pSharedInfo->aheList );
-	PRINT_PTR( pSharedInfo->pDisplayInfo );
-	PRINT_PTR( pSharedInfo->ulSharedDelta );
+	PRINT_HEX( pSharedInfo->psi );
+	PRINT_HEX( pSharedInfo->aheList );
+	PRINT_HEX( pSharedInfo->pDisplayInfo );
+	PRINT_HEX( pSharedInfo->ulSharedDelta );
 	
 	PRINT_SEP_END( objname );
 	

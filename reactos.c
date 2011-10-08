@@ -204,8 +204,8 @@ void print_HANDLEENTRY(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	PRINT_PTR( entry->pHead );
-	PRINT_PTR( entry->pOwner );
+	PRINT_HEX( entry->pHead );
+	PRINT_HEX( entry->pOwner );
 	
 	printf( "entry->bType: %u ( ", (unsigned)entry->bType );
 	print_HANDLEENTRY_type( entry->bType );
@@ -341,14 +341,14 @@ void print_HOOK_anomalies(
 	)
 	{
 		printf( "ERROR: The HOOK @ " );
-		PRINT_BARE_PTR( object->pSelf );
+		PRINT_HEX_BARE( object->pSelf );
 		printf( " is supposed to be global-only but is missing the HF_GLOBAL flag!\n" );
 	}
 	
 	if( ( object->flags & HF_GLOBAL ) && object->ptiHooked )
 	{
 		printf( "ERROR: The global HOOK @ " );
-		PRINT_BARE_PTR( object->pSelf );
+		PRINT_HEX_BARE( object->pSelf );
 		printf( " has a target address even though global HOOKs aren't supposed to have them.\n" );
 	}
 	
@@ -374,13 +374,13 @@ void print_HOOK(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	PRINT_PTR( object->head.h );
+	PRINT_HEX( object->head.h );
 	printf( "object->head.cLockObj: %lu\n", object->head.cLockObj );
 	
-	PRINT_PTR( object->pti );
-	PRINT_PTR( object->rpdesk1 );
-	PRINT_PTR( object->pSelf );
-	PRINT_PTR( object->phkNext );
+	PRINT_HEX( object->pti );
+	PRINT_HEX( object->rpdesk1 );
+	PRINT_HEX( object->pSelf );
+	PRINT_HEX( object->phkNext );
 	
 	printf( "object->iHook: %d ( ", object->iHook );
 	print_HOOK_id( object->iHook );
@@ -398,8 +398,8 @@ void print_HOOK(
 	printf( "\n" );
 	
 	printf( "object->ihmod: %d\n", object->ihmod );
-	PRINT_PTR( object->ptiHooked );
-	PRINT_PTR( object->rpdesk2 );
+	PRINT_HEX( object->ptiHooked );
+	PRINT_HEX( object->rpdesk2 );
 	
 	PRINT_SEP_END( objname );
 	

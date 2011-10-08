@@ -240,7 +240,7 @@ int match_gui_process_pid(
 	FAIL_IF( !gui );
 	
 	
-	if( gui->spi && ( pid == (unsigned __int64)gui->spi->UniqueProcessId ) )
+	if( gui->spi && ( pid == (uintptr_t)gui->spi->UniqueProcessId ) )
 		return TRUE;
 	else
 		return FALSE;
@@ -735,7 +735,7 @@ void print_gui_brief(
 	
 	printf( "PID " );
 	if( gui->spi )
-		printf( "%Iu", (size_t)gui->spi->UniqueProcessId );
+		printf( "%Iu", gui->spi->UniqueProcessId );
 	else
 		printf( "<unknown>" );
 	
@@ -743,12 +743,12 @@ void print_gui_brief(
 	
 	printf( "TID " );
 	if( gui->sti )
-		printf( "%Iu", (size_t)gui->sti->ClientId.UniqueThread );
+		printf( "%Iu", gui->sti->ClientId.UniqueThread );
 	else
 		printf( "<unknown>" );
 	
 	printf( " @ " );
-	PRINT_BARE_PTR( gui->pvWin32ThreadInfo );
+	PRINT_HEX_BARE( gui->pvWin32ThreadInfo );
 	
 	printf( ")" );
 	
@@ -814,8 +814,8 @@ void print_gui(
 	
 	PRINT_SEP_BEGIN( objname );
 	
-	PRINT_PTR( gui->pvWin32ThreadInfo );
-	PRINT_PTR( gui->pvTeb );
+	PRINT_HEX( gui->pvWin32ThreadInfo );
+	PRINT_HEX( gui->pvTeb );
 	
 	printf( "\n" );
 	
