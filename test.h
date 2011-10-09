@@ -34,7 +34,7 @@ extern "C" {
 these functions are documented in the comment block above their definitions in test.c
 */
 unsigned __int64 print_handle_count( 
-	unsigned __int64 seconds   // in
+	unsigned __int64 seconds   // in, optional
 );
 
 unsigned __int64 print_kernel_HOOK(

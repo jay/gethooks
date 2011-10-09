@@ -24,6 +24,7 @@ along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 #include <windows.h>
 #include <limits.h>
 
+#include "str_to_int.h"
 
 
 #ifdef __cplusplus

@@ -48,6 +48,12 @@ struct config
 	*/
 	int verbose;
 	
+	/* ignore "inside" hooks. set nonzero.
+	any hook with the same owner, origin and target thread information I refer to as an inside hook.
+	any hook with differing owner/origin/target info I refer to as an outside hook.
+	*/
+	unsigned ignore_inside;
+	
 	/* a linked list of desktop names to include */
 	struct list *desklist;   // create_list_store(), free_list_store()
 	
@@ -76,6 +82,8 @@ void create_config_store(
 );
 
 void print_usage_and_exit( void );
+
+void print_advanced_usage_and_exit( void );
 
 void print_more_examples_and_exit( void );
 

@@ -131,6 +131,7 @@ if polling is enabled this function will loop continuously and never return.
 int gethooks()
 {
 	const char *const objname = "GetHooks";
+	struct desktop_hook_item *dh = NULL;
 	struct snapshot *previous = NULL;
 	struct snapshot *current = NULL;
 	struct snapshot *temp = NULL;
@@ -161,11 +162,33 @@ int gethooks()
 	
 	print_initial_desktop_hook_list( current->desktop_hooks );
 	
+	printf( "\n" );
+	for( dh = current->desktop_hooks->head; dh; dh = dh->next )
+	{
+		unsigned i = 0, hook_ignore_count = 0;
+		
+		
+		for( i = 0; i < dh->hook_count; ++i )
+		{
+			if( dh->hook[ i ].ignore )
+				++hook_ignore_count;
+		}
+		
+		if( G->config->verbose >= 1 )
+		{
+			printf( "\nDesktop '%ls':\nFound %u, Ignored %u, Printed %u hooks.\n",
+				dh->desktop->pwszDesktopName, 
+				dh->hook_count, 
+				hook_ignore_count, 
+				( dh->hook_count - hook_ignore_count ) 
+			);
+		}
+	}
+	
 	if( G->config->polling < 0 )
 		goto cleanup;
 	
-	printf( 
-		"\nMonitor mode enabled. Checking for changes every %d seconds...\n", 
+	printf( "\nMonitor mode enabled. Checking for changes every %d seconds...\n", 
 		G->config->polling 
 	);
 	fflush( stdout );

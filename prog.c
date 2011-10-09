@@ -235,6 +235,7 @@ void init_global_prog_store(
 	{
 		MSG_FATAL_GLE( "get_user_obj_name() failed." );
 		printf( "Failed to get this program's window station name.\n" );
+		printf( "If you can reproduce this error contact raysatiro@yahoo.com\n" );
 		exit( 1 );
 	}
 	

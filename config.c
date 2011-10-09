@@ -38,6 +38,12 @@ Print the program's usage and exit(1).
 -
 
 -
+print_advanced_usage_and_exit()
+
+Print the program's advanced usage and exit(1).
+-
+
+-
 print_more_examples_and_exit()
 
 Print more usage examples and exit(1).
@@ -182,6 +188,46 @@ void print_usage_and_exit( void )
 
 
 
+/* print_advanced_usage_and_exit()
+Print the program's advanced usage and exit(1).
+*/
+void print_advanced_usage_and_exit( void )
+{
+	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
+	
+	
+	printf( "Advanced options for gethooks:\n"
+		"[-o] [-t <func> [param]]\n"
+	);
+	
+	printf( "\n\n"
+		"   -o     process \"outside\" hooks only. ignore \"inside\" hooks.\n"
+		"\n"
+		"You'll notice for each hook found on your desktop that the owner, origin and \n"
+		"target thread are often the same. That means a thread hooked itself. I refer \n"
+		"to those hooks as inside hooks. Outside hooks are any hooks which are not \n"
+		"inside, and are usually more of interest. For example a thread which has \n"
+		"targeted some other thread with a hook or is targeting all threads with a \n"
+		"global hook. To make outside hooks easier to identify you may choose to \n"
+		"ignore inside hooks by enabling this option.\n"
+		"This option is compatible with all standard usage options.\n"
+	);
+	
+	printf( "\n\n"
+		"   -t     run a test mode function with an optional or required parameter.\n"
+		"\n"
+		"Test mode is where I am testing functions like walking a hook chain or dumping \n"
+		"an individual HOOK from its kernel address.\n"
+		"Whether or not this option is compatible with any other options depends on the \n"
+		"function and its parameter. For usage and examples: %s -t\n",
+		G->prog->pszBasename
+	);
+	
+	exit( 1 );
+}
+
+
+
 /* print_more_examples_and_exit()
 Print more usage examples and exit(1).
 */
@@ -192,56 +238,66 @@ void print_more_examples_and_exit( void )
 	
 	printf( "\nMore examples:\n" );
 	
-	printf( "\n"
+	printf( "\n\n"
 		"By default this program attaches to all desktops in the current window station.\n"
-		"You can specify individual desktops with the 'd' option.\n"
-		"example to monitor only \"Sysinternals Desktop 1\":\n"
+		"Instead you may specify zero or more individual desktops with the 'd' option.\n"
+		"If you specify 'd' without a desktop name it is assumed you want the current.\n"
+		"For example, to list hooks on the current desktop and \"Sysinternals Desktop 1\":\n"
+		"\n"
+		"          %s -d -d \"Sysinternals Desktop 1\"\n", 
+		G->prog->pszBasename 
 	);
-	printf( " %s -d \"Sysinternals Desktop 1\"\n", G->prog->pszBasename );
 	
-	printf( "\n"
+	printf( "\n\n"
 		"You may use a hook's id instead of its name when including/excluding hooks.\n"
-		"example to monitor only WH_KEYBOARD(2) and WH_MOUSE(7) hooks:\n"
+		"For example, to monitor only WH_KEYBOARD(2) and WH_MOUSE(7) hooks:\n"
+		"\n"
+		"          %s -m -i 2 7\n", 
+		G->prog->pszBasename 
 	);
-	printf( " %s -m -i 2 7\n", G->prog->pszBasename );
 	
-	printf( "\n"
-		"If the program name you want hooks for has only numbers and no extension you \n"
-		"may prefix it with a colon so that it is not misinterpreted as a pid.\n"
-		"example to list hooks associated with program name 907\n"
-	);
-	printf( " %s -p :907\n", G->prog->pszBasename );
-	
-	printf( "\n"
-		"If the program name you want hooks for starts with a dash and has one letter \n"
-		"you may prefix it with a colon so that it is not misinterpreted as an option.\n"
-		"example to list hooks associated with program name -h\n"
-	);
-	printf( " %s -p :-h\n", G->prog->pszBasename );
-	
-	printf( "\n"
+	printf( "\n\n"
 		"If the colon is the first character in an argument to program include/exclude \n"
-		"it is assumed a program name follows. If the program name you want for some \n"
-		"reason starts with a colon then you must prefix it with another.\n" 
-		"example to list hooks associated with program name :program.exe\n"
+		"it is assumed a program name follows. You may prefix your program name with a \n"
+		"colon so that it is not misinterpreted as an option or program id (PID).\n"
+		"For example, to list hooks associated with program name -h and program name 907\n"
+		"\n"
+		"          %s -p :-h :907\n",
+		G->prog->pszBasename
 	);
-	printf( " %s -p ::program.exe\n", G->prog->pszBasename );
 	
-	printf( "\nUse GNU 'tee' to print output to stdout and record output to file \"outfile\":\n" );
-	printf( " %s -m | tee outfile\n", G->prog->pszBasename );
+	printf( "\n\n"
+		"Use the GNU 'tee' program to copy this program's output to a file.\n"
+		"For example, to monitor hooks and copy output to file \"outfile\":\n"
+		"\n"
+		"          %s -m | tee outfile\n", 
+		G->prog->pszBasename 
+	);
 	
-	printf( "\n"
-		"The higher the verbosity level the more information that is printed.\n"
+	printf( "\n\n"
+		"Verbosity can be enabled to aid advanced users.\n"
 		"When verbosity is enabled the lowest level is 1 and the highest level is 9.\n"
-		/*
-		level 5 prints store info
-		level 6 prints HOOK struct for each hook notice
-		level 7 prints each hook struct 
-		level 8 
-		*/
+		"The higher the verbosity level the more information that is printed.\n"
+		"\n"
+		"Level 1 shows additional statistics.\n"
+		"Level 2 is reserved for further development.\n"
+		"Level 3 is reserved for further development.\n"
+		"Level 4 is reserved for further development.\n"
+		"Level 5 shows this program's global store (structure) and its descendants.\n"
+		"Level 6 shows the HOOK structs (Microsoft's internal hook structures).\n"
+		"Level 7 shows the hook structs (This program's internal hook structures).\n"
+		"\n"
+		"Level >=8 is too noisy/comprehensive to be used in monitoring mode:\n"
+		"Level 8 shows brief information on all the threads captured in the snapshot.\n"
+		"Level 9 enables traverse_threads() verbosity when it traverses the each thread.\n"
+		"\n"
+		"For example, to print the HOOK struct in each HOOK notice:\n"
+		"\n"
+		"          %s -v 6\n", 
+		G->prog->pszBasename 
 	);
 	
-	
+	printf( "\n\nTo show advanced options: %s --advanced\n", G->prog->pszBasename );
 	exit( 1 );
 }
 
@@ -334,6 +390,8 @@ unsigned get_next_arg(
 		{
 			if( !strcmp( G->prog->argv[ *index ], "--help" ) )
 				print_usage_and_exit();
+			else if( !strcmp( G->prog->argv[ *index ], "--advanced" ) )
+				print_advanced_usage_and_exit();
 			else if( !strcmp( G->prog->argv[ *index ], "--examples" ) )
 				print_more_examples_and_exit();
 			else if( !strcmp( G->prog->argv[ *index ], "--version" ) ) /* version always printed */
@@ -509,6 +567,27 @@ void init_global_config_store( void )
 					exit( 1 );
 				}
 				
+				continue;
+			}
+			
+			
+			
+			/** 
+			option to process only "outside" hooks
+			*/
+			case 'o':
+			case 'O':
+			{
+				if( G->config->ignore_inside )
+				{
+					MSG_FATAL( "Option 'o': this option has already been specified." );
+					exit( 1 );
+				}
+				
+				/* ignore "inside" hooks */
+				G->config->ignore_inside = TRUE;
+				
+				arf = get_next_arg( &i, OPT );
 				continue;
 			}
 			
@@ -789,7 +868,7 @@ void init_global_config_store( void )
 				) 
 				{
 					MSG_FATAL( "Option 'v': verbosity level invalid." );
-					printf( "verbosity level: %d\n", G->config->verbose );
+					printf( "verbosity level: %s\n", G->prog->argv[ i ] );
 					exit( 1 );
 				}
 				
@@ -851,12 +930,18 @@ static void print_config_store(
 	PRINT_DBLSEP_BEGIN( objname );
 	print_init_time( "store->init_time", store->init_time );
 	
+	printf( "store->ignore_inside: " );
+	if( store->ignore_inside ) 
+		printf( "TRUE (Ignore hooks with same owner/origin/target)" );
+	else
+		printf( "FALSE (Don't ignore hooks with same owner/origin/target)" );
+	printf( "\n" );
+	
 	printf( "store->polling: %d", store->polling );
 	if( store->polling >= 0 )
 		printf( " (Comparing snapshots every %d seconds)", store->polling );
 	else
 		printf( " (Taking only one snapshot)" );
-	
 	printf( "\n" );
 	
 	printf( "store->verbose: %d\n", store->verbose );

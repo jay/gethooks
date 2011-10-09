@@ -131,19 +131,18 @@ static void print_function_usage(
 Print counts of USER free, invalid, valid, menu, hook, and generic handles.
 
 Specify the number of 'seconds' to enable polling.
-if 'seconds' > 0 then poll
 
 returns nonzero in any case
 */
 unsigned __int64 print_handle_count( 
-	unsigned __int64 seconds   // in
+	unsigned __int64 seconds   // in, optional
 )
 {
-	FAIL_IF( seconds >= INT_MAX );
+	if( seconds == UI64_MAX ) // user did not specify a parameter
+		seconds = 0;
 	
-	
-	if( seconds > 0 )
-		printf( "Polling user handle counts every %d seconds.\n", seconds );
+	if( seconds )
+		printf( "Polling user handle counts every %I64u seconds.\n", seconds );
 	
 	for( ;; )
 	{
@@ -168,13 +167,12 @@ unsigned __int64 print_handle_count(
 			else
 				++cGeneric;
 		}
-		printf( 
-			"Free: %u   Hook: %u   Menu: %u   Valid: %u   Invalid: %u   Generic: %u\n",
+		printf( "Free: %u   Hook: %u   Menu: %u   Valid: %u   Invalid: %u   Generic: %u\n",
 			cFree, cHook, cMenu, cValid, cInvalid, cGeneric
 		);
 		printf( "\n" );
 		
-		if( seconds <= 0 )
+		if( !seconds )
 			break;
 		
 		Sleep( (DWORD)( seconds * 1000 ) );
@@ -708,6 +706,12 @@ int testmode( void )
 			)
 			{
 				printf( "\nCalling test function '%ls'.\n", function[ i ].name );
+				if( function[ i ].param_required && ( item->id == UI64_MAX ) )
+				{
+					MSG_FATAL( "A parameter is required to call the above function." );
+					exit( 1 );
+				}
+				
 				function[ i ].pfn( item->id );
 				break;
 			}

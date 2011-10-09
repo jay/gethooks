@@ -328,9 +328,30 @@ int is_hook_wanted(
 	
 	
 	/* If ignore is set there is some reason that this hook is not wanted
-	eg maybe this function was already called and it was determined the hook is not wanted
+	eg maybe this function was already called and it was already determined the hook is not wanted
 	*/
 	if( hook->ignore )
+		return FALSE;
+	
+	/* if the user requested to ignore "inside" hooks then any HOOK (aka hook->object) with the 
+	same owner, origin and target thread info should be ignored.
+	
+	HOOK owner GUI thread info kernel address: hook->entry.pOwner
+	The related user mode thread info obtained by this program: hook->owner
+	
+	HOOK origin GUI thread info kernel address: hook->object.pti
+	The related user mode thread info obtained by this program: hook->origin
+	
+	HOOK target GUI thread info kernel address: hook->object.ptiHooked
+	The related user mode thread info obtained by this program: hook->target
+	*/
+	if( G->config->ignore_inside
+		&& hook->entry.pOwner
+		&& ( hook->owner == hook->origin ) 
+		&& ( hook->entry.pOwner == hook->object.pti ) 
+		&& ( hook->owner == hook->target )
+		&& ( hook->entry.pOwner == hook->object.ptiHooked ) 
+	)
 		return FALSE;
 	
 	/* if there is a list of programs to include/exclude */

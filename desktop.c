@@ -710,6 +710,7 @@ static int add_all_desktops(
 			"Failed to open window station '%ls' for WINSTA_ENUMDESKTOPS access.\n", 
 			G->prog->pwszWinstaName 
 		);
+		printf( "The desktop names cannot be enumerated. Use the -d switch instead.\n" );
 		exit( 1 );
 	}
 	
@@ -722,6 +723,7 @@ static int add_all_desktops(
 			"Failed to enumerate desktops in window station '%ls'.\n", 
 			G->prog->pwszWinstaName 
 		);
+		printf( "The desktop names cannot be enumerated. Use the -d switch instead.\n" );
 		exit( 1 );
 	}
 	
