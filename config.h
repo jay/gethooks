@@ -39,20 +39,50 @@ The configuration store holds the user-specified configuration derived from the 
 struct config 
 {
 	/* how many seconds to wait between taking snapshots for comparison.
-	polling is set to a negative number if not taking more than one snapshot (default).
+	by default polling is disabled and this program will not take more than one snapshot.
 	*/
+	#define POLLING_MIN   0
+	#define POLLING_MAX   1036800 // the number of seconds in twelve days
+	#define POLLING_ENABLED_DEFAULT   7
+	#define POLLING_DEFAULT   ( POLLING_MIN - 1 )
 	int polling;
 	
+	
 	/* verbosity level. the higher the level the more information.
-	verbose is set to 0 by default.
+	by default verbose is disabled and this program will not print extra information.
 	*/
+	#define VERBOSE_MIN   1
+	#define VERBOSE_MAX   9
+	#define VERBOSE_ENABLED_DEFAULT   VERBOSE_MIN
+	#define VERBOSE_DEFAULT   ( VERBOSE_MIN - 1 )
 	int verbose;
 	
-	/* ignore "inside" hooks. set nonzero.
+	
+	/* max_threads is the maximum number of threads that can be held in each snapshot.
+	having 20k elements each gui/spi is currently about 7MB total per snapshot which is reasonable.
+	*/
+	#define MAX_THREADS_DEFAULT   20000
+	unsigned max_threads;
+	
+	
+	/* ignore "inside" hooks.
 	any hook with the same owner, origin and target thread information I refer to as an inside hook.
 	any hook with differing owner/origin/target info I refer to as an outside hook.
+	ignore_inside_hooks is set to 0 if disabled (default) and nonzero if enabled.
 	*/
-	unsigned ignore_inside;
+	unsigned ignore_inside_hooks;
+	
+	/* ignore "known" hooks: hooks with valid owner, origin and target threads.
+	a hook that is not known has an unknown owner, origin and/or target thread.
+	ignore_known_hooks is set to 0 if disabled (default) and nonzero if enabled.
+	*/
+	unsigned ignore_known_hooks;
+	
+	/* ignore some NtQuerySystemInformation() errors. nonzero if true. default false.
+	traverse_threads() depends on NtQuerySystemInformation() which may fail for numerous reasons.
+	ignore_failed_queries is set to 0 if disabled (default) and nonzero if enabled.
+	*/
+	unsigned ignore_failed_queries;
 	
 	/* a linked list of desktop names to include */
 	struct list *desklist;   // create_list_store(), free_list_store()

@@ -345,12 +345,26 @@ int is_hook_wanted(
 	HOOK target GUI thread info kernel address: hook->object.ptiHooked
 	The related user mode thread info obtained by this program: hook->target
 	*/
-	if( G->config->ignore_inside
+	if( G->config->ignore_inside_hooks
 		&& hook->entry.pOwner
 		&& ( hook->owner == hook->origin ) 
 		&& ( hook->entry.pOwner == hook->object.pti ) 
 		&& ( hook->owner == hook->target )
 		&& ( hook->entry.pOwner == hook->object.ptiHooked ) 
+	)
+		return FALSE;
+	
+	/* if the user requested to ignore "known" hooks then any HOOK (aka hook->object) with known 
+	owner, origin and target thread user mode info should be ignored.
+	as a special case if the HOOK is global and valid then the target is considered known even 
+	though hook->target and hook->object.ptiHooked don't point to anything.
+	*/
+	if( G->config->ignore_known_hooks 
+		&& hook->owner 
+		&& hook->origin 
+		&& ( hook->target 
+			|| ( ( hook->object.flags & HF_GLOBAL ) && !hook->object.ptiHooked )
+		)
 	)
 		return FALSE;
 	

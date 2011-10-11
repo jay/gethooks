@@ -211,17 +211,21 @@ unsigned __int64 print_kernel_HOOK(
 			break;
 	}
 	
-	printf( "HOOK at kernel address " );
-	PRINT_HEX_BARE( addr );
 	
 	if( !desktop )
 	{
+		printf( "HOOK at kernel address " );
+		PRINT_HEX_BARE( addr );
 		printf( " is on an inaccessible desktop.\n" );
 		
 		return 0;
 	}
-	
-	printf( " is on desktop '%ls'.\n", desktop->pwszDesktopName );
+	else if( G->config->verbose >= 1 )
+	{
+		printf( "HOOK at kernel address " );
+		PRINT_HEX_BARE( addr );
+		printf( " is on desktop '%ls'.\n", desktop->pwszDesktopName );
+	}
 	
 	hook.object = *(HOOK *)( (uintptr_t)addr - (uintptr_t)desktop->pvClientDelta );
 	
@@ -473,11 +477,19 @@ unsigned __int64 print_kernel_HOOK_chain(
 	
 	for( i = 0; addr; ++i )
 	{
+		if( G->config->verbose >= 1 )
+			printf( "\n\n" );
+		
 		if( find_kernel_HOOK( &desktop, addr ) )
 		{
-			printf( "HOOK " );
-			PRINT_HEX_BARE( addr );
-			printf( " was found on desktop '%ls' in the snapshot.\n", desktop->pwszDesktopName );
+			if( G->config->verbose >= 1 )
+			{
+				printf( "HOOK " );
+				PRINT_HEX_BARE( addr );
+				printf( " was found on desktop '%ls' in the snapshot.\n", 
+					desktop->pwszDesktopName 
+				);
+			}
 		}
 		else
 		{
@@ -486,7 +498,8 @@ unsigned __int64 print_kernel_HOOK_chain(
 			PRINT_HEX( addr );
 		}
 		
-		printf( "\nPosition in chain relative to passed in HOOK: %u\n", i );
+		if( G->config->verbose >= 1 )
+			printf( "\nPosition in chain relative to passed in HOOK: %u\n", i );
 		
 		addr = print_kernel_HOOK( addr );
 	}
@@ -528,11 +541,14 @@ unsigned __int64 print_kernel_HOOK_desktop_chains(
 			if( !desktop->pDeskInfo->aphkStart[ i ] )
 				continue;
 			
-			printf( "\n\naphkStart[ %d ]: ", i );
-			print_HOOK_id( WH_MIN + i );
-			printf( ": HOOK ");
-			PRINT_HEX_BARE( desktop->pDeskInfo->aphkStart[ i ] );
-			printf( " on desktop '%ls'.", desktop->pwszDesktopName );
+			if( G->config->verbose >= 1 )
+			{
+				printf( "\n\naphkStart[ %d ]: ", i );
+				print_HOOK_id( WH_MIN + i );
+				printf( ": HOOK ");
+				PRINT_HEX_BARE( desktop->pDeskInfo->aphkStart[ i ] );
+				printf( " on desktop '%ls'.", desktop->pwszDesktopName );
+			}
 			
 			print_kernel_HOOK_chain( (uintptr_t)desktop->pDeskInfo->aphkStart[ i ] );
 		}
@@ -574,7 +590,7 @@ const struct
 		L"address",   // param_name
 		TRUE,   // param_required
 		NULL,   // extra_info
-		L"0xFE893E68",   // example_name
+		L"0xFE893E68 -v 6",   // example_name
 		L"Print HOOK at 0xFE893E68."   // example_description
 	},
 	{
@@ -596,7 +612,7 @@ const struct
 		NULL,   // param_name
 		FALSE,   // param_required
 		L"Use the user-specified hook include/exclude list for filtering.",   // extra_info
-		L"-d -i WH_KEYBOARD_LL",   // example_name
+		L"-d -i WH_KEYBOARD_LL -v 1",   // example_name
 		L"Print the WH_KEYBOARD_LL chain on the current desktop.",   // example_description
 	}
 };
@@ -621,7 +637,7 @@ static void print_function_usage(
 	if( function[ i ].description )
 		printf( "%ls\n", function[ i ].description );
 	
-	printf( "%s -t %ls", G->prog->pszBasename, function[ i ].name );
+	printf( "%s -z %ls", G->prog->pszBasename, function[ i ].name );
 	if( function[ i ].param_name )
 	{
 		BOOL req = !!function[ i ].param_required;
@@ -642,7 +658,7 @@ static void print_function_usage(
 		if( function[ i ].example_description )
 			printf( "Example: %ls\n", function[ i ].example_description );
 		
-		printf( "%s -t %ls %ls\n", 
+		printf( "%s -z %ls %ls\n", 
 			G->prog->pszBasename, function[ i ].name, function[ i ].example_name 
 		);
 	}

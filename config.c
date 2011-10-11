@@ -86,9 +86,9 @@ Free a configuration store and all its descendants.
 
 #include <stdio.h>
 
-#include "str_to_int.h"
-
 #include "util.h"
+
+#include "nt_independent_sysprocinfo_structs.h"
 
 #include "test.h"
 
@@ -102,14 +102,6 @@ Free a configuration store and all its descendants.
 static void print_config_store( 
 	struct config *store   // in
 );
-
-
-
-/* the default number of seconds when polling is enabled */
-#define POLLING_DEFAULT   7
-
-/* the default verbosity level when verbosity is enabled */
-#define VERBOSE_DEFAULT   1
 
 
 
@@ -157,11 +149,11 @@ void print_usage_and_exit( void )
 {
 	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
+//		"gethooks prints any errors to stdout, not stderr.\n"
 	
 	printf( 
 		"gethooks lists any hook in the user handle table that is on any desktop in the \n"
 		"current window station, and the threads/processes associated with that hook.\n"
-		"gethooks prints any errors to stdout, not stderr.\n"
 		"\n"
 		"[-m [sec]]  [-v [num]]  [-d [desktop]]  [[-i]|[-x] <hook>]  [[-p]|[-r] <prog>]\n"
 		"\n"
@@ -173,7 +165,7 @@ void print_usage_and_exit( void )
 		"   -p     include only these programs: a list of programs separated by space.\n"
 		"   -r     exclude only these programs: a list of programs separated by space.\n"
 		"\n",
-		POLLING_DEFAULT, VERBOSE_DEFAULT
+		POLLING_ENABLED_DEFAULT, VERBOSE_ENABLED_DEFAULT
 	);
 	
 	printf( "\nexample to list WH_MOUSE hooks on the current desktop only:\n" );
@@ -182,7 +174,10 @@ void print_usage_and_exit( void )
 	printf( "\nexample to monitor WH_KEYBOARD hooks associated with workrave.exe or pid 799:\n" );
 	printf( " %s -m -i WH_KEYBOARD -p workrave.exe 799\n", G->prog->pszBasename );
 	
-	printf( "\nTo show more examples: %s --examples\n", G->prog->pszBasename );
+	printf( "\n" );
+	printf( "To show more examples: %s --examples\n", G->prog->pszBasename );
+	printf( "To show advanced options: %s --advanced\n", G->prog->pszBasename );
+	
 	exit( 1 );
 }
 
@@ -196,32 +191,96 @@ void print_advanced_usage_and_exit( void )
 	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
 	
-	printf( "Advanced options for gethooks:\n"
-		"[-o] [-t <func> [param]]\n"
+	printf( "\n"
+		"Advanced options are compatible with all other options unless stated otherwise.\n"
+		"For the sake of posterity please email me if you *have* to use these options.\n"
+		"\n"
+		"[-t <num>]  [-f]  [-o]  [-u]  [-z <func> [param]]\n"
 	);
 	
+	
 	printf( "\n\n"
-		"   -o     process \"outside\" hooks only. ignore \"inside\" hooks.\n"
+		"   -t     the maximum number of threads in a snapshot\n"
+		"\n"
+		"For each system snapshot this program allocates several buffers whose size is \n"
+		"based on the maximum number of threads in a snapshot. The default maximum \n"
+		"number of threads is currently %u, resulting in each snapshot taking ~%uMB.\n"
+		"Currently gethooks has memory allocated at any one time for 1 snapshot by \n"
+		"default, or 2 if in monitor mode, or maybe more if in test mode. Use this \n"
+		"option to specify a smaller or larger number of threads per snapshot, which \n"
+		"will decrease or increase, respectively, the amount of memory allocated.\n", 
+		MAX_THREADS_DEFAULT, 
+		(unsigned)( 
+			MAX_THREADS_DEFAULT
+			* ( sizeof( SYSTEM_PROCESS_INFORMATION ) 
+				+ sizeof( SYSTEM_EXTENDED_THREAD_INFORMATION ) 
+			)
+			/ 1048576
+			+ 1
+		)
+	);
+	
+	
+	printf( "\n\n"
+		"   -f     force successful completion of NtQuerySystemInformation()\n"
+		"\n"
+		"For each system snapshot this program uses a thread traversal library which \n"
+		"calls the API function NtQuerySystemInformation() to get a list of threads in \n"
+		"the system. If that call ever fails it is considered an indicator of system \n"
+		"instability and by default this program will terminate. However, you may \n"
+		"decide that the failure is indicative of something else entirely. Use this \n"
+		"option to silently retry on almost any failed NtQuerySystemInformation() call \n"
+		"every second until it succeeds.\n"
+		"Note that info length mismatch (buffer too small) failures are never retried.\n"
+		"To remedy a small buffer increase the number of threads using option 't'.\n"
+	);
+	
+	
+	printf( "\n\n"
+		"   -o     process \"outside\" hooks and ignore \"inside\" hooks\n"
 		"\n"
 		"You'll notice for each hook found on your desktop that the owner, origin and \n"
-		"target thread are often the same. That means a thread hooked itself. I refer \n"
-		"to those hooks as inside hooks. Outside hooks are any hooks which are not \n"
-		"inside, and are usually more of interest. For example a thread which has \n"
+		"target thread are often the same. That means a thread hooked itself. Example:\n"
+		"-\n"
+		"Owner/Origin/Target: notepad++.exe (PID 3408, TID 3412 @ 0xFE6ECDD8)\n"
+		"-\n"
+		"I refer to those hooks as inside hooks. Outside hooks are any hooks which are \n"
+		"not inside, and are usually more of interest. For example a thread which has \n"
 		"targeted some other thread with a hook or is targeting all threads with a \n"
-		"global hook. To make outside hooks easier to identify you may choose to \n"
-		"ignore inside hooks by enabling this option.\n"
-		"This option is compatible with all standard usage options.\n"
+		"global hook. This program processes both outside and inside hooks by default, \n"
+		"but you may use this option to ignore inside hooks.\n"
 	);
 	
+	
+	printf( "\n\n" 
+		"   -u     process \"unknown\" hooks and ignore \"known\" hooks\n"
+		"\n"
+		"You'll notice for each hook found on your desktop that the owner, origin and \n"
+		"target thread are usually identified by their thread and process info. Example:\n"
+		"-\n"
+		"Owner/Origin: WLSync.exe (PID 148, TID 3280 @ 0xFE2A5B50)\n"
+		"Target: WLSync.exe (PID 148, TID 3556 @ 0xFE5E9B78)\n"
+		"-\n"
+		"I refer to those hooks as known. Unknown hooks are any hooks which do not \n"
+		"have identifiable owner, origin and/or target thread information, and may be \n"
+		"more of interest to you because they could not be fully identified. This \n"
+		"program processes both known and unknown hooks by default, but you may use \n"
+		"this option to ignore known hooks.\n"
+		"Note that unknown hooks are often the result of insufficient permissions. \n"
+		"To remedy that you can run this program with administrative privileges.\n"
+	);
+	
+	
 	printf( "\n\n"
-		"   -t     run a test mode function with an optional or required parameter.\n"
+		"   -z     run a test mode function with an optional or required parameter.\n"
 		"\n"
 		"Test mode is where I am testing functions like walking a hook chain or dumping \n"
 		"an individual HOOK from its kernel address.\n"
 		"Whether or not this option is compatible with any other options depends on the \n"
-		"function and its parameter. For usage and examples: %s -t\n",
+		"function and its parameter. For usage and examples: %s -z\n",
 		G->prog->pszBasename
 	);
+	
 	
 	exit( 1 );
 }
@@ -238,6 +297,41 @@ void print_more_examples_and_exit( void )
 	
 	printf( "\nMore examples:\n" );
 	
+	
+	printf( "\n\n"
+		"Show WH_KEYBOARD_LL hooks that are associated with hkcmd.exe:\n"
+		"\n"
+		"          %s -i WH_KEYBOARD_LL -p hkcmd.exe\n", 
+		G->prog->pszBasename 
+	);
+	
+	
+	printf( "\n\n"
+		"Show WH_KEYBOARD_LL hooks that are associated with any process other than \n"
+		"hkcmd.exe:\n"
+		"\n"
+		"          %s -i WH_KEYBOARD_LL -r hkcmd.exe\n", 
+		G->prog->pszBasename 
+	);
+	
+	
+	printf( "\n\n"
+		"Show hooks other than WH_KEYBOARD_LL that are associated with hkcmd.exe:\n"
+		"\n"
+		"          %s -x WH_KEYBOARD_LL -p hkcmd.exe\n", 
+		G->prog->pszBasename 
+	);
+	
+	
+	printf( "\n\n"
+		"Show hooks other than WH_KEYBOARD_LL that are associated with any process \n"
+		"other than hkcmd.exe:\n"
+		"\n"
+		"          %s -x WH_KEYBOARD_LL -r hkcmd.exe\n", 
+		G->prog->pszBasename 
+	);
+	
+	
 	printf( "\n\n"
 		"By default this program attaches to all desktops in the current window station.\n"
 		"Instead you may specify zero or more individual desktops with the 'd' option.\n"
@@ -248,6 +342,7 @@ void print_more_examples_and_exit( void )
 		G->prog->pszBasename 
 	);
 	
+	
 	printf( "\n\n"
 		"You may use a hook's id instead of its name when including/excluding hooks.\n"
 		"For example, to monitor only WH_KEYBOARD(2) and WH_MOUSE(7) hooks:\n"
@@ -255,6 +350,7 @@ void print_more_examples_and_exit( void )
 		"          %s -m -i 2 7\n", 
 		G->prog->pszBasename 
 	);
+	
 	
 	printf( "\n\n"
 		"If the colon is the first character in an argument to program include/exclude \n"
@@ -266,6 +362,7 @@ void print_more_examples_and_exit( void )
 		G->prog->pszBasename
 	);
 	
+	
 	printf( "\n\n"
 		"Use the GNU 'tee' program to copy this program's output to a file.\n"
 		"For example, to monitor hooks and copy output to file \"outfile\":\n"
@@ -274,30 +371,34 @@ void print_more_examples_and_exit( void )
 		G->prog->pszBasename 
 	);
 	
+	
 	printf( "\n\n"
 		"Verbosity can be enabled to aid advanced users.\n"
-		"When verbosity is enabled the lowest level is 1 and the highest level is 9.\n"
-		"The higher the verbosity level the more information that is printed.\n"
-		"\n"
+		"When verbosity is enabled the lowest level is %u and the highest level is %u.\n"
+		"The higher the verbosity level the more information that is printed.\n", 
+		VERBOSE_MIN, VERBOSE_MAX
+	);
+	
+	printf( "\n"
 		"Level 1 shows additional statistics.\n"
 		"Level 2 is reserved for further development.\n"
 		"Level 3 is reserved for further development.\n"
 		"Level 4 is reserved for further development.\n"
-		"Level 5 shows this program's global store (structure) and its descendants.\n"
+		"Level 5 shows this program's global store (structures) and its descendants.\n"
 		"Level 6 shows the HOOK structs (Microsoft's internal hook structures).\n"
 		"Level 7 shows the hook structs (This program's internal hook structures).\n"
 		"\n"
 		"Level >=8 is too noisy/comprehensive to be used in monitoring mode:\n"
-		"Level 8 shows brief information on all the threads captured in the snapshot.\n"
-		"Level 9 enables traverse_threads() verbosity when it traverses the each thread.\n"
+		"Level 8 shows brief information on every thread captured in a snapshot.\n"
+		"Level 9 enables traverse_threads() verbosity when it traverses each thread.\n"
 		"\n"
-		"For example, to print the HOOK struct in each HOOK notice:\n"
+		"For example, to print Microsoft's internal HOOK struct in each HOOK notice:\n"
 		"\n"
 		"          %s -v 6\n", 
 		G->prog->pszBasename 
 	);
 	
-	printf( "\n\nTo show advanced options: %s --advanced\n", G->prog->pszBasename );
+	
 	exit( 1 );
 }
 
@@ -437,8 +538,9 @@ void init_global_config_store( void )
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
 	
-	/* set polling to a negative number if not taking more than one snapshot */
-	G->config->polling = -1; // default. not polling.
+	G->config->polling = POLLING_DEFAULT;
+	G->config->verbose = VERBOSE_DEFAULT;
+	G->config->max_threads = MAX_THREADS_DEFAULT;
 	
 	/* parse command line arguments */
 	i = 0;
@@ -521,14 +623,14 @@ void init_global_config_store( void )
 			case 'm':
 			case 'M':
 			{
-				if( G->config->polling >= 0 )
+				if( G->config->polling != POLLING_DEFAULT )
 				{
 					MSG_FATAL( "Option 'm': this option has already been specified." );
 					printf( "sec: %d\n", G->config->polling );
 					exit( 1 );
 				}
 				
-				G->config->polling = POLLING_DEFAULT;
+				G->config->polling = POLLING_ENABLED_DEFAULT;
 				
 				/* since this option may or may not have an associated argument, 
 				test for both an option's argument(optarg) or the next option
@@ -540,54 +642,40 @@ void init_global_config_store( void )
 				
 				/* option argument found */
 				
-				/* if the string is not an integer representation, or it is but it's negative */
-				if( !str_to_int( &G->config->polling, G->prog->argv[ i ] ) 
-					|| ( G->config->polling < 0 ) 
-				) 
+				if( !str_to_int( &G->config->polling, G->prog->argv[ i ] ) )
 				{
-					MSG_FATAL( "Option 'm': number of seconds invalid." );
+					MSG_FATAL( "Option 'm': the string is not an integer representation." );
 					printf( "sec: %s\n", G->prog->argv[ i ] );
 					exit( 1 );
 				}
 				
-				if( !G->config->polling )
+				if( G->config->polling == 0 )
 				{
 					MSG_WARNING( "Option 'm': an interval of 0 uses too much CPU time." );
-					printf( "sec: %d\n", G->config->polling );
+					printf( "sec: %s\n", G->prog->argv[ i ] );
 				}
-				else if( G->config->polling > 86400 )
+				
+				if( G->config->polling > 86400 ) // number of seconds in a day
 				{
-					MSG_WARNING( "Option 'm': more seconds than in a day." );
-					printf( "sec: %d\n", G->config->polling );
+					MSG_WARNING( "Option 'm': more seconds than in a day (86400)." );
+					printf( "sec: %s\n", G->prog->argv[ i ] );
 				}
-				else if( G->config->polling > 1036800 )
+				
+				if( G->config->polling < POLLING_MIN )
 				{
-					MSG_FATAL( "Option 'm': more seconds than in twelve days." );
-					printf( "sec: %d\n", G->config->polling );
+					MSG_FATAL( "Option 'm': less seconds than the minimum allowed." );
+					printf( "sec: %s\n", G->prog->argv[ i ] );
+					printf( "POLLING_MIN: %d\n", POLLING_MIN );
+					exit( 1 );
+				}
+				else if( G->config->polling > POLLING_MAX )
+				{
+					MSG_FATAL( "Option 'm': more seconds than the maximum allowed." );
+					printf( "sec: %s\n", G->prog->argv[ i ] );
+					printf( "POLLING_MAX: %d\n", POLLING_MAX );
 					exit( 1 );
 				}
 				
-				continue;
-			}
-			
-			
-			
-			/** 
-			option to process only "outside" hooks
-			*/
-			case 'o':
-			case 'O':
-			{
-				if( G->config->ignore_inside )
-				{
-					MSG_FATAL( "Option 'o': this option has already been specified." );
-					exit( 1 );
-				}
-				
-				/* ignore "inside" hooks */
-				G->config->ignore_inside = TRUE;
-				
-				arf = get_next_arg( &i, OPT );
 				continue;
 			}
 			
@@ -776,10 +864,97 @@ void init_global_config_store( void )
 			
 			
 			/** 
-			test mode include option
+			verbosity option
+			*/
+			case 'v':
+			case 'V':
+			{
+				if( G->config->verbose != VERBOSE_DEFAULT )
+				{
+					MSG_FATAL( "Option 'v': this option has already been specified." );
+					printf( "verbosity level: %d\n", G->config->verbose );
+					exit( 1 );
+				}
+				
+				G->config->verbose = VERBOSE_ENABLED_DEFAULT;
+				
+				/* since this option may or may not have an associated argument, 
+				test for both an option's argument(optarg) or the next option
+				*/
+				arf = get_next_arg( &i, OPT | OPTARG );
+				
+				if( arf != OPTARG )
+					continue;
+				
+				/* option argument found */
+				
+				if( !str_to_int( &G->config->verbose, G->prog->argv[ i ] ) )
+				{
+					MSG_FATAL( "Option 'v': the string is not an integer representation." );
+					printf( "num: %s\n", G->prog->argv[ i ] );
+					exit( 1 );
+				}
+				
+				if( G->config->verbose < VERBOSE_MIN )
+				{
+					MSG_FATAL( "Option 'v': less verbosity than the minimum allowed." );
+					printf( "num: %s\n", G->prog->argv[ i ] );
+					printf( "VERBOSE_MIN: %d\n", VERBOSE_MIN );
+					exit( 1 );
+				}
+				else if( G->config->verbose > VERBOSE_MAX )
+				{
+					MSG_FATAL( "Option 'v': more verbosity than the maximum allowed." );
+					printf( "num: %s\n", G->prog->argv[ i ] );
+					printf( "VERBOSE_MAX: %d\n", VERBOSE_MAX );
+					exit( 1 );
+				}
+				
+				continue;
+			}
+			
+			
+			
+			/**
+			threads option (advanced)
 			*/
 			case 't':
 			case 'T':
+			{
+				if( G->config->max_threads != MAX_THREADS_DEFAULT )
+				{
+					MSG_FATAL( "Option 't': this option has already been specified." );
+					printf( "max threads: %u\n", G->config->max_threads );
+					exit( 1 );
+				}
+				
+				/* this option must have an associated argument (optarg). 
+				if an optarg is not found get_next_arg() will exit(1)
+				*/
+				arf = get_next_arg( &i, OPTARG );
+				
+				/* option argument found */
+				
+				/* if the string is not a positive integer representation > 0 */
+				if( ( str_to_uint( &G->config->max_threads, G->prog->argv[ i ] ) != NUM_POS ) 
+					|| ( G->config->max_threads <= 0 ) 
+				)
+				{
+					MSG_FATAL( "Option 't': maximum number of threads invalid." );
+					printf( "num: %s\n", G->prog->argv[ i ] );
+					exit( 1 );
+				}
+				
+				continue;
+			}
+			
+			
+			
+			/**
+			test mode include option (advanced)
+			*/
+			case 'z':
+			case 'Z':
 			{
 				unsigned __int64 id = 0;
 				WCHAR *name = NULL;
@@ -787,7 +962,7 @@ void init_global_config_store( void )
 				
 				G->config->testlist->type = LIST_INCLUDE_TEST;
 				
-				/* the 't' option requires one associated argument (optarg), and a second which is 
+				/* the 'z' option requires one associated argument (optarg), and a second which is 
 				optional.
 				*/
 				arf = get_next_arg( &i, OPT | OPTARG );
@@ -837,41 +1012,61 @@ void init_global_config_store( void )
 			
 			
 			
-			/** 
-			verbosity option
+			/**
+			option to ignore failed NtQuerySystemInformation() calls (advanced)
 			*/
-			case 'v':
-			case 'V':
+			case 'f':
+			case 'F':
 			{
-				if( G->config->verbose )
+				if( G->config->ignore_failed_queries )
 				{
-					MSG_FATAL( "Option 'v': this option has already been specified." );
-					printf( "verbosity level: %d\n", G->config->verbose );
+					MSG_FATAL( "Option 'f': this option has already been specified." );
 					exit( 1 );
 				}
 				
-				G->config->verbose = VERBOSE_DEFAULT;
+				G->config->ignore_failed_queries = TRUE;
 				
-				/* since this option may or may not have an associated argument, 
-				test for both an option's argument(optarg) or the next option
-				*/
-				arf = get_next_arg( &i, OPT | OPTARG );
-				
-				if( arf != OPTARG )
-					continue;
-				
-				/* option argument found */
-				
-				/* if the string is not an integer representation, or it is but it's invalid */
-				if( !str_to_int( &G->config->verbose, G->prog->argv[ i ] ) 
-					|| ( G->config->verbose <= 0 ) 
-				) 
+				arf = get_next_arg( &i, OPT );
+				continue;
+			}
+			
+			
+			
+			/**
+			option to ignore inside hooks (advanced)
+			*/
+			case 'o':
+			case 'O':
+			{
+				if( G->config->ignore_inside_hooks )
 				{
-					MSG_FATAL( "Option 'v': verbosity level invalid." );
-					printf( "verbosity level: %s\n", G->prog->argv[ i ] );
+					MSG_FATAL( "Option 'o': this option has already been specified." );
 					exit( 1 );
 				}
 				
+				G->config->ignore_inside_hooks = TRUE;
+				
+				arf = get_next_arg( &i, OPT );
+				continue;
+			}
+			
+			
+			
+			/**
+			option to ignore known hooks (advanced)
+			*/
+			case 'u':
+			case 'U':
+			{
+				if( G->config->ignore_known_hooks )
+				{
+					MSG_FATAL( "Option 'u': this option has already been specified." );
+					exit( 1 );
+				}
+				
+				G->config->ignore_known_hooks = TRUE;
+				
+				arf = get_next_arg( &i, OPT );
 				continue;
 			}
 			
@@ -930,13 +1125,6 @@ static void print_config_store(
 	PRINT_DBLSEP_BEGIN( objname );
 	print_init_time( "store->init_time", store->init_time );
 	
-	printf( "store->ignore_inside: " );
-	if( store->ignore_inside ) 
-		printf( "TRUE (Ignore hooks with same owner/origin/target)" );
-	else
-		printf( "FALSE (Don't ignore hooks with same owner/origin/target)" );
-	printf( "\n" );
-	
 	printf( "store->polling: %d", store->polling );
 	if( store->polling >= 0 )
 		printf( " (Comparing snapshots every %d seconds)", store->polling );
@@ -945,6 +1133,28 @@ static void print_config_store(
 	printf( "\n" );
 	
 	printf( "store->verbose: %d\n", store->verbose );
+	printf( "store->max_threads: %u\n", store->max_threads );
+	
+	printf( "store->ignore_inside_hooks: " );
+	if( store->ignore_inside_hooks )
+		printf( "TRUE (Ignore hooks with same owner, origin and target)" );
+	else
+		printf( "FALSE (Don't ignore hooks with same owner, origin and target)" );
+	printf( "\n" );
+	
+	printf( "store->ignore_known_hooks: " );
+	if( store->ignore_known_hooks )
+		printf( "TRUE (Ignore hooks with known owner, origin and target)" );
+	else
+		printf( "FALSE (Don't ignore hooks with known owner, origin and target)" );
+	printf( "\n" );
+	
+	printf( "store->ignore_failed_queries: " );
+	if( store->ignore_failed_queries ) 
+		printf( "TRUE (Ignore failed calls to NtQuerySystemInformation)" );
+	else
+		printf( "FALSE (Don't ignore failed calls to NtQuerySystemInformation)" );
+	printf( "\n" );
 	
 	printf( "\nPrinting list store of user specified hooks:\n" );
 	print_list_store( store->hooklist );

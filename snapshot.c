@@ -155,12 +155,8 @@ void create_snapshot_store(
 	
 	/* the allocated/maximum number of elements in the array pointed to by gui.
 	this is also the maximum number of threads that can be handled in this snapshot.
-	
-	between the gui array and SYSTEM_PROCESS_INFORMATION array , having 20,000 
-	elements each is about 7MB total per snapshot which is reasonable. 
-	so for now the maximum threads that can be handled is 20,000.
 	*/
-	snapshot->gui_max = 20000;
+	snapshot->gui_max = G->config->max_threads;
 	
 	/* allocate an array of gui structs */
 	snapshot->gui = 
@@ -169,11 +165,10 @@ void create_snapshot_store(
 	
 	/* the allocated size of the buffer in bytes.
 	
-	when traverse_threads() is called how much memory is needed depends on 
-	how many threads in the system, the thread process ratio and whether extended process 
-	information was requested.  because this information is constantly changing 
-	depending on the state of the system, and to avoid too many allocations and frees, 
-	i'm using one big buffer that can be continually refilled.
+	when traverse_threads() is called how much memory is needed depends on how many threads in the 
+	system, the thread process ratio and whether extended process information was requested.
+	because this information is constantly changing depending on the state of the system, and to 
+	avoid too many allocations and frees, i'm using one big buffer that can be continually refilled.
 	
 	the size is calculated based on the worst-case scenario of one thread per process.
 	eg 20k max threads is about a 6.5MB buffer
@@ -595,6 +590,9 @@ int init_snapshot_store(
 	
 	FAIL_IF( !store );   // a snapshot store must always be passed in
 	
+retry:
+	flags = 0;
+	nt_status = 0;
 	
 	/* snapshot stores are reused. do a soft reset to reuse gui array */
 	store->gui_count = 0;
@@ -633,6 +631,16 @@ int init_snapshot_store(
 	
 	if( ret != TRAVERSE_SUCCESS )
 	{
+		/* Troubleshooting: If we're ignoring failed queries wait a second and retry.
+		Although technically not necessary clear the memory before retrying.
+		*/
+		if( G->config->ignore_failed_queries && ( ret == TRAVERSE_ERROR_QUERY ) )
+		{
+			ZeroMemory( store->spi, store->spi_max_bytes );
+			Sleep( 1000 );
+			goto retry;
+		}
+		
 		MSG_ERROR( "traverse_threads() failed." );
 		printf( "traverse_threads() returned: %s\n", traverse_threads_retcode_to_cstr( ret ) );
 		
@@ -640,7 +648,33 @@ int init_snapshot_store(
 			|| ( ret == TRAVERSE_ERROR_BUFFER_TOO_SMALL )
 			|| ( ret == TRAVERSE_ERROR_QUERY )
 		)
-			printf( "nt_status: 0x%08lX\n", nt_status );
+			printf( "NtQuerySystemInformation() failed. nt_status: 0x%08lX\n", nt_status );
+		
+		if( ret == TRAVERSE_ERROR_QUERY )
+		{
+			if( nt_status == 0xC000009AL )
+			{
+				printf( "C000009A: STATUS_INSUFFICIENT_RESOURCES\n"
+					"\"Insufficient system resources exist to complete the API.\"\n"
+					"That usually means there's insufficient contigious available kernel space.\n"
+					"Too many handles are open, a misbehaving driver, etc.\n"
+					"While I have tested ignoring this error I don't recommend it. There is \n"
+					"usually something seriously wrong with the state of your system if you are \n"
+					"seeing this error and you should not ignore it.\n"
+				);
+			}
+			
+			printf( "You may attempt to force successful completion of NtQuerySystemInformation()\n"
+				"Please review advanced option 'f' by specifying the switch --advanced\n" 
+			);
+		}
+		else if( ret == TRAVERSE_ERROR_BUFFER_TOO_SMALL )
+		{
+			printf( 
+				"You may increase the maximum number of threads which increases the buffer size.\n" 
+				"Please review advanced option 't' by specifying the switch --advanced\n" 
+			);
+		}
 		
 		/* the callback sets the initialization time of spi, however if traverse_threads() failed 
 		the data may not be valid so clear the init
