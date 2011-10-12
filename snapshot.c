@@ -37,9 +37,15 @@ Compare a GUI thread's process name to the passed in name.
 -
 
 -
-match_gui_process_pid()
+match_gui_process_id()
 
 Compare a GUI thread's process id to the passed in process id.
+-
+
+-
+match_gui_thread_id()
+
+Compare a GUI thread's id to the passed in thread id.
 -
 
 -
@@ -222,12 +228,12 @@ int match_gui_process_name(
 
 
 
-/* match_gui_process_pid()
+/* match_gui_process_id()
 Compare a GUI thread's process id to the passed in process id.
 
 returns nonzero on success ('pid' matches the GUI thread's process id)
 */
-int match_gui_process_pid(
+int match_gui_process_id(
 	const struct gui *const gui,   // in
 	const unsigned __int64 pid   // in
 )
@@ -236,6 +242,27 @@ int match_gui_process_pid(
 	
 	
 	if( gui->spi && ( pid == (uintptr_t)gui->spi->UniqueProcessId ) )
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* match_gui_thread_id()
+Compare a GUI thread's id to the passed in thread id.
+
+returns nonzero on success ('tid' matches the GUI thread's id)
+*/
+int match_gui_thread_id(
+	const struct gui *const gui,   // in
+	const unsigned __int64 tid   // in
+)
+{
+	FAIL_IF( !gui );
+	
+	
+	if( gui->sti && ( tid == (uintptr_t)gui->sti->ClientId.UniqueThread ) )
 		return TRUE;
 	else
 		return FALSE;

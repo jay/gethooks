@@ -174,9 +174,14 @@ int match_gui_process_name(
 	const WCHAR *const name   // in
 );
 
-int match_gui_process_pid(
+int match_gui_process_id(
 	const struct gui *const gui,   // in
 	const unsigned __int64 pid   // in
+);
+
+int match_gui_thread_id(
+	const struct gui *const gui,   // in
+	const unsigned __int64 tid   // in
 );
 
 struct gui *find_Win32ThreadInfo( 

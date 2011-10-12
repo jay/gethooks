@@ -65,24 +65,33 @@ struct config
 	unsigned max_threads;
 	
 	
-	/* ignore "inside" hooks.
-	any hook with the same owner, origin and target thread information I refer to as an inside hook.
-	any hook with differing owner/origin/target info I refer to as an outside hook.
-	ignore_inside_hooks is set to 0 if disabled (default) and nonzero if enabled.
+	/* ignore internal hooks.
+	any hook with the same user and kernel mode owner, origin and target thread information I refer 
+	to as an internal hook, ie a thread hooked itself. any hook with any differing kernel or user 
+	mode owner, origin and/or target info I refer to as an external hook.
+	ignore_internal_hooks is set to 0 if disabled (default) and nonzero if enabled.
 	*/
-	unsigned ignore_inside_hooks;
+	unsigned ignore_internal_hooks;
 	
-	/* ignore "known" hooks: hooks with valid owner, origin and target threads.
-	a hook that is not known has an unknown owner, origin and/or target thread.
+	/* ignore known hooks: hooks with valid user mode owner, origin and target threads.
+	a hook that is not known has an unknown owner, origin and/or target user mode thread.
 	ignore_known_hooks is set to 0 if disabled (default) and nonzero if enabled.
 	*/
 	unsigned ignore_known_hooks;
+	
+	/* ignore targeted hooks: hooks that have a target thread. 
+	hooks that don't have a valid user or kernel target thread are almost always global hooks (have 
+	the flag HF_GLOBAL) or if not then the internal HOOK struct is invalid.
+	ignore_targeted_hooks is set to 0 if disabled (default) and nonzero if enabled.
+	*/
+	unsigned ignore_targeted_hooks;
 	
 	/* ignore some NtQuerySystemInformation() errors. nonzero if true. default false.
 	traverse_threads() depends on NtQuerySystemInformation() which may fail for numerous reasons.
 	ignore_failed_queries is set to 0 if disabled (default) and nonzero if enabled.
 	*/
 	unsigned ignore_failed_queries;
+	
 	
 	/* a linked list of desktop names to include */
 	struct list *desklist;   // create_list_store(), free_list_store()
@@ -95,6 +104,7 @@ struct config
 	
 	/* a linked list of test parameters for test mode */
 	struct list *testlist;
+	
 	
 	/* the system utc time in FILETIME format immediately after this store has been initialized.
 	this is nonzero when this store has been initialized.

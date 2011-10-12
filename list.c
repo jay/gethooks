@@ -184,8 +184,8 @@ struct list_item *add_list_item(
 	{
 		/* for the program list, name and id are mutually exclusive.
 		if name then a program name has been passed in, 
-		otherwise a pid has been passed in. 
-		if name or pid is already in the list then there is no reason to append
+		otherwise an id has been passed in. 
+		if name or id is already in the list then there is no reason to append
 		*/
 		if( name )
 		{
@@ -203,13 +203,13 @@ struct list_item *add_list_item(
 		}
 		else
 		{
-			/* check if the program id is already in the list */
+			/* check if the PID/TID is already in the list */
 			for( item = store->head; item; item = item->next )
 			{
 				/* a program list item's id is only valid if doesn't have a name */
-				if( !item->name && id == item->id ) /* pid in list */
+				if( !item->name && id == item->id ) /* PID/TID in list */
 				{
-					MSG_WARNING( "Program id already in list." );
+					MSG_WARNING( "PID/TID already in list." );
 					print_list_item( item );
 					printf( "\n" );
 					goto existing_item;

@@ -420,12 +420,16 @@ static int print_diff_gui(
 	ZeroMemory( &newstuff, sizeof( newstuff ) );
 	
 	oldstuff.ImageName.Buffer = empty1;
-	oldstuff.ImageName.Length = (unsigned short)( wcslen( oldstuff.ImageName.Buffer ) * sizeof( WCHAR ) );
-	oldstuff.ImageName.MaximumLength = (unsigned short)( oldstuff.ImageName.Length + sizeof( WCHAR ) );
+	oldstuff.ImageName.Length = 
+		(unsigned short)( wcslen( oldstuff.ImageName.Buffer ) * sizeof( WCHAR ) );
+	oldstuff.ImageName.MaximumLength = 
+		(unsigned short)( oldstuff.ImageName.Length + sizeof( WCHAR ) );
 	
 	newstuff.ImageName.Buffer = empty2;
-	newstuff.ImageName.Length = (unsigned short)( wcslen( newstuff.ImageName.Buffer ) * sizeof( WCHAR ) );
-	newstuff.ImageName.MaximumLength = (unsigned short)( newstuff.ImageName.Length + sizeof( WCHAR ) );
+	newstuff.ImageName.Length = 
+		(unsigned short)( wcslen( newstuff.ImageName.Buffer ) * sizeof( WCHAR ) );
+	newstuff.ImageName.MaximumLength = 
+		(unsigned short)( newstuff.ImageName.Length + sizeof( WCHAR ) );
 	
 	/* both oldstuff and newstuff have been initialized empty */
 	

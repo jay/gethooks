@@ -45,7 +45,8 @@ name is optional. id is required.
 
 program include/exclude list:
 name and id are currently handled elsewhere as mutually exclusive.
-if( name ) then the name is used, but if( !name ) then the id is used
+if( name ) then the name is used, but if( !name ) then the id is used.
+the id may represent either a PID or TID
 */
 struct list_item
 {

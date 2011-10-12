@@ -149,7 +149,6 @@ void print_usage_and_exit( void )
 {
 	FAIL_IF( !G->prog->init_time );   // This function depends on G->prog
 	
-//		"gethooks prints any errors to stdout, not stderr.\n"
 	
 	printf( 
 		"gethooks lists any hook in the user handle table that is on any desktop in the \n"
@@ -168,11 +167,11 @@ void print_usage_and_exit( void )
 		POLLING_ENABLED_DEFAULT, VERBOSE_ENABLED_DEFAULT
 	);
 	
-	printf( "\nexample to list WH_MOUSE hooks on the current desktop only:\n" );
-	printf( " %s -d -i WH_MOUSE\n", G->prog->pszBasename );
+	printf( "\nexample to show WH_KEYBOARD hooks on the current desktop only:\n" );
+	printf( " %s -d -i WH_KEYBOARD\n", G->prog->pszBasename );
 	
-	printf( "\nexample to monitor WH_KEYBOARD hooks associated with workrave.exe or pid 799:\n" );
-	printf( " %s -m -i WH_KEYBOARD -p workrave.exe 799\n", G->prog->pszBasename );
+	printf( "\nexample to monitor WH_MOUSE hooks associated with workrave.exe or PID/TID 799:\n" );
+	printf( " %s -m -i WH_MOUSE -p workrave.exe 799\n", G->prog->pszBasename );
 	
 	printf( "\n" );
 	printf( "To show more examples: %s --examples\n", G->prog->pszBasename );
@@ -195,7 +194,7 @@ void print_advanced_usage_and_exit( void )
 		"Advanced options are compatible with all other options unless stated otherwise.\n"
 		"For the sake of posterity please email me if you *have* to use these options.\n"
 		"\n"
-		"[-t <num>]  [-f]  [-o]  [-u]  [-z <func> [param]]\n"
+		"[-t <num>]  [-f]  [-e]  [-u]  [-g]  [-z <func> [param]]\n"
 	);
 	
 	
@@ -217,7 +216,7 @@ void print_advanced_usage_and_exit( void )
 			)
 			/ 1048576
 			+ 1
-		)
+		) // worst case scenario for snapshot size
 	);
 	
 	
@@ -231,29 +230,31 @@ void print_advanced_usage_and_exit( void )
 		"decide that the failure is indicative of something else entirely. Use this \n"
 		"option to silently retry on almost any failed NtQuerySystemInformation() call \n"
 		"every second until it succeeds.\n"
-		"Note that info length mismatch (buffer too small) failures are never retried.\n"
+		"-Note that this option is only a workaround for intermittent failures. If you \n"
+		"enable this option and a failure *always* occurs then the code loops endlessly.\n"
+		"-Note that info length mismatch (buffer too small) failures are never retried. \n"
 		"To remedy a small buffer increase the number of threads using option 't'.\n"
 	);
 	
 	
 	printf( "\n\n"
-		"   -o     process \"outside\" hooks and ignore \"inside\" hooks\n"
+		"   -e     show external hooks (ignore internal hooks)\n"
 		"\n"
 		"You'll notice for each hook found on your desktop that the owner, origin and \n"
 		"target thread are often the same. That means a thread hooked itself. Example:\n"
 		"-\n"
 		"Owner/Origin/Target: notepad++.exe (PID 3408, TID 3412 @ 0xFE6ECDD8)\n"
 		"-\n"
-		"I refer to those hooks as inside hooks. Outside hooks are any hooks which are \n"
-		"not inside, and are usually more of interest. For example a thread which has \n"
-		"targeted some other thread with a hook or is targeting all threads with a \n"
-		"global hook. This program processes both outside and inside hooks by default, \n"
-		"but you may use this option to ignore inside hooks.\n"
+		"I refer to those hooks as internal hooks. External hooks are any hooks which \n"
+		"are not internal, and are usually more of interest. For example a thread \n"
+		"which has targeted some other thread with a hook or is targeting all threads \n"
+		"with a global hook. This program processes both external and internal hooks \n"
+		"by default, but you may use this option to ignore internal hooks.\n"
 	);
 	
 	
 	printf( "\n\n" 
-		"   -u     process \"unknown\" hooks and ignore \"known\" hooks\n"
+		"   -u     show unknown hooks (ignore known hooks)\n"
 		"\n"
 		"You'll notice for each hook found on your desktop that the owner, origin and \n"
 		"target thread are usually identified by their thread and process info. Example:\n"
@@ -261,13 +262,30 @@ void print_advanced_usage_and_exit( void )
 		"Owner/Origin: WLSync.exe (PID 148, TID 3280 @ 0xFE2A5B50)\n"
 		"Target: WLSync.exe (PID 148, TID 3556 @ 0xFE5E9B78)\n"
 		"-\n"
-		"I refer to those hooks as known. Unknown hooks are any hooks which do not \n"
-		"have identifiable owner, origin and/or target thread information, and may be \n"
-		"more of interest to you because they could not be fully identified. This \n"
-		"program processes both known and unknown hooks by default, but you may use \n"
-		"this option to ignore known hooks.\n"
-		"Note that unknown hooks are often the result of insufficient permissions. \n"
-		"To remedy that you can run this program with administrative privileges.\n"
+		"I refer to those hooks as known hooks. Unknown hooks are any hooks which do \n"
+		"not have identifiable user or kernel mode owner, origin and/or target thread \n"
+		"information, and may be more of interest to you because they could not be \n"
+		"fully identified. This program processes both known and unknown hooks by \n"
+		"default, but you may use this option to ignore known hooks.\n"
+		"-Note that unknown hooks are often the result of insufficient permissions. To \n"
+		"remedy that you can run this program with administrative privileges.\n"
+	);
+	
+	
+	printf( "\n\n" 
+		"   -g     show global hooks (ignore hooks with a target thread)\n"
+		"\n"
+		"You may notice hooks on your desktop that have a target of <GLOBAL>. Example:\n"
+		"-\n"
+		"Owner/Origin: hkcmd.exe (PID 2780, TID 3456 @ 0xFF52EC00)\n"
+		"Target: <GLOBAL>\n"
+		"-\n"
+		"Global hooks may be of more interest to you because \"the hook procedure is \n"
+		"associated with all existing threads running in the same desktop as the \n"
+		"calling thread.\" Popular global hooks include WH_KEYBOARD, WH_KEYBOARD_LL \n"
+		"and WH_MOUSE, WH_MOUSE_LL to monitor keyboard and mouse input, respectively. \n"
+		"This program processes both global and non-global (targeted) hooks by \n"
+		"default, but you may use this option to ignore targeted hooks.\n"
 	);
 	
 	
@@ -333,6 +351,16 @@ void print_more_examples_and_exit( void )
 	
 	
 	printf( "\n\n"
+		"It is possible to include or exclude a thread id (TID) or a process id (PID) \n"
+		"instead of a process name. To do that just use the id instead of the name.\n"
+		"For example, to monitor hooks associated with thread id 492 or process id 148:\n"
+		"\n"
+		"          %s -m -p 148 492\n", 
+		G->prog->pszBasename 
+	);
+	
+	
+	printf( "\n\n"
 		"By default this program attaches to all desktops in the current window station.\n"
 		"Instead you may specify zero or more individual desktops with the 'd' option.\n"
 		"If you specify 'd' without a desktop name it is assumed you want the current.\n"
@@ -353,9 +381,9 @@ void print_more_examples_and_exit( void )
 	
 	
 	printf( "\n\n"
-		"If the colon is the first character in an argument to program include/exclude \n"
-		"it is assumed a program name follows. You may prefix your program name with a \n"
-		"colon so that it is not misinterpreted as an option or program id (PID).\n"
+		"If a colon is the first character in an argument to program include/exclude it \n"
+		"is assumed a program name follows. You may prefix a program name with a colon \n"
+		"so that it is not misinterpreted as an option or process id or thread id.\n"
 		"For example, to list hooks associated with program name -h and program name 907\n"
 		"\n"
 		"          %s -p :-h :907\n",
@@ -398,6 +426,9 @@ void print_more_examples_and_exit( void )
 		G->prog->pszBasename 
 	);
 	
+	printf( "\n\n"
+		"Note that gethooks prints any errors to stdout, not stderr.\n" 
+	);
 	
 	exit( 1 );
 }
@@ -809,9 +840,9 @@ void init_global_config_store( void )
 					
 					/* a colon is used as the escape character. 
 					if the first character is a colon then a program name 
-					is specified, not a program id. this is only necessary 
+					is specified, not a PID/TID. this is only necessary 
 					in cases where a program name can be mistaken by 
-					the parser for an option or a program id.
+					the parser for an option or a PID/TID.
 					*/
 					if( *p == ':' )
 						++p;
@@ -1033,18 +1064,18 @@ void init_global_config_store( void )
 			
 			
 			/**
-			option to ignore inside hooks (advanced)
+			option to ignore internal hooks (advanced)
 			*/
-			case 'o':
-			case 'O':
+			case 'e':
+			case 'E':
 			{
-				if( G->config->ignore_inside_hooks )
+				if( G->config->ignore_internal_hooks )
 				{
-					MSG_FATAL( "Option 'o': this option has already been specified." );
+					MSG_FATAL( "Option 'e': this option has already been specified." );
 					exit( 1 );
 				}
 				
-				G->config->ignore_inside_hooks = TRUE;
+				G->config->ignore_internal_hooks = TRUE;
 				
 				arf = get_next_arg( &i, OPT );
 				continue;
@@ -1065,6 +1096,26 @@ void init_global_config_store( void )
 				}
 				
 				G->config->ignore_known_hooks = TRUE;
+				
+				arf = get_next_arg( &i, OPT );
+				continue;
+			}
+			
+			
+			
+			/**
+			option to ignore targeted hooks (advanced)
+			*/
+			case 'g':
+			case 'G':
+			{
+				if( G->config->ignore_targeted_hooks )
+				{
+					MSG_FATAL( "Option 'g': this option has already been specified." );
+					exit( 1 );
+				}
+				
+				G->config->ignore_targeted_hooks = TRUE;
 				
 				arf = get_next_arg( &i, OPT );
 				continue;
@@ -1126,7 +1177,7 @@ static void print_config_store(
 	print_init_time( "store->init_time", store->init_time );
 	
 	printf( "store->polling: %d", store->polling );
-	if( store->polling >= 0 )
+	if( store->polling >= POLLING_MIN )
 		printf( " (Comparing snapshots every %d seconds)", store->polling );
 	else
 		printf( " (Taking only one snapshot)" );
@@ -1135,18 +1186,27 @@ static void print_config_store(
 	printf( "store->verbose: %d\n", store->verbose );
 	printf( "store->max_threads: %u\n", store->max_threads );
 	
-	printf( "store->ignore_inside_hooks: " );
-	if( store->ignore_inside_hooks )
-		printf( "TRUE (Ignore hooks with same owner, origin and target)" );
+	printf( "store->ignore_internal_hooks: " );
+	if( store->ignore_internal_hooks )
+		printf( "TRUE (Ignore hooks with same user and kernel mode owner, origin and target)" );
 	else
-		printf( "FALSE (Don't ignore hooks with same owner, origin and target)" );
+		printf( 
+			"FALSE (Don't ignore hooks with same user and kernel mode owner, origin and target)" 
+		);
 	printf( "\n" );
 	
 	printf( "store->ignore_known_hooks: " );
 	if( store->ignore_known_hooks )
-		printf( "TRUE (Ignore hooks with known owner, origin and target)" );
+		printf( "TRUE (Ignore hooks with known user-mode owner, origin and target)" );
 	else
-		printf( "FALSE (Don't ignore hooks with known owner, origin and target)" );
+		printf( "FALSE (Don't ignore hooks with known user-mode owner, origin and target)" );
+	printf( "\n" );
+	
+	printf( "store->ignore_targeted_hooks: " );
+	if( store->ignore_targeted_hooks )
+		printf( "TRUE (Ignore hooks that have a target thread)" );
+	else
+		printf( "FALSE (Don't ignore hooks that have a target thread)" );
 	printf( "\n" );
 	
 	printf( "store->ignore_failed_queries: " );

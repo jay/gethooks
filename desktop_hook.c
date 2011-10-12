@@ -44,9 +44,15 @@ Match a hook struct's associated GUI threads' process names to the passed in nam
 -
 
 -
-match_hook_process_pid()
+match_hook_process_id()
 
-Match a hook struct's associated GUI threads' process pids to the passed in pid.
+Match a hook struct's associated GUI threads' process ids to the passed in pid.
+-
+
+-
+match_hook_thread_id()
+
+Match a hook struct's associated GUI threads' ids to the passed in tid.
 -
 
 -
@@ -251,12 +257,12 @@ int match_hook_process_name(
 
 
 
-/* match_hook_process_pid()
-Match a hook struct's associated GUI threads' process pids to the passed in pid.
+/* match_hook_process_id()
+Match a hook struct's associated GUI threads' process ids to the passed in pid.
 
-returns nonzero on success ('pid' matched one of the hook struct's GUI thread process pids)
+returns nonzero on success ('pid' matched one of the hook struct's GUI threads' process pids)
 */
-int match_hook_process_pid(
+int match_hook_process_id(
 	const struct hook *const hook,   // in
 	const unsigned __int64 pid   // in
 )
@@ -264,9 +270,33 @@ int match_hook_process_pid(
 	FAIL_IF( !hook );
 	
 	
-	if( ( hook->owner && match_gui_process_pid( hook->owner, pid ) )
-		|| ( hook->origin && match_gui_process_pid( hook->origin, pid ) )
-		|| ( hook->target && match_gui_process_pid( hook->target, pid ) )
+	if( ( hook->owner && match_gui_process_id( hook->owner, pid ) )
+		|| ( hook->origin && match_gui_process_id( hook->origin, pid ) )
+		|| ( hook->target && match_gui_process_id( hook->target, pid ) )
+	)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+
+/* match_hook_thread_id()
+Match a hook struct's associated GUI threads' ids to the passed in tid.
+
+returns nonzero on success ('tid' matched one of the hook struct's GUI threads' ids)
+*/
+int match_hook_thread_id(
+	const struct hook *const hook,   // in
+	const unsigned __int64 tid   // in
+)
+{
+	FAIL_IF( !hook );
+	
+	
+	if( ( hook->owner && match_gui_thread_id( hook->owner, tid ) )
+		|| ( hook->origin && match_gui_thread_id( hook->origin, tid ) )
+		|| ( hook->target && match_gui_thread_id( hook->target, tid ) )
 	)
 		return TRUE;
 	else
@@ -333,7 +363,7 @@ int is_hook_wanted(
 	if( hook->ignore )
 		return FALSE;
 	
-	/* if the user requested to ignore "inside" hooks then any HOOK (aka hook->object) with the 
+	/* if the user requested to ignore internal hooks then any HOOK (aka hook->object) with the 
 	same owner, origin and target thread info should be ignored.
 	
 	HOOK owner GUI thread info kernel address: hook->entry.pOwner
@@ -345,7 +375,7 @@ int is_hook_wanted(
 	HOOK target GUI thread info kernel address: hook->object.ptiHooked
 	The related user mode thread info obtained by this program: hook->target
 	*/
-	if( G->config->ignore_inside_hooks
+	if( G->config->ignore_internal_hooks
 		&& hook->entry.pOwner
 		&& ( hook->owner == hook->origin ) 
 		&& ( hook->entry.pOwner == hook->object.pti ) 
@@ -354,7 +384,7 @@ int is_hook_wanted(
 	)
 		return FALSE;
 	
-	/* if the user requested to ignore "known" hooks then any HOOK (aka hook->object) with known 
+	/* if the user requested to ignore known hooks then any HOOK (aka hook->object) with known 
 	owner, origin and target thread user mode info should be ignored.
 	as a special case if the HOOK is global and valid then the target is considered known even 
 	though hook->target and hook->object.ptiHooked don't point to anything.
@@ -365,6 +395,14 @@ int is_hook_wanted(
 		&& ( hook->target 
 			|| ( ( hook->object.flags & HF_GLOBAL ) && !hook->object.ptiHooked )
 		)
+	)
+		return FALSE;
+	
+	/* if the user requested to ignore targeted hooks then any HOOK (aka hook->object) with a 
+	target thread should be ignored.
+	*/
+	if( G->config->ignore_targeted_hooks
+		&& ( hook->target || hook->object.ptiHooked )
 	)
 		return FALSE;
 	
@@ -383,8 +421,12 @@ int is_hook_wanted(
 		{
 			if( item->name ) // match program name
 				yes = !!match_hook_process_name( hook, item->name );
-			else // match program id
-				yes = !!match_hook_process_pid( hook, (unsigned __int64)item->id );
+			else // match PID/TID
+			{
+				yes = !!match_hook_process_id( hook, (unsigned __int64)item->id );
+				if( !yes )
+					yes = !!match_hook_thread_id( hook, (unsigned __int64)item->id );
+			}
 		}
 		
 		if( ( yes && ( G->config->proglist->type == LIST_EXCLUDE_PROG ) )

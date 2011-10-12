@@ -141,9 +141,14 @@ int match_hook_process_name(
 	const WCHAR *const name   // in
 );
 
-int match_hook_process_pid(
+int match_hook_process_id(
 	const struct hook *const hook,   // in
 	const unsigned __int64 pid   // in
+);
+
+int match_hook_thread_id(
+	const struct hook *const hook,   // in
+	const unsigned __int64 tid   // in
 );
 
 int is_HOOK_id_wanted( 

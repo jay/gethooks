@@ -205,7 +205,7 @@ static int attach(
 		d->hDesktop = OpenDesktopW( d->pwszDesktopName, 0, 0, DESKTOP_READOBJECTS );
 		if( !d->hDesktop )
 		{
-			if( G->config->verbose >= 1 )
+			if( G->config->verbose >= 2 )
 			{
 				MSG_ERROR_GLE( "OpenDesktopW() failed." );
 				printf( 
@@ -243,6 +243,7 @@ static int attach(
 		{
 			MSG_ERROR( "NtCurrentTeb() failed." );
 			printf( "d->dwThreadId: %u\n", d->dwThreadId );
+			printf( "d->pwszDesktopName: %ls\n", d->pwszDesktopName );
 		}
 		
 		goto fail;
@@ -269,6 +270,7 @@ static int attach(
 		if( G->config->verbose >= 1 )
 		{
 			MSG_ERROR( "Failed to get a pointer to the DESKTOPINFO struct." );
+			printf( "d->pwszDesktopName: %ls\n", d->pwszDesktopName );
 		}
 		
 		goto fail;
@@ -297,6 +299,7 @@ static int attach(
 		if( G->config->verbose >= 1 )
 		{
 			MSG_ERROR( "Desktop heap info is invalid." );
+			printf( "d->pwszDesktopName: %ls\n", d->pwszDesktopName );
 			PRINT_HEX( d->pvClientDelta );
 			PRINT_HEX( d->pDeskInfo->pvDesktopBase );
 			PRINT_HEX( d->pDeskInfo->pvDesktopLimit );
@@ -308,9 +311,6 @@ static int attach(
 	return 1;
 	
 fail:
-	if( G->config->verbose >= 1 )
-		printf( "d->pwszDesktopName: %ls\n", d->pwszDesktopName );
-	
 	return 0;
 }
 
@@ -369,7 +369,7 @@ static unsigned __stdcall thread(
 	/* attach to the desktop specified by d->pwszDesktopName and get the desktop's heap info */
 	if( !attach( stuff->d ) )
 	{
-		if( G->config->verbose >= 1 )
+		if( G->config->verbose >= 2 )
 		{
 			MSG_ERROR( "attach() failed." );
 		}
@@ -550,7 +550,7 @@ static struct desktop_item *add_desktop_item(
 		*/
 		if( !d->hEventTerminate ) // worker thread's initialization failed
 		{
-			if( G->config->verbose >= 1 )
+			if( G->config->verbose >= 2 )
 			{
 				MSG_ERROR( "Worker thread initialization failed." );
 			}
@@ -610,10 +610,14 @@ cleanup:
 	}
 	else
 	{
-		printf( "Failed to attach to desktop '%ls'.", name );
-		if( !_wcsicmp( name, L"Winlogon" ) ) // this is the only name expected to fail
-			printf( " (expected)" );
-		printf( "\n" );
+		/* some desktops attaching is expected to fail. if a desktop attach fails when it's 
+		expected then don't show a message unless verbose.
+		the only known failure right now is Winlogon (tested on Windows 7 x86 SP1).
+		*/
+		if( _wcsicmp( name, L"Winlogon" ) ) 
+			printf( "Failed to attach to desktop '%ls'.\n", name );
+		else if( G->config->verbose >= 1 )
+			printf( "Failed to attach to desktop '%ls'. (expected)\n", name );
 	}
 	
 	free( pwszMainDesktopName );
