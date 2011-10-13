@@ -241,7 +241,7 @@ unsigned __int64 print_kernel_HOOK(
 		struct desktop_hook_item *dh = NULL;
 		
 		
-		/* for each desktop in the list of attached to desktops */
+		/* for each desktop in the snapshot */
 		for( dh = snapshot->desktop_hooks->head; ( dh && !hook.owner ); dh = dh->next )
 		{
 			/* skip if not the desktop on which the HOOK was found */

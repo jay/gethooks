@@ -583,7 +583,7 @@ struct gui *find_Win32ThreadInfo(
 /* init_snapshot_store()
 Take a snapshot of the system state. This initializes a snapshot store.
 
-A snapshot store depends on all global stores, but does not depend on any other snapshot stores.
+A snapshot store depends on all global stores.
 
 The following info in the snapshot store is recorded consecutively:
 system process info (spi)

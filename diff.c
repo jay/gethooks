@@ -61,25 +61,25 @@ Compare two hook structs, both for the same HOOK object, and print any significa
 -
 print_diff_desktop_hook_items()
 
-Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
--
-
--
-print_initial_desktop_hook_item()
-
-Print the HOOKs that have been found on a single attached to desktop.
--
-
--
-print_initial_desktop_hook_list()
-
-Print the HOOKs that have been found on all attached to desktops for a single snapshot.
+Print the HOOKs that have been added/removed/modified from a single desktop between snapshots.
 -
 
 -
 print_diff_desktop_hook_lists()
 
-Print the HOOKs that have been added/removed from all attached to desktops between snapshots.
+Print the HOOKs that have been added/removed/modified from all desktops between snapshots.
+-
+
+-
+print_initial_desktop_hook_item()
+
+Print the HOOKs that have been found on a single desktop in an initial snapshot.
+-
+
+-
+print_initial_desktop_hook_list()
+
+Print the HOOKs that have been found on all desktops in an initial snapshot.
 -
 
 */
@@ -366,12 +366,23 @@ static int print_diff_gui(
 	
 	WCHAR empty1[] = L"<unknown>";
 	WCHAR empty2[] = L"<unknown>";
+	
+	/* only "significant" attributes of the thread will be compared. */
 	struct
 	{
+		/* The kernel address of the thread's THREADINFO */
 		const void *pvWin32ThreadInfo;
+		
+		/* The address of the thread's environment block (TEB) */
 		const void *pvTeb;
+		
+		/* The thread id */
 		HANDLE tid;
+		
+		/* The thread's process' id */
 		HANDLE pid;
+		
+		/* The thread's process' name */
 		struct
 		{
 			USHORT Length;
@@ -575,7 +586,9 @@ int print_diff_hook(
 		}
 	}
 	
-	/* the gui->owner struct has the process and thread info for entry.pOwner */
+	/* compare entry.pOwner
+	print any significant differences in the owner of the HOOK
+	*/
 	print_diff_gui( a, b, THREAD_OWNER, deskname, &modified_header );
 	
 	if( a->object.head.h != b->object.head.h )
@@ -604,7 +617,9 @@ int print_diff_hook(
 		printf( "New: %lu\n", b->object.head.cLockObj );
 	}
 	
-	/* the gui->origin struct has the process and thread info for pti */
+	/* compare object.pti
+	print any significant differences in the origin of the HOOK
+	*/
 	print_diff_gui( a, b, THREAD_ORIGIN, deskname, &modified_header );
 	
 	if( a->object.rpdesk1 != b->object.rpdesk1 )
@@ -729,7 +744,9 @@ int print_diff_hook(
 		printf( "New: %d\n", b->object.ihmod );
 	}
 	
-	/* the gui->target struct has the process and thread info for ptiHooked */
+	/* compare object.ptiHooked
+	print any significant differences in the target of the HOOK
+	*/
 	print_diff_gui( a, b, THREAD_TARGET, deskname, &modified_header );
 	
 	if( a->object.rpdesk2 != b->object.rpdesk2 )
@@ -755,10 +772,10 @@ int print_diff_hook(
 
 
 /* print_diff_desktop_hook_items()
-Print the HOOKs that have been added/removed from a single attached to desktop between snapshots.
+Print the HOOKs that have been added/removed/modified from a single desktop between snapshots.
 
-'a' is an item from the desktop hook list of the previous snapshot
-'b' is an item from the desktop hook list of the current snapshot
+'a' is a desktop and its HOOKs captured in the previous snapshot
+'b' is the same desktop and its HOOKs captured in the current snapshot
 */
 void print_diff_desktop_hook_items( 
 	const struct desktop_hook_item *const a,   // in
@@ -849,24 +866,24 @@ void print_diff_desktop_hook_items(
 
 
 /* print_diff_desktop_hook_lists()
-Print the HOOKs that have been added/removed from all attached to desktops between snapshots.
+Print the HOOKs that have been added/removed/modified from all desktops between snapshots.
 
-'list1' is the previous snapshot's desktop hook list
-'list2' is the current snapshot's desktop hook list
+'list_a' is the previous snapshot's desktop hook list
+'list_b' is the current snapshot's desktop hook list
 */
 void print_diff_desktop_hook_lists( 
-	const struct desktop_hook_list *const list1,   // in
-	const struct desktop_hook_list *const list2   // in
+	const struct desktop_hook_list *const list_a,   // in
+	const struct desktop_hook_list *const list_b   // in
 )
 {
 	struct desktop_hook_item *a = NULL;
 	struct desktop_hook_item *b = NULL;
 	
-	FAIL_IF( !list1 );
-	FAIL_IF( !list2 );
+	FAIL_IF( !list_a );
+	FAIL_IF( !list_b );
 	
 	
-	for( a = list1->head, b = list2->head; ( a && b ); a = a->next, b = b->next )
+	for( a = list_a->head, b = list_b->head; ( a && b ); a = a->next, b = b->next )
 		print_diff_desktop_hook_items( a, b );
 	
 	if( a || b )
@@ -881,28 +898,30 @@ void print_diff_desktop_hook_lists(
 
 
 /* print_initial_desktop_hook_item()
-Print the HOOKs that have been found on a single attached to desktop.
+Print the HOOKs that have been found on a single desktop in an initial snapshot.
+
+'item' is a desktop and its HOOKs captured in the snapshot
 
 returns the number of HOOKs printed
 */
 unsigned print_initial_desktop_hook_item( 
-	const struct desktop_hook_item *const b   // in
+	const struct desktop_hook_item *const item   // in
 )
 {
 	unsigned i = 0;
 	unsigned printed = 0;
 	
-	FAIL_IF( !b );
-	FAIL_IF( !b->desktop );
-	FAIL_IF( !b->hook_max );
-	FAIL_IF( b->hook_count > b->hook_max );
+	FAIL_IF( !item );
+	FAIL_IF( !item->desktop );
+	FAIL_IF( !item->hook_max );
+	FAIL_IF( item->hook_count > item->hook_max );
 	
 	
-	for( i = 0; i < b->hook_count; ++i )
+	for( i = 0; i < item->hook_count; ++i )
 	{
-		if( !b->hook[ i ].ignore )
+		if( !item->hook[ i ].ignore )
 		{
-			print_hook_notice_begin( &b->hook[ i ], b->desktop->pwszDesktopName, HOOK_FOUND );
+			print_hook_notice_begin( &item->hook[ i ], item->desktop->pwszDesktopName, HOOK_FOUND );
 			print_hook_notice_end();
 			++printed;
 		}
@@ -914,22 +933,24 @@ unsigned print_initial_desktop_hook_item(
 
 
 /* print_initial_desktop_hook_list()
-Print the HOOKs that have been found on all attached to desktops for a single snapshot.
+Print the HOOKs that have been found on all desktops in an initial snapshot.
+
+'list' is the initial snapshot's desktop hook list
 
 returns the number of HOOKs printed
 */
 unsigned print_initial_desktop_hook_list( 
-	const struct desktop_hook_list *const list2   // in
+	const struct desktop_hook_list *const list   // in
 )
 {
 	unsigned printed = 0;
-	struct desktop_hook_item *b = NULL;
+	struct desktop_hook_item *item = NULL;
 	
-	FAIL_IF( !list2 );
+	FAIL_IF( !list );
 	
-	
-	for( b = list2->head; b; b = b->next )
-		printed += print_initial_desktop_hook_item( b );
+	/* for each desktop in a snapshot print the HOOKs found */
+	for( item = list->head; item; item = item->next )
+		printed += print_initial_desktop_hook_item( item );
 	
 	return printed;
 }

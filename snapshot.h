@@ -50,7 +50,7 @@ For each thread traversed if its TEB.Win32ThreadInfo != NULL then the thread is 
 */
 struct gui 
 {
-	/* The address of the thread's THREADINFO (kernel). 
+	/* The kernel address of the thread's THREADINFO. 
 	The address is taken from TEB's Win32ThreadInfo.
 	THREADINFO is unreachable from user mode, as far as I can tell.
 	*/

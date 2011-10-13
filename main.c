@@ -146,9 +146,10 @@ int gethooks()
 	if( G->config->verbose >= 5 )
 		PRINT_HASHSEP_BEGIN( objname );
 	
+	/* allocate the memory needed to take a snapshot */
 	create_snapshot_store( &current );
-	create_snapshot_store( &previous );
 	
+	/* take a snapshot */
 	ret = init_snapshot_store( current );
 	
 	if( G->config->verbose >= 8 )
@@ -160,20 +161,23 @@ int gethooks()
 		exit( 1 );
 	}
 	
+	/* print the HOOKs found in the snapshot */
 	print_initial_desktop_hook_list( current->desktop_hooks );
-	
 	printf( "\n" );
+	
+	/* for each desktop in the snapshot */
 	for( dh = current->desktop_hooks->head; dh; dh = dh->next )
 	{
 		unsigned i = 0, hook_ignore_count = 0;
 		
-		
+		/* for each hook info in the desktop's array of hook info structs */
 		for( i = 0; i < dh->hook_count; ++i )
 		{
-			if( dh->hook[ i ].ignore )
+			if( dh->hook[ i ].ignore ) // the hook was ignored
 				++hook_ignore_count;
 		}
 		
+		/* print some statistics if the user requested verbosity */
 		if( G->config->verbose >= 1 )
 		{
 			printf( "\nDesktop '%ls':\nFound %u, Ignored %u, Printed %u hooks.\n",
@@ -185,13 +189,17 @@ int gethooks()
 		}
 	}
 	
-	if( G->config->polling < 0 )
+	/* if polling is disabled then the user did not request monitor mode so we're done */
+	if( G->config->polling < POLLING_MIN )
 		goto cleanup;
 	
 	printf( "\nMonitor mode enabled. Checking for changes every %d seconds...\n", 
 		G->config->polling 
 	);
 	fflush( stdout );
+	
+	/* allocate the memory needed to take another snapshot */
+	create_snapshot_store( &previous );
 	
 	for( ;; )
 	{
@@ -206,6 +214,7 @@ int gethooks()
 		previous = current;
 		current = temp;
 		
+		/* take a snapshot */
 		ret = init_snapshot_store( current );
 		
 		if( G->config->verbose >= 8 )
@@ -217,11 +226,13 @@ int gethooks()
 			exit( 1 );
 		}
 		
+		/* Print the HOOKs that have been added/removed/modified since the last snapshot */
 		print_diff_desktop_hook_lists( previous->desktop_hooks, current->desktop_hooks );
 	}
 	
 	
 cleanup:
+	/* free the stores and all their descendants */
 	free_snapshot_store( &previous );
 	free_snapshot_store( &current );
 	
@@ -254,7 +265,7 @@ Create and initialize the global stores, print the license and version and then 
 */
 int main( int argc, char **argv )
 {
-	/* If the program is started in its own window pause before exit
+	/* If the program is started in its own window then pause before exit
 	(eg user clicks on gethooks.exe in explorer, or vs debugger initiated program)
 	*/
 	{
