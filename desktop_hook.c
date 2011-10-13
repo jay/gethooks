@@ -348,6 +348,8 @@ The user can filter hooks (eg WH_MOUSE) and programs (eg notepad.exe).
 
 init_desktop_hook_store() calls this function to set hook->ignore when initializing each hook.
 
+This function should not access hook->ignore.
+
 returns nonzero if the hook struct should be processed
 */
 int is_hook_wanted( 
@@ -356,12 +358,6 @@ int is_hook_wanted(
 {
 	FAIL_IF( !hook );
 	
-	
-	/* If ignore is set there is some reason that this hook is not wanted
-	eg maybe this function was already called and it was already determined the hook is not wanted
-	*/
-	if( hook->ignore )
-		return FALSE;
 	
 	/* if the user requested to ignore internal hooks then any HOOK (aka hook->object) with the 
 	same owner, origin and target thread info should be ignored.
@@ -491,7 +487,7 @@ int compare_hook(
 Initialize the desktop hook store by recording the hooks for each desktop.
 
 The desktop hook store depends on the spi and gui info in its parent snapshot store and all global 
-stores except other snapshot stores.
+stores.
 
 returns nonzero on success
 */
@@ -598,11 +594,17 @@ int init_desktop_hook_store(
 		hook->object = 
 			*(HOOK *)( (uintptr_t)hook->entry.pHead - (uintptr_t)item->desktop->pvClientDelta );
 		
-		/* search the gui threads to find the owner origin and target of the HOOK */
+		/* search the gui threads to find the owner origin and target of the HOOK.
+		the HANDLEENTRY and HOOK must be copied before calling find_Win32ThreadInfo()
+		*/
 		hook->owner = find_Win32ThreadInfo( parent, hook->entry.pOwner );
 		hook->origin = find_Win32ThreadInfo( parent, hook->object.pti );
 		hook->target = find_Win32ThreadInfo( parent, hook->object.ptiHooked );
 		
+		/* 'ignore' should be the last member of the hook to set. is_hook_wanted() relies on all 
+		the other information in the hook, and if it is called before the other members are set 
+		the hook may point to old (and now invalid) information and the result will be incorrect.
+		*/
 		hook->ignore = !is_hook_wanted( hook );
 		
 		item->hook_count++;
