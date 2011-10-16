@@ -371,7 +371,7 @@ int is_hook_wanted(
 	HOOK target GUI thread info kernel address: hook->object.ptiHooked
 	The related user mode thread info obtained by this program: hook->target
 	*/
-	if( G->config->ignore_internal_hooks
+	if( ( G->config->flags & CFG_IGNORE_INTERNAL_HOOKS )
 		&& hook->entry.pOwner
 		&& ( hook->owner == hook->origin ) 
 		&& ( hook->entry.pOwner == hook->object.pti ) 
@@ -385,7 +385,7 @@ int is_hook_wanted(
 	as a special case if the HOOK is global and valid then the target is considered known even 
 	though hook->target and hook->object.ptiHooked don't point to anything.
 	*/
-	if( G->config->ignore_known_hooks 
+	if( ( G->config->flags & CFG_IGNORE_KNOWN_HOOKS )
 		&& hook->owner 
 		&& hook->origin 
 		&& ( hook->target 
@@ -397,7 +397,7 @@ int is_hook_wanted(
 	/* if the user requested to ignore targeted hooks then any HOOK (aka hook->object) with a 
 	target thread should be ignored.
 	*/
-	if( G->config->ignore_targeted_hooks
+	if( ( G->config->flags & CFG_IGNORE_TARGETED_HOOKS )
 		&& ( hook->target || hook->object.ptiHooked )
 	)
 		return FALSE;
@@ -486,8 +486,9 @@ int compare_hook(
 /* init_desktop_hook_store()
 Initialize the desktop hook store by recording the hooks for each desktop.
 
-The desktop hook store depends on the spi and gui info in its parent snapshot store and all global 
-stores.
+The desktop hook store depends on all global stores.
+The spi and gui info from its parent snapshot store is used to identify the threads associated with 
+each hook and is optional.
 
 returns nonzero on success
 */
@@ -505,8 +506,10 @@ int init_desktop_hook_store(
 	FAIL_IF( !G->desktops->init_time );   // The desktop store must be initialized.
 	
 	FAIL_IF( !parent );   // The snapshot parent of the desktop_hook store must always be passed in.
-	FAIL_IF( !parent->init_time_spi );   // The snapshot's spi array must be initialized.
-	FAIL_IF( !parent->init_time_gui );   // The snapshot's gui array must be initialized.
+	
+	/*  valid spi and gui arrays are expected if passive mode isn't enabled */
+	FAIL_IF( !parent->init_time_spi && !( G->config->flags & CFG_COMPLETELY_PASSIVE ) );
+	FAIL_IF( !parent->init_time_gui && !( G->config->flags & CFG_COMPLETELY_PASSIVE ) );
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	

@@ -65,32 +65,46 @@ struct config
 	unsigned max_threads;
 	
 	
+	
+	/** flags
+	*/
 	/* ignore internal hooks.
 	any hook with the same user and kernel mode owner, origin and target thread information I refer 
 	to as an internal hook, ie a thread hooked itself. any hook with any differing kernel or user 
 	mode owner, origin and/or target info I refer to as an external hook.
-	ignore_internal_hooks is set to 0 if disabled (default) and nonzero if enabled.
 	*/
-	unsigned ignore_internal_hooks;
+	#define CFG_IGNORE_INTERNAL_HOOKS   1u
 	
 	/* ignore known hooks: hooks with valid user mode owner, origin and target threads.
 	a hook that is not known has an unknown owner, origin and/or target user mode thread.
-	ignore_known_hooks is set to 0 if disabled (default) and nonzero if enabled.
 	*/
-	unsigned ignore_known_hooks;
+	#define CFG_IGNORE_KNOWN_HOOKS   ( 1u << 1 )
 	
 	/* ignore targeted hooks: hooks that have a target thread. 
 	hooks that don't have a valid user or kernel target thread are almost always global hooks (have 
 	the flag HF_GLOBAL) or if not then the internal HOOK struct is invalid.
-	ignore_targeted_hooks is set to 0 if disabled (default) and nonzero if enabled.
 	*/
-	unsigned ignore_targeted_hooks;
+	#define CFG_IGNORE_TARGETED_HOOKS   ( 1u << 2 )
 	
-	/* ignore some NtQuerySystemInformation() errors. nonzero if true. default false.
+	/* ignore some NtQuerySystemInformation() errors.
 	traverse_threads() depends on NtQuerySystemInformation() which may fail for numerous reasons.
-	ignore_failed_queries is set to 0 if disabled (default) and nonzero if enabled.
 	*/
-	unsigned ignore_failed_queries;
+	#define CFG_IGNORE_FAILED_QUERIES   ( 1u << 3 )
+	
+	/* ignore lock count changes when checking a hook for modifications.
+	the object may be locked and unlocked frequently and that creates a lot of modification notices.
+	*/
+	#define CFG_IGNORE_LOCK_COUNTS   ( 1u << 4 )
+	
+	/* go completely passive: do not call NtQuerySystemInformation() or read any process' memory.
+	this program reads the memory of each process to determine which threads are associated with 
+	which hooks.
+	*/
+	#define CFG_COMPLETELY_PASSIVE   ( 1u << 5 )
+	#define CFG_VALID   ( ~( (unsigned)(-1) << 5 ) )
+	
+	unsigned flags;
+	
 	
 	
 	/* a linked list of desktop names to include */
@@ -103,7 +117,7 @@ struct config
 	struct list *proglist;   // create_list_store(), free_list_store()
 	
 	/* a linked list of test parameters for test mode */
-	struct list *testlist;
+	struct list *testlist;   // create_list_store(), free_list_store()
 	
 	
 	/* the system utc time in FILETIME format immediately after this store has been initialized.
@@ -121,18 +135,16 @@ void create_config_store(
 	struct config **const out   // out deref
 );
 
-void print_usage_and_exit( void );
-
-void print_advanced_usage_and_exit( void );
-
-void print_more_examples_and_exit( void );
-
 unsigned get_next_arg( 
 	int *const index,   // in, out
 	const unsigned expected_types   // in
 );
 
 void init_global_config_store( void );
+
+void print_config_flags( 
+	const unsigned flags   // in
+);
 
 void print_global_config_store( void );
 

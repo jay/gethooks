@@ -563,6 +563,9 @@ struct gui *find_Win32ThreadInfo(
 	FAIL_IF( store->gui_count > store->gui_max );
 	
 	
+	if( !store->gui_count )
+		return NULL;
+	
 	ZeroMemory( &findme, sizeof( findme ) );
 	
 	/* only the pvWin32ThreadInfo member is compared */
@@ -617,6 +620,7 @@ int init_snapshot_store(
 	
 	FAIL_IF( !store );   // a snapshot store must always be passed in
 	
+	
 retry:
 	flags = 0;
 	nt_status = 0;
@@ -630,6 +634,11 @@ retry:
 	store->init_time = 0;
 	store->init_time_gui = 0;
 	store->init_time_spi = 0;
+	
+	
+	/* if completely passive skip traversing threads and reading every process' TEB */
+	if( G->config->flags & CFG_COMPLETELY_PASSIVE )
+		goto gethooks;
 	
 	
 	ZeroMemory( &ci, sizeof( ci ) );
@@ -661,7 +670,9 @@ retry:
 		/* Troubleshooting: If we're ignoring failed queries wait a second and retry.
 		Although technically not necessary clear the memory before retrying.
 		*/
-		if( G->config->ignore_failed_queries && ( ret == TRAVERSE_ERROR_QUERY ) )
+		if( ( G->config->flags & CFG_IGNORE_FAILED_QUERIES )
+			&& ( ret == TRAVERSE_ERROR_QUERY ) 
+		)
 		{
 			ZeroMemory( store->spi, store->spi_max_bytes );
 			Sleep( 1000 );
@@ -755,10 +766,10 @@ retry:
 	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time_gui );
 	
 	
-	/* init the desktop hook store. depends on spi and gui arrays */
+gethooks:
+	/* init the desktop hook store */
 	if( !init_desktop_hook_store( store ) )
 		return FALSE;
-	
 	
 	/* the snapshot store has been initialized */
 	GetSystemTimeAsFileTime( (FILETIME *)&store->init_time );

@@ -265,6 +265,19 @@ void print_hook_notice_begin(
 		printf( "\n" );
 	}
 	
+	if( hook->object.head.cLockObj )
+		printf( "Lock count: %lu\n", hook->object.head.cLockObj );
+	
+	/* exactly what rpdesk2 does is unclear */
+	if( hook->object.rpdesk2 )
+	{
+		PRINT_HEX_NAME( "rpdesk1", hook->object.rpdesk1 );
+		
+		printf( "rpdesk2: " );
+		PRINT_HEX_BARE( hook->object.rpdesk2 );
+		printf( " (HOOK faulted? chain faulted? locked? owner destroyed?)\n" );
+	}
+	
 	printf( "Desktop: %ls\n", deskname );
 	
 	/**
@@ -604,7 +617,12 @@ int print_diff_hook(
 		PRINT_HEX_NAME( "New", b->object.head.h );
 	}
 	
-	if( a->object.head.cLockObj != b->object.head.cLockObj )
+	/* the object may be locked and unlocked frequently and that creates a lot of modification 
+	notices. this modification can be ignored by the user.
+	*/
+	if( ( a->object.head.cLockObj != b->object.head.cLockObj )
+		&& !( G->config->flags & CFG_IGNORE_LOCK_COUNTS )
+	)
 	{
 		if( !modified_header )
 		{
@@ -757,7 +775,12 @@ int print_diff_hook(
 			modified_header = TRUE;
 		}
 		
-		printf( "\nrpdesk2 has changed. HOOK locked, owner destroyed?\n" );
+		printf( "\nrpdesk2 has changed." );
+		if( b->object.rpdesk2 )
+			printf( " HOOK faulted? chain faulted? locked? owner destroyed?\n" );
+		else
+			printf( " HOOK recovered?\n" );
+		
 		PRINT_HEX_NAME( "Old", a->object.rpdesk2 );
 		PRINT_HEX_NAME( "New", b->object.rpdesk2 );
 	}
