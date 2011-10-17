@@ -101,7 +101,10 @@ struct config
 	which hooks.
 	*/
 	#define CFG_COMPLETELY_PASSIVE   ( 1u << 5 )
-	#define CFG_VALID   ( ~( (unsigned)(-1) << 5 ) )
+	
+	/* general purpose debug flag to handle my whims */
+	#define CFG_DEBUG   ( 1u << 6 )
+	#define CFG_VALID   ( ~( (unsigned)(-1) << 7 ) )
 	
 	unsigned flags;
 	

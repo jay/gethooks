@@ -18,8 +18,8 @@ You should have received a copy of the GNU General Public License
 along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _TEST_H
-#define _TEST_H
+#ifndef _DEBUG_H
+#define _DEBUG_H
 
 #include <windows.h>
 
@@ -31,35 +31,17 @@ extern "C" {
 
 
 /** 
-these functions are documented in the comment block above their definitions in test.c
+these functions are documented in the comment block above their definitions in debug.c
 */
-unsigned __int64 print_handle_count( 
-	unsigned __int64 seconds   // in, optional
+int dump_teb( 
+	const DWORD pid,   // in
+	const DWORD tid,   // in
+	const DWORD flags   // in, optional
 );
-
-unsigned __int64 print_kernel_HOOK(
-	unsigned __int64 addr   // in
-);
-
-unsigned __int64 print_kernel_HOOK_chain(
-	unsigned __int64 addr   // in
-);
-
-unsigned __int64 print_kernel_HOOK_desktop_chains( 
-	unsigned __int64 unused   // unused
-);
-
-unsigned __int64 dump_teb_wrapper( 
-	unsigned __int64 tid   // in
-);
-
-void print_testmode_usage( void );
-
-int testmode( void );
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _TEST_H
+#endif /* _DEBUG_H */

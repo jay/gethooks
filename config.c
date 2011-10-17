@@ -254,6 +254,7 @@ void init_global_config_store( void )
 {
 	int i = 0;
 	unsigned arf = 0;
+	char *debugstr = NULL;
 	
 	FAIL_IF( !G );   // The global store must exist.
 	
@@ -263,6 +264,10 @@ void init_global_config_store( void )
 	
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
+	
+	debugstr = getenv( "GETHOOKS_DEBUG" );
+	if( debugstr && ( debugstr[ 0 ] == '1' ) && !debugstr[ 1 ] )
+		G->config->flags |= CFG_DEBUG;
 	
 	G->config->polling = POLLING_DEFAULT;
 	G->config->verbose = VERBOSE_DEFAULT;
@@ -880,6 +885,9 @@ void print_config_flags(
 	
 	if( flags & CFG_COMPLETELY_PASSIVE )
 		printf( "CFG_COMPLETELY_PASSIVE " );
+	
+	if( flags & CFG_DEBUG )
+		printf( "CFG_DEBUG " );
 	
 	if( flags & ~CFG_VALID )
 		printf( "<0x%X> ", ( flags & ~CFG_VALID ) );

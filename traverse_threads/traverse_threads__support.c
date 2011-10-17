@@ -25,7 +25,13 @@ Each function is documented in the comment block above its definition.
 -
 get_teb()
 
-Get a thread's TEB.
+Get the address of the thread environment block of a thread in another process.
+-
+
+-
+copy_teb()
+
+Copy the thread environment block of a thread in another process.
 -
 
 -
@@ -77,9 +83,9 @@ Test memory for read and/or write access violations using structured exception h
 
 
 /* get_teb()
-Get a thread's TEB.
+Get the address of the thread environment block of a thread in another process.
 
-'tid' is the thread id
+'tid' is the thread id of the thread
 'flags' is the optional flags parameter that was passed to traverse_threads() or a callback
 
 returns the TEB address on success
@@ -140,8 +146,9 @@ void *get_teb(
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "OpenThread() %s. GLE: %lu, Handle: 0x%p.\n", 
+		printf( "OpenThread() %s. tid: %lu, GLE: %lu, Handle: 0x%p.\n", 
 			( thread ? "success" : "error" ), 
+			tid, 
 			GetLastError(), 
 			thread 
 		);
@@ -186,6 +193,116 @@ cleanup:
 		
 		thread = NULL;
 	}
+	
+	return return_code;
+}
+
+
+
+/* copy_teb()
+Copy the thread environment block of a thread in another process.
+
+'pid' is the process id of the thread
+'tid' is the thread id of the thread
+'flags' is the optional flags parameter that was passed to traverse_threads() or a callback
+
+returns a pointer to a buffer the size of SIZEOF_WIN7_TEB on success. free() when done.
+if only part of the teb could be read it is still considered a success and above still applies.
+*/
+void *copy_teb( 
+	const DWORD pid,   // in
+	const DWORD tid,   // in
+	const DWORD flags   // in, optional
+)
+{
+	BOOL ret = 0;
+	HANDLE process = NULL;
+	void *return_code = NULL;
+	void *buffer = NULL;
+	void *teb = NULL;
+	DWORD bytes_read = 0;
+	
+	
+	if( !pid || !tid )
+		goto cleanup;
+	
+	SetLastError( 0 ); // error code is evaluated on success
+	process = OpenProcess( PROCESS_VM_READ, FALSE, pid );
+	
+	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+	{
+		printf( "OpenProcess() %s. pid: %lu, GLE: %lu, Handle: 0x%p.\n", 
+			( process ? "success" : "error" ), 
+			pid, 
+			GetLastError(), 
+			process 
+		);
+	}
+	
+	if( !process )
+		goto cleanup;
+	
+	teb = get_teb( tid, flags );
+	if( !teb )
+		goto cleanup;
+	
+	buffer = calloc( 1, SIZEOF_WIN7_TEB );
+	
+	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+	{
+		printf( "calloc() %s. bytes: %d\n", 
+			( buffer ? "success" : "error" ), 
+			SIZEOF_WIN7_TEB
+		);
+	}
+	
+	if( !buffer )
+		goto cleanup;
+	
+	SetLastError( 0 ); // error code is evaluated on success
+	ret = ReadProcessMemory( 
+		process, 
+		teb,
+		buffer, 
+		SIZEOF_WIN7_TEB, 
+		&bytes_read 
+	);
+	
+	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+	{
+		printf( "ReadProcessMemory() %s. GLE: %lu, bytes_read: %lu, Handle: 0x%p.\n", 
+			( ret ? "success" : "error" ), 
+			GetLastError(), 
+			bytes_read, 
+			process 
+		);
+	}
+	
+	if( !bytes_read )
+		goto cleanup;
+	
+	return_code = buffer;
+	
+cleanup:
+	if( process )
+	{
+		SetLastError( 0 ); // error code is evaluated on success
+		ret = CloseHandle( process );
+		
+		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
+		{
+			printf( "CloseHandle() %s. GLE: %lu, Handle: 0x%p\n", 
+				( ret ? "success" : "error" ), 
+				GetLastError(), 
+				process
+			);
+		}
+		
+		process = NULL;
+	}
+	
+	if( !return_code )
+		free( buffer );
 	
 	return return_code;
 }

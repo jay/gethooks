@@ -64,6 +64,18 @@ Print the HOOK chains in DESKTOPINFO.aphkStart[] for each attached to desktop.
 -
 
 -
+callback_get_pid_from_tid()
+
+Find which process is associated with a thread id.
+-
+
+-
+dump_teb_wrapper()
+
+Wrapper that calls debug function dump_teb() to dump a TEB to a file.
+-
+
+-
 function[], function__count
 
 An array of structures holding info on every user accessible function in this file.
@@ -96,6 +108,12 @@ Run user-specified tests.
 #include "reactos.h"
 
 #include "diff.h"
+
+/* traverse_threads() */
+#include "nt_independent_sysprocinfo_structs.h"
+#include "traverse_threads.h"
+
+#include "debug.h"
 
 #include "test.h"
 
@@ -559,6 +577,101 @@ unsigned __int64 print_kernel_HOOK_desktop_chains(
 
 
 
+/* stuff to be passed to callback_get_pid_from_tid().
+this struct members' annotations are similar to those of function parameters
+"actual" is used if the structure member will be modified by the function, regardless of if what it 
+points to will be modified ("out").
+*/
+struct callback_info
+{
+	// Thread Id
+	DWORD tid;   // in
+	
+	// Process Id
+	DWORD pid;   // out, actual
+};
+
+/* callback_get_pid_from_tid()
+Find which process is associated with a thread id.
+
+traverse_threads() callback: this function is called for every SYSTEM_THREAD_INFORMATION.
+This function uses x86 offsets only, it will have to be fixed for x64.
+
+The behavior of a traverse_threads() callback is documented in traverse_threads.txt.
+*/
+static int callback_get_pid_from_tid( 
+	void *cb_param,   // in, out, optional
+	SYSTEM_PROCESS_INFORMATION *const spi,   // in
+	SYSTEM_THREAD_INFORMATION *const sti,   // in, optional
+	const ULONG remaining,   // in
+	const DWORD flags   // in, optional
+)
+{
+	// callback data
+	struct callback_info *const ci = (struct callback_info *)cb_param; 
+	
+	FAIL_IF( !ci );
+	FAIL_IF( !ci->tid );
+	FAIL_IF( ci->pid );
+	
+	
+	if( (DWORD)sti->ClientId.UniqueThread == (DWORD)ci->tid ) // thread id found
+	{
+		ci->pid = (DWORD)spi->UniqueProcessId;
+		
+		/* found it, no need to continue */
+		return TRAVERSE_CALLBACK_ABORT;
+	}
+	
+	return TRAVERSE_CALLBACK_CONTINUE; /* continue normally to the next thread */
+}
+
+
+
+/* dump_teb_wrapper()
+Wrapper that calls debug function dump_teb() to dump a TEB to a file.
+
+'tid' is the thread id of the thread
+
+returns nonzero on success
+*/
+unsigned __int64 dump_teb_wrapper( 
+	unsigned __int64 tid   // in
+)
+{
+	struct callback_info ci;
+	DWORD flags = 0;
+	int ret = 0;
+	
+	ZeroMemory( &ci, sizeof( ci ) );
+	
+	ci.tid = (DWORD)tid;
+	
+	if( G->config->verbose >= 9 )
+		flags |= TRAVERSE_FLAG_DEBUG;
+	
+	ret = traverse_threads( 
+		callback_get_pid_from_tid, /* your callback */
+		&ci, /* your callback data */
+		NULL, /* your buffer. unused in this example  */
+		0, /* your buffer's byte count. unused in this example  */
+		flags, /* your flags */
+		NULL /* pointer to receive status. unused in this example */
+	);
+	
+	if( !ci.pid ) // the callback didn't find the pid associated with the tid
+		return FALSE;
+	else
+		printf( "Found pid %lu associated with tid %lu.\n", ci.pid, ci.tid );
+	
+	if( !dump_teb( ci.pid, (DWORD)tid, flags ) )
+		return FALSE;
+	
+	return TRUE;
+}
+
+
+
 const struct
 {
 	unsigned __int64 (*pfn)(unsigned __int64);
@@ -614,6 +727,17 @@ const struct
 		L"Use the user-specified hook include/exclude list for filtering.",   // extra_info
 		L"-d -i WH_KEYBOARD_LL -v 1",   // example_name
 		L"Print the WH_KEYBOARD_LL chain on the current desktop.",   // example_description
+	},
+	{
+		dump_teb_wrapper,   // pfn
+		L"teb",   // name
+		/* description */
+		L"Dump to a file the thread environment block of a thread in another process.",
+		L"TID",   // param_name
+		TRUE,   // param_required
+		NULL,   // extra_info
+		L"148",   // example_name
+		L"Dump the TEB of thread id 148 to a file.",   // example_description
 	}
 };
 const unsigned function_count = sizeof( function ) / sizeof( function[ 0 ] );
@@ -728,7 +852,9 @@ int testmode( void )
 					exit( 1 );
 				}
 				
-				function[ i ].pfn( item->id );
+				if( !function[ i ].pfn( item->id ) )
+					MSG_FATAL( "The test function failed.\n" );
+				
 				break;
 			}
 		}

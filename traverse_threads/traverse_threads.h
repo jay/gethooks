@@ -86,6 +86,14 @@ void *get_teb(
 	const DWORD flags   // in, optional
 );
 
+#define SIZEOF_WIN7_TEB   4068
+
+void *copy_teb( 
+	const DWORD pid,   // in
+	const DWORD tid,   // in
+	const DWORD flags   // in, optional
+);
+
 int callback_print_thread_state( 
 	void *cb_param,   // in, out, optional
 	SYSTEM_PROCESS_INFORMATION *const spi,   // in

@@ -118,6 +118,8 @@ Free a snapshot store and all its descendants.
 #include "nt_independent_sysprocinfo_structs.h"
 #include "traverse_threads.h"
 
+#include "debug.h"
+
 #include "snapshot.h"
 
 /* the global stores */
@@ -366,8 +368,9 @@ static int callback_add_gui(
 		SetLastError( 0 ); // error code is evaluated on success
 		ci->process = OpenProcess( PROCESS_VM_READ, FALSE, (DWORD)spi->UniqueProcessId );
 		
-		dbg_printf( "OpenProcess() %s. GLE: %lu, Handle: 0x%p.\n", 
+		dbg_printf( "OpenProcess() %s. pid: %lu, GLE: %lu, Handle: 0x%p.\n", 
 			( ci->process ? "success" : "error" ), 
+			(DWORD)spi->UniqueProcessId, 
 			GetLastError(), 
 			ci->process 
 		);
@@ -744,6 +747,28 @@ retry:
 			MSG_ERROR( "Duplicate pvWin32ThreadInfo." );
 			print_gui( a );
 			print_gui( b );
+			
+			if( G->config->flags & CFG_DEBUG )
+			{
+				if( a->spi && a->sti )
+				{
+					dump_teb( 
+						(DWORD)a->spi->UniqueProcessId, 
+						(DWORD)a->sti->ClientId.UniqueThread, 
+						flags 
+					);
+				}
+				
+				if( b->spi && b->sti )
+				{
+					dump_teb( 
+						(DWORD)b->spi->UniqueProcessId, 
+						(DWORD)b->sti->ClientId.UniqueThread, 
+						flags 
+					);
+				}
+			}
+			
 			return FALSE;
 		}
 		
