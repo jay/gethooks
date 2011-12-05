@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GetHooks", "GetHooks.vcxproj", "{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug MSVCRT|Win32 = Debug MSVCRT|Win32
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}.Debug MSVCRT|Win32.ActiveCfg = Debug MSVCRT|Win32
+		{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}.Debug MSVCRT|Win32.Build.0 = Debug MSVCRT|Win32
+		{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}.Debug|Win32.Build.0 = Debug|Win32
+		{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}.Release|Win32.ActiveCfg = Release|Win32
+		{900238E5-3AE9-8B03-CCB9-8D39E43EDF7D}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
