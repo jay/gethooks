@@ -86,6 +86,7 @@ void *get_teb(
 	const DWORD flags   // in, optional
 );
 
+// The size in bytes of Win7 x86 TEB struct
 #define SIZEOF_WIN7_TEB   4068
 
 void *copy_teb( 

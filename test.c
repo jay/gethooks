@@ -595,7 +595,6 @@ struct callback_info
 Find which process is associated with a thread id.
 
 traverse_threads() callback: this function is called for every SYSTEM_THREAD_INFORMATION.
-This function uses x86 offsets only, it will have to be fixed for x64.
 
 The behavior of a traverse_threads() callback is documented in traverse_threads.txt.
 */
@@ -660,7 +659,10 @@ unsigned __int64 dump_teb_wrapper(
 	);
 	
 	if( !ci.pid ) // the callback didn't find the pid associated with the tid
+	{
+		printf( "Couldn't find the pid associated with tid %lu.\n", ci.tid );
 		return FALSE;
+	}
 	else
 		printf( "Found pid %lu associated with tid %lu.\n", ci.pid, ci.tid );
 	

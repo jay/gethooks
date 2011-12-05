@@ -262,6 +262,8 @@ static void pause( void )
 
 /* main()
 Create and initialize the global stores, print the license and version and then run gethooks().
+
+returns zero on success
 */
 int main( int argc, char **argv )
 {
@@ -286,7 +288,7 @@ int main( int argc, char **argv )
 			atexit( pause );
 	}
 	
-	_set_printf_count_output( 1 ); // enable support for %n.
+	//_set_printf_count_output( 1 ); // enable support for %n.
 	
 	
 	/* print version and license */
@@ -340,6 +342,7 @@ int main( int argc, char **argv )
 	
 	/* If the testlist is initialized the user requested testmode to run tests.
 	Else run gethooks() to take snapshots and print differences.
+	testmode() and gethooks() return nonzero on success, but main should return zero on success.
 	*/
 	return ( ( G->config->testlist->init_time ) ? !testmode() : !gethooks() );
 }
