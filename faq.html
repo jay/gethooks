@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html itemscope itemtype="http://schema.org/Product">
+	<head>
+		<title>GetHooks FAQ for Windows x86 2k/XP/Vista/7/8</title>
+		<style type="text/css">
+			body {
+			background-color: #F8F8F8;
+			font-family: arial, helvetica, sans-serif;
+			}
+			a.mousepic {
+			display: block;
+			width: 992px;
+			height: 535px;
+			background: url("WH_MOUSE - unknown.png") no-repeat;
+			}
+			a.mousepic:hover {
+			background: url("WH_MOUSE - known.png") no-repeat;
+			}
+		</style>
+		
+		<meta itemprop="name" content="GetHooks FAQ for Windows x86 2k/XP/Vista/7/8">
+		<meta itemprop="description" content="GetHooks is a program that detects and monitors SetWindowsHookEx() type hooks in Windows.">
+		<meta itemprop="image" content="http://jay.github.com/gethooks/gethooks built Nov 17 2011.png">
+	</head>
+	
+	<body>
+		<p>
+		<h1>GetHooks FAQ for Windows x86 2k/XP/Vista/7/8</h1>
+		If you are looking for the GetHooks homepage <a href="index.html">click here.</a><br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Will GetHooks detect hooks set by malware?</h3>
+		Yes and no. GetHooks was not designed to detect malware and it has no self-protection. It is a monitoring tool intended for Windows developers that are using hooks in the applications they are developing. If you want to monitor malware hooks you should use a tool that monitors for them from the kernel. I've seen a few of those but their drivers are questionable and I'm not comfortable recommending them.<br>
+		<br>
+		Malware can change the name of its process(es) and inject into other processes. Although the hook will likely show in GetHooks it will show for example something like WH_KEYBOARD_LL originated by explorer.exe, which would be very hard to discern because the real explorer.exe can actually set WH_KEYBOARD_LL hooks momentarily.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>I know a hook exists briefly but GetHooks doesn't show it, why?</h3>
+		GetHooks monitors by taking system snapshots every n seconds. The default interval is currently seven seconds. So if you have a hook that is created and destroyed during that interval it will not be visible in the snapshot. You can of course shorten the interval to one second. If you have a very difficult case and you have a hook that you suspect is sporadically being created and destroyed in a fraction of a second you can set the interval to 0. Be warned that will eat CPU and if you're monitoring on a laptop with an interval of 0 it will drain your battery. In my development I never need 0 but I do use 1 sometimes.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>What's the difference between a hook's owner and origin?</h3>
+		When a hook is created a handle is created in the user handle table. The creating thread (pOwner) owns the handle, and therefore the hook. The origin thread should be the same as the owner, but Microsoft has a field for it (pti) in the internal HOOK structure. Whether in the kernel Microsoft simply copies the address or there is more to it than that I don't know. In all my testing I have not encountered a case where they differ. If you encounter such a case please report it.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>How do I determine a faulty hook?</h3>
+		While monitoring a process you may see a hook's properties change to "Flags added: HF_HOOKFAULTED". Older versions of Windows will move the hook to a placeholder desktop, so you may notice the rpdesk/2 properties change. You may also notice frequent lock count changes even though the hook never actually faults (please read the help--lock count change frequency may be normal and is largely dependent on the monitoring interval). All the ways to identify a faulty hook are unclear, and just why a faulty hook may never actually fault is also unclear. If you see any properties change in your hook you should pay attention.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Can Windows make hooks disappear?</h3>
+		Here's an example in Visual Studio 2010 SP1 on Windows 7 SP1 32-bit:<br>
+		<br>
+		Your program has a thread that uses a WH_MOUSE_LL hook and you hit a breakpoint in your program or pause the program whatever. All the threads are suspended except for the current thread which is wait state 8/WrExecutive. Now if that thread happens to be your callback Windows won't see the thread as suspended and won't fault the hook. But let's say the next time you pause/break your callback thread is suspended. Windows will see that and fault the hook. On Windows 7 this is especially vicious because it will gut a known "faulty" hook when the thread resumes normal operation, unlike Vista which will restore it to the desktop. And how would you id that without GetHooks? :)<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Can I monitor only a single specific hook by its address or a single hook chain in my program while ignoring everything else?</h3>
+		You can't, currently. If you really want to let me know. I'm thinking that might be a good idea, to maybe monitor only one hook or hook chain instead of monitoring by thread.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Why do I see unknown hooks when I run GetHooks as administrator?</h3>
+		GetHooks works by opening all processes to get their name and associated kernel thread address (Win32ThreadInfo). If a process is protected and its memory cannot be read then that information cannot be obtained to identify the owner, origin and/or target of the hook. The protected csrss sets a WH_MSGFILTER hook, and GetHooks won't access csrss. GetHooks will always show that hook as having the same owner/origin/target as &quot;&lt;unknown&gt;&quot;. Typically though you should not see unknown hooks when running GetHooks as administrator.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Why do I see so many unknown hooks when I run GetHooks as a limited user?</h3>
+		Although GetHooks can detect hooks as a limited user it may not be able to identify the associated processes. Almost all unknown hooks are the result of a lack of privilege. Mouseover the pic below to see the difference when running GetHooks as administrator.<br>
+			<div> <a class="mousepic" href="#mousepic"></a> </div>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>If a hook is destroyed in my own program can I detect and continually re-create it in that program?</h3>
+		Yes, but you are likely masking a much more serious problem.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>I'm monitoring a program that's not mine and I notice that hook(s) are continually created and destroyed, why?</h3>
+		I don't know, you'd have to ask the program's developers if that's the intended behavior before you start investigating. In the <a href="http://www.workrave.org">Workrave</a> program which I had worked on as a developer we used hooks to lock the keyboard and mouse during a user's break times. That is because the program is designed to assist in the prevention and recovery of repetitive strain injuries (RSI). So there are legitimate reasons for a hook being created and destroyed continually. Also, windows explorer will create a WH_KEYBOARD_LL hook in Windows 7 on a hover over a taskbar button/thumbnail and then unhook when not hovering. That is also legitimate.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Can I filter out hooks that are continually created and destroyed?</h3>
+		No, and that is by design.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>How do I get the DLL module name associated with a hook function?</h3>
+		You'll have to use another program. It is only possible to do that in kernel mode and I designed GetHooks so that it would operate entirely in user mode. Interestingly the kernel mode array containing the names can actually be accessed via user mode, but not their position in the array. Without that index number there's no way to be certain, although in theory I might be able to brute force all the atoms and make a best guess. For now it's not possible using GetHooks. You'll want to check out <a href="http://blog.airesoft.co.uk/2011/07/hookers-underneath-the-sheets/trackback/">MsgHookLister</a>.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Do you have a version of GetHooks for x64?</h3>
+		That's not implemented, although I kept it in mind during development.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>How do you license and can I have access to your source?</h3>
+		GetHooks is free software and it is licensed under the <a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License version 3 (GPLv3)</a>, a license that will keep it free. You may not remove my copyright or the copyright of any contributors under the license terms. The GetHooks source cannot be used in proprietary software, but you can for example execute the GetHooks program from a proprietary software application. <b>In any case please review the GPLv3 license, which is designed to protect freedom, not take it away.</b><br>
+		<br>
+		The source can be found on <a href="https://github.com/jay/gethooks">GitHub.</a><br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Send me any questions you have</h3>
+		Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; and put GetHooks in the subject.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		If you are looking for the GetHooks homepage <a href="index.html">click here.</a><br>
+		</p>
+		
+	</body>
+</html>

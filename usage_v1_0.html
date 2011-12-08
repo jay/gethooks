@@ -1,0 +1,407 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html itemscope itemtype="http://schema.org/Product">
+	<head>
+		<title>GetHooks usage for Windows x86 2k/XP/Vista/7/8</title>
+		<style type="text/css">
+			body {
+			background-color: #F8F8F8;
+			font-family: "lucida console", "courier new", courier, monospace;
+			}
+		</style>
+		
+		<meta itemprop="name" content="GetHooks usage for Windows x86 2k/XP/Vista/7/8">
+		<meta itemprop="description" content="GetHooks is a program that detects and monitors SetWindowsHookEx() type hooks in Windows.">
+		<meta itemprop="image" content="http://jay.github.com/gethooks/gethooks built Nov 17 2011.png">
+	</head>
+	
+	<body>
+		<p>
+		<h1>GetHooks usage for Windows x86 2k/XP/Vista/7/8</h1>
+		If you are looking for the GetHooks homepage <a href="index.html">click here.</a><br>
+		<br>
+		<br>
+		<a href="#help">gethooks --help</a><br>
+		<a href="#about">gethooks --about</a><br>
+		<a href="#options">gethooks --options</a><br>
+		<a href="#examples">gethooks --examples</a><br>
+		<br>
+		<br>
+		<br>
+		<br>
+		</p>
+		
+		<p id="help">
+		<h3>gethooks --help</h3>
+		gethooks v1.0 - Built on Dec&nbsp;&nbsp;5 2011 at 00:52:19<br>
+		The original gethooks source can be found at <a href="http://jay.github.com/gethooks">http://jay.github.com/gethooks</a><br>
+		For usage use --help<br>
+		<br>
+		-<br>
+		Copyright (C) 2011 Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; <br>
+		All rights reserved. License GPLv3+: GNU GPL version 3 or later <br>
+		&lt;<a href="http://www.gnu.org/licenses/gpl.html">http://www.gnu.org/licenses/gpl.html</a>&gt;. <br>
+		This is free software: you are free to change and redistribute it. <br>
+		There is NO WARRANTY, to the extent permitted by law. <br>
+		-<br>
+		<br>
+		<br>
+		<br>
+		GetHooks lists any hook in the user handle table that is on any desktop in the <br>
+		current window station, and the threads/processes associated with that hook.<br>
+		<br>
+		[-m [sec]]&nbsp;&nbsp;[-v [num]]&nbsp;&nbsp;[-d [desktop]]&nbsp;&nbsp;[[-i]|[-x] <hook>]&nbsp;&nbsp;[[-p]|[-r] <prog>]<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-m&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;monitor mode. check for changes every n seconds (default 7).<br>
+		&nbsp;&nbsp;&nbsp;-v&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verbosity. print more information (default level when enabled is 1).<br>
+		&nbsp;&nbsp;&nbsp;-d&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;include only these desktops: a list of desktops separated by space.<br>
+		&nbsp;&nbsp;&nbsp;-i&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;include only these hooks: a list of hooks separated by space.<br>
+		&nbsp;&nbsp;&nbsp;-x&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exclude only these hooks: a list of hooks separated by space.<br>
+		&nbsp;&nbsp;&nbsp;-p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;include only these programs: a list of programs separated by space.<br>
+		&nbsp;&nbsp;&nbsp;-r&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exclude only these programs: a list of programs separated by space.<br>
+		<br>
+		<br>
+		Example to monitor WH_MOUSE hooks associated with workrave.exe or PID/TID 799:<br>
+		 GetHooks.exe -m -i WH_MOUSE -p workrave.exe 799<br>
+		<br>
+		<br>
+		For an overview: <a href="#about">GetHooks.exe --about</a><br>
+		For more options: <a href="#options">GetHooks.exe --options</a><br>
+		For more examples: <a href="#examples">GetHooks.exe --examples</a><br>
+		<br>
+		<br>
+		<br>
+		<br>
+		</p>
+		
+		<p id="about">
+		<h3>gethooks --about</h3>
+		gethooks v1.0 - Built on Dec&nbsp;&nbsp;5 2011 at 00:52:19<br>
+		The original gethooks source can be found at <a href="http://jay.github.com/gethooks/index.html#source">http://jay.github.com/gethooks</a><br>
+		For usage use --help<br>
+		<br>
+		-<br>
+		Copyright (C) 2011 Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; <br>
+		All rights reserved. License GPLv3+: GNU GPL version 3 or later <br>
+		&lt;<a href="http://www.gnu.org/licenses/gpl.html">http://www.gnu.org/licenses/gpl.html</a>&gt;. <br>
+		This is free software: you are free to change and redistribute it. <br>
+		There is NO WARRANTY, to the extent permitted by law. <br>
+		-<br>
+		<br>
+		<br>
+		<br>
+		Overview<br>
+		<br>
+		<br>
+		<br>
+		GetHooks is a program designed for the passive detection and monitoring of <br>
+		hooks from a limited user account.<br>
+		<br>
+		GetHooks lists any hook in the user handle table that is on any desktop in the <br>
+		current window station, and the threads/processes associated with that hook.<br>
+		<br>
+		<br>
+		<br>
+		A hook basically allows for intercepting certain messages before they reach <br>
+		their target. To &quot;hook&quot; is a general term. To be more specific, GetHooks <br>
+		detects all hooks handled by SetWindowsHookEx(), or in other words all hooks <br>
+		of user object TYPE_HOOK.<br>
+		<br>
+		GetHooks does not detect WinEvents, which can be hooked and are of user object <br>
+		TYPE_WINEVENTHOOK. WinEvent hooks are sometimes referred to as just hooks. <br>
+		<br>
+		GetHooks also does not detect function hooks. Functions can be hooked any <br>
+		number of ways. Function hooks are sometimes referred to as just hooks.<br>
+		<br>
+		The semantics involved might seem confusing. For a list of the hooks <br>
+		recognized by this program please review the examples.<br>
+		<br>
+		<br>
+		<br>
+		GetHooks is passive in that unlike other monitors it does not attempt to set <br>
+		any hooks itself, load any drivers, need administrator privileges to find <br>
+		hooks or have any type of impact on the operating system.<br>
+		<br>
+		GetHooks is not passive in that it attempts to read at least several bytes of <br>
+		each process' memory to identify the owner, origin and target thread of a <br>
+		hook. If it cannot identify a thread associated with a hook the respective <br>
+		thread is shown in the hook notice as &quot;&lt;unknown&gt;&quot;.<br>
+		<br>
+		<br>
+		<br>
+		After a lot of research (special thanks to alex$at$ntinternals{}org) I <br>
+		designed and developed GetHooks as free software. The program's estimated <br>
+		cost so far has exceeded $6000 as of October 13, 2011. If you find this <br>
+		program useful and it has saved you time or money then you are welcome to <br>
+		donate time or money. <a href="http://jay.github.com/gethooks/index.html#donate">http://jay.github.com/gethooks/index.html#donate</a><br>
+		<br>
+		<br>
+		<br>
+		Please review the options and examples for more information.<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		</p>
+		
+		
+		<p id="options">
+		<h3>gethooks --options</h3>
+		gethooks v1.0 - Built on Dec&nbsp;&nbsp;5 2011 at 00:52:19<br>
+		The original gethooks source can be found at <a href="http://jay.github.com/gethooks/index.html#source">http://jay.github.com/gethooks</a><br>
+		For usage use --help<br>
+		<br>
+		-<br>
+		Copyright (C) 2011 Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; <br>
+		All rights reserved. License GPLv3+: GNU GPL version 3 or later <br>
+		&lt;<a href="http://www.gnu.org/licenses/gpl.html">http://www.gnu.org/licenses/gpl.html</a>&gt;. <br>
+		This is free software: you are free to change and redistribute it. <br>
+		There is NO WARRANTY, to the extent permitted by law. <br>
+		-<br>
+		<br>
+		<br>
+		<br>
+		These options are compatible with all other options unless stated otherwise.<br>
+		<br>
+		[-t &lt;num&gt;]&nbsp;&nbsp;[-f]&nbsp;&nbsp;[-e]&nbsp;&nbsp;[-u]&nbsp;&nbsp;[-g]&nbsp;&nbsp;[-z &lt;func&gt; [param]]<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-t&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the maximum number of threads in a snapshot<br>
+		<br>
+		For each system snapshot this program allocates several buffers whose size is <br>
+		based on the maximum number of threads in a snapshot. The default maximum <br>
+		number of threads is currently 20000, resulting in each snapshot taking ~7MB.<br>
+		Currently gethooks has memory allocated at any one time for 1 snapshot by <br>
+		default, or 2 if in monitor mode, or maybe more if in test mode. Use this <br>
+		option to specify a smaller or larger number of threads per snapshot, which <br>
+		will decrease or increase, respectively, the amount of memory allocated.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-f&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;force successful completion of NtQuerySystemInformation()<br>
+		<br>
+		For each system snapshot this program uses a thread traversal library which <br>
+		calls the API function NtQuerySystemInformation() to get a list of threads in <br>
+		the system. If that call ever fails it is considered an indicator of system <br>
+		instability and by default this program will terminate. However, you may <br>
+		decide that the failure is indicative of something else entirely. Use this <br>
+		option to silently retry on almost any failed NtQuerySystemInformation() call <br>
+		every second until it succeeds.<br>
+		-Note that this option is only a workaround for intermittent failures. If you <br>
+		enable this option and a failure *always* occurs then the code loops endlessly.<br>
+		-Note that info length mismatch (buffer too small) failures are never retried. <br>
+		To remedy a small buffer increase the number of threads using option 't'.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-e&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show external hooks (ignore internal hooks)<br>
+		<br>
+		You'll notice for each hook found on your desktop that the owner, origin and <br>
+		target thread are often the same. That means a thread hooked itself. Example:<br>
+		-<br>
+		Owner/Origin/Target: notepad++.exe (PID 3408, TID 3412 @ 0xFE6ECDD8)<br>
+		-<br>
+		I refer to those hooks as internal hooks. External hooks are any hooks which <br>
+		are not internal, and are usually more of interest. For example a thread <br>
+		which has targeted some other thread with a hook or is targeting all threads <br>
+		with a global hook. This program processes both external and internal hooks <br>
+		by default, but you may use this option to ignore internal hooks.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show unknown hooks (ignore known hooks)<br>
+		<br>
+		You'll notice for each hook found on your desktop that the owner, origin and <br>
+		target thread are usually identified by their thread and process info. Example:<br>
+		-<br>
+		Owner/Origin: WLSync.exe (PID 148, TID 3280 @ 0xFE2A5B50)<br>
+		Target: WLSync.exe (PID 148, TID 3556 @ 0xFE5E9B78)<br>
+		-<br>
+		I refer to those hooks as known hooks. Unknown hooks are any hooks which do <br>
+		not have identifiable user or kernel mode owner, origin and/or target thread <br>
+		information, and may be more of interest to you because they could not be <br>
+		fully identified. This program processes both known and unknown hooks by <br>
+		default, but you may use this option to ignore known hooks.<br>
+		-Note that unknown hooks are often the result of insufficient permissions. To <br>
+		remedy that you can run this program with administrative privileges.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show global hooks (ignore hooks with a target thread)<br>
+		<br>
+		You may notice hooks on your desktop that have a target of &lt;GLOBAL&gt;. Example:<br>
+		-<br>
+		Owner/Origin: hkcmd.exe (PID 2780, TID 3456 @ 0xFF52EC00)<br>
+		Target: &lt;GLOBAL&gt;<br>
+		-<br>
+		Global hooks may be of more interest to you because &quot;the hook procedure is <br>
+		associated with all existing threads running in the same desktop as the <br>
+		calling thread.&quot; Popular global hooks include WH_KEYBOARD, WH_KEYBOARD_LL <br>
+		and WH_MOUSE, WH_MOUSE_LL to monitor keyboard and mouse input, respectively. <br>
+		This program processes both global and non-global (targeted) hooks by <br>
+		default, but you may use this option to ignore targeted hooks.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-c&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ignore hook lock count changes<br>
+		<br>
+		Hook objects can be locked and unlocked by the kernel. The lock count and <br>
+		the frequency at which the count changes may or may not prove to be viable <br>
+		diagnostic information for you when you are monitoring a hook. Not a lot is <br>
+		known about the expected behavior of hook locking and unlocking. Further, <br>
+		the number of lock count changes you see will largely depend on the interval <br>
+		at which you are monitoring. You may use this option to ignore lock count <br>
+		change notifications.<br>
+		-Note that empirical testing on Win7 x86 SP1 shows that locking and unlocking <br>
+		is far more frequent with a faulted hook.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-y&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;go completely passive (do not identify owner/origin/target threads)<br>
+		<br>
+		GetHooks was designed for passive detection of hooks but by default it is not <br>
+		completely passive. The memory of each process must be read to identify which <br>
+		threads are associated with which hooks. If it cannot read the memory of a <br>
+		process which has a thread associated with a hook it refers to that hook's <br>
+		respective thread as unknown. By using this option no threads will be <br>
+		traversed and no process' memory will be read, and all hooks will have <br>
+		threads that show as &quot;&lt;unknown&gt;&quot;.<br>
+		<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;-z&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;run a test mode function with an optional or required parameter.<br>
+		<br>
+		Test mode is where I am testing functions like walking a hook chain or dumping <br>
+		an individual HOOK from its kernel address.<br>
+		Whether or not this option is compatible with any other options depends on the <br>
+		function and its parameter. For usage and examples: GetHooks.exe -z<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		</p>
+		
+		
+		<p id="examples">
+		<h3>gethooks --examples</h3>
+		gethooks v1.0 - Built on Dec&nbsp;&nbsp;5 2011 at 00:52:19<br>
+		The original gethooks source can be found at <a href="http://jay.github.com/gethooks/index.html#source">http://jay.github.com/gethooks</a><br>
+		For usage use --help<br>
+		<br>
+		-<br>
+		Copyright (C) 2011 Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; <br>
+		All rights reserved. License GPLv3+: GNU GPL version 3 or later <br>
+		&lt;<a href="http://www.gnu.org/licenses/gpl.html">http://www.gnu.org/licenses/gpl.html</a>&gt;. <br>
+		This is free software: you are free to change and redistribute it. <br>
+		There is NO WARRANTY, to the extent permitted by law. <br>
+		-<br>
+		<br>
+		<br>
+		<br>
+		More examples:<br>
+		<br>
+		<br>
+		GetHooks can filter hooks by name or id. For the sake of posterity if an id <br>
+		does not have an associated name it is still accepted, though with a warning.<br>
+		The recognized hook names are:<br>
+		<br>
+		WH_MSGFILTER(-1)<br>
+		WH_JOURNALRECORD(0)<br>
+		WH_JOURNALPLAYBACK(1)<br>
+		WH_KEYBOARD(2)<br>
+		WH_GETMESSAGE(3)<br>
+		WH_CALLWNDPROC(4)<br>
+		WH_CBT(5)<br>
+		WH_SYSMSGFILTER(6)<br>
+		WH_MOUSE(7)<br>
+		WH_HARDWARE(8)<br>
+		WH_DEBUG(9)<br>
+		WH_SHELL(10)<br>
+		WH_FOREGROUNDIDLE(11)<br>
+		WH_CALLWNDPROCRET(12)<br>
+		WH_KEYBOARD_LL(13)<br>
+		WH_MOUSE_LL(14)<br>
+		<br>
+		You may use a hook's id instead of its name when including/excluding hooks.<br>
+		For example, to monitor only WH_KEYBOARD(2) and WH_MOUSE(7) hooks:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -m -i 2 7<br>
+		<br>
+		<br>
+		Show WH_KEYBOARD_LL hooks that are associated with hkcmd.exe:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -i WH_KEYBOARD_LL -p hkcmd.exe<br>
+		<br>
+		<br>
+		Show WH_KEYBOARD_LL hooks that are associated with any process other than <br>
+		hkcmd.exe:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -i WH_KEYBOARD_LL -r hkcmd.exe<br>
+		<br>
+		<br>
+		Show hooks other than WH_KEYBOARD_LL that are associated with hkcmd.exe:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -x WH_KEYBOARD_LL -p hkcmd.exe<br>
+		<br>
+		<br>
+		Show hooks other than WH_KEYBOARD_LL that are associated with any process <br>
+		other than hkcmd.exe:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -x WH_KEYBOARD_LL -r hkcmd.exe<br>
+		<br>
+		<br>
+		It is possible to include or exclude a thread id (TID) or a process id (PID) <br>
+		instead of a process name. To do that just use the id instead of the name.<br>
+		For example, to monitor hooks associated with thread id 492 or process id 148:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -m -p 148 492<br>
+		<br>
+		<br>
+		If a colon is the first character in an argument to program include/exclude it <br>
+		is assumed a program name follows. You may prefix a program name with a colon <br>
+		so that it is not misinterpreted as an option or process id or thread id.<br>
+		For example, to list hooks associated with program name -h and program name 907<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -p :-h :907<br>
+		<br>
+		<br>
+		By default this program attaches to all desktops in the current window station.<br>
+		Instead you may specify zero or more individual desktops with the 'd' option.<br>
+		If you specify 'd' without a desktop name it is assumed you want the current.<br>
+		For example, to list hooks on the current desktop and &quot;Sysinternals Desktop 1&quot;:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -d -d &quot;Sysinternals Desktop 1&quot;<br>
+		<br>
+		<br>
+		Use the GNU 'tee' program to copy this program's output to a file.<br>
+		For example, to monitor hooks and copy output to file &quot;outfile&quot;:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -m | tee outfile<br>
+		<br>
+		<br>
+		Verbosity can be enabled to aid advanced users.<br>
+		When verbosity is enabled the lowest level is 1 and the highest level is 9.<br>
+		The higher the verbosity level the more information that is printed.<br>
+		<br>
+		Level 1 shows additional statistics.<br>
+		Level 2 is reserved for further development.<br>
+		Level 3 is reserved for further development.<br>
+		Level 4 is reserved for further development.<br>
+		Level 5 shows this program's global store (structures) and its descendants.<br>
+		Level 6 shows the HOOK structs (Microsoft's internal hook structures).<br>
+		Level 7 shows the hook structs (This program's internal hook structures).<br>
+		<br>
+		Level >=8 is too noisy/comprehensive to be used in monitoring mode:<br>
+		Level 8 shows brief information on every thread captured in a snapshot.<br>
+		Level 9 enables traverse_threads() verbosity when it traverses each thread.<br>
+		<br>
+		For example, to print Microsoft's internal HOOK struct in each HOOK notice:<br>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetHooks.exe -v 6<br>
+		<br>
+		<br>
+		Note that gethooks prints any errors to stdout, not stderr.<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		If you are looking for the GetHooks homepage <a href="index.html">click here.</a>
+		</p>
+		
+	</body>
+</html>

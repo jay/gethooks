@@ -1,0 +1,75 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html itemscope itemtype="http://schema.org/Product">
+	<head>
+		<title>GetHooks known issues for Windows x86 2k/XP/Vista/7/8</title>
+		<style type="text/css">
+			body {
+			background-color: #F8F8F8;
+			font-family: arial, helvetica, sans-serif;
+			}
+		</style>
+		
+		<meta itemprop="name" content="GetHooks known issues for Windows x86 2k/XP/Vista/7/8">
+		<meta itemprop="description" content="GetHooks is a program that detects and monitors SetWindowsHookEx() type hooks in Windows.">
+		<meta itemprop="image" content="http://jay.github.com/gethooks/gethooks built Nov 17 2011.png">
+	</head>
+	
+	<body>
+		<p>
+		<h1>GetHooks known issues for Windows x86 2k/XP/Vista/7/8</h1>
+		These are the known issues for gethooks v1.0 - Built on Dec&nbsp;&nbsp;5 2011 at 00:52:19.<br>
+		If you are looking for the GetHooks homepage <a href="index.html">click here.</a><br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>FATAL errors on Windows 2000</h3>
+		I designed GetHooks to work on Windows 2000 but it looks as though I got an offset wrong somewhere. I have to debug GetHooks in Windows 2000 but that's proving to be a real chore, and maybe even impossible using Visual Studio 2010.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>The snapshot store failed to initialize. (Duplicate pvWin32ThreadInfo)</h3>
+		GetHooks identifies the threads associated with a hook by matching each thread's kernel mode address with the kernel mode addresses stored in each HOOK structure. Rarely, for reasons I do not yet understand, two threads in user mode will have the same kernel mode address. This does not appear to be a bug in the program. I have witnessed this on Vista and 7 systems, and also once in a clean VM where I was running GetHooks for testing purposes.<br>
+		<br>
+		Regrettably I have yet to find a solution to this issue. I suspect it is caused by the kernel reusing addresses or maybe structures. Unless I find a way to identify in user mode which duplicate thread info is correct and which is &quot;stale&quot; the program cannot accurately identify the thread. For now when GetHooks encounters such a situation it will terminate to avoid reporting incorrect results. A possible workaround until I find a solution might be in such a situation to report multiple associations, but so far I'm loathe to implement that.<br>
+		<br>
+		Here's a screenshot of GetHooks dying on a FATAL:
+		<img src="Duplicate pvWin32ThreadInfo.PNG" alt="Duplicate pvWin32ThreadInfo.PNG" /><br>
+		<br>
+		If you want to help me find a solution, I would like to examine the thread environment blocks (TEBs) of your user mode programs that have threads that share the same kernel mode thread address. What you can do is set in your system environment GETHOOKS_DEBUG with a value of 1. If the error above is ever encountered GetHooks should dump the TEB of any thread that has a thread kernel address that is encountered more than once.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>UNC paths are not supported.&nbsp;&nbsp;Defaulting to Windows directory.</h3>
+		GetHooks can be run from the command interpreter or directly (eg by double-clicking on it in explorer). If you do the latter GetHooks will pause before exit so the console window is not automatically closed. In this case if you are running GetHooks from a network share the command interpreter will warn you that &quot;UNC paths are not supported&quot; before pausing:<br>
+		<br>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		'\\vmware-host\Shared Folders\.GetHooks24958'<br>
+		CMD.EXE was started with the above path as the current directory.<br>
+		UNC paths are not supported.&nbsp;&nbsp;Defaulting to Windows directory.<br>
+		Press any key to continue . . .<br>
+		</span>
+		<br>
+		You can ignore that warning.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Send me any issues you encounter</h3>
+		Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; and put GetHooks in the subject.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		If you are looking for the GetHooks homepage <a href="index.html">click here.</a>
+		</p>
+		
+	</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html itemscope itemtype="http://schema.org/Product">
+	<head>
+		<title>GetHooks for Windows x86 2k/XP/Vista/7/8</title>
+		<style type="text/css">
+			body {
+			background-color: #F8F8F8;
+			font-family: arial, helvetica, sans-serif;
+			}
+		</style>
+		
+		<meta itemprop="name" content="GetHooks for Windows x86 2k/XP/Vista/7/8">
+		<meta itemprop="description" content="GetHooks is a program that detects and monitors SetWindowsHookEx() type hooks in Windows.">
+		<meta itemprop="image" content="http://jay.github.com/gethooks/gethooks built Nov 17 2011.png">
+	</head>
+	
+	<body>
+		<p>
+		<h1>GetHooks for Windows x86 2k/XP/Vista/7/8</h1>
+		GetHooks is a program designed for the passive detection and monitoring of hooks from a limited user account.<br>
+		<br>
+		The source is now available on <a href="https://github.com/jay/gethooks">GitHub</a>.<br>
+		<br>
+		<img src="gethooks built Nov 17 2011.png" alt="gethooks usage screenshot" /><br>
+		<br>
+		<a href="usage_v1_0.html#help">gethooks --help</a><br>
+		<a href="usage_v1_0.html#about">gethooks --about</a><br>
+		<a href="usage_v1_0.html#options">gethooks --options</a><br>
+		<a href="usage_v1_0.html#examples">gethooks --examples</a><br>
+		<br>
+		<br>
+		GetHooks monitors SetWindowsEx() type hooks. The recognized hooks are:<br>
+		<br>
+		WH_MSGFILTER(-1)<br>
+		WH_JOURNALRECORD(0)<br>
+		WH_JOURNALPLAYBACK(1)<br>
+		WH_KEYBOARD(2)<br>
+		WH_GETMESSAGE(3)<br>
+		WH_CALLWNDPROC(4)<br>
+		WH_CBT(5)<br>
+		WH_SYSMSGFILTER(6)<br>
+		WH_MOUSE(7)<br>
+		WH_HARDWARE(8)<br>
+		WH_DEBUG(9)<br>
+		WH_SHELL(10)<br>
+		WH_FOREGROUNDIDLE(11)<br>
+		WH_CALLWNDPROCRET(12)<br>
+		WH_KEYBOARD_LL(13)<br>
+		WH_MOUSE_LL(14)<br>
+		</p>
+		
+		<p>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		Here's an example:<br>
+		----------------------------------------------------------------------------[b]<br>
+		[Found] [HOOK 0x000100E5 @ 0xFE60AA78] [1:07:48 AM&nbsp;&nbsp;12/4/2011]<br>
+		<br>
+		Id: WH_CBT<br>
+		Desktop: Default<br>
+		Owner/Origin/Target: AvastUI.exe (PID 1536, TID 3972 @ 0xFDBC1C80)<br>
+		----------------------------------------------------------------------------[e]<br>
+		</span>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Download</h3>
+		<table cellpadding=0 cellspacing=2 width="100%" border=0>
+			<tr bgColor="#D1D1DD">
+				<td>&nbsp;&nbsp;Release&nbsp;&nbsp;</td>
+				<td>&nbsp;&nbsp;Date&nbsp;&nbsp;</td>
+				<td>&nbsp;&nbsp;Info&nbsp;&nbsp;</td>
+			</tr>
+			<tr height=20 bgColor="#D4EDC9">
+				<td>&nbsp;&nbsp;<b>1.0</b>&nbsp;&nbsp;(<a href="http://cloud.github.com/downloads/jay/gethooks/GetHooks.exe">HTTP</a>, <a href="https://raw.github.com/jay/gethooks/ac1f20783b343069f86eaae12c95aa978141b65e/vs/Debug%20MSVCRT/GetHooks.exe">HTTPS</a>)&nbsp;&nbsp;</td>
+				<td>&nbsp;&nbsp;December 7, 2011&nbsp;&nbsp;</td>
+				<td>
+					&nbsp;&nbsp;sha1 <i>fd9a93a83ea36143a3e4a5e8ee2e40be29822b73</i>&nbsp;&nbsp;<br>
+					&nbsp;&nbsp;Build date Dec  5 2011 at 00:52:19&nbsp;&nbsp;<br>
+					<ul>
+					<li>Initial GetHooks release for XP/Vista/7/8.&nbsp;
+					</ul>
+				</td>
+			</tr>
+		</table>
+		<br>
+		Please review the <a href="faq.html">FAQ</a> and <a href="issues.html">known issues</a>. If you still have questions email me: Jay Satiro &lt;raysatiro$at$yahoo{}com&gt; and put GetHooks in the subject.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Share</h3>
+		Click one of the social sharing buttons below to share GetHooks with other people you know that may find it useful.<br>
+		<br>
+		<!-- AddThis Button BEGIN -->
+		<div class="addthis_toolbox addthis_default_style " addthis:url="http://jay.github.com/gethooks" addthis:title="GetHooks for Windows x86 2k/XP/Vista/7">
+		<a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+		<a class="addthis_button_tweet"></a>
+		<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+		<a class="addthis_counter addthis_pill_style"></a>
+		</div>
+		<script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=ra-4edbfb754a805bec"></script>
+		<!-- AddThis Button END -->
+		<br>
+		<br>
+		</p>
+		
+		<p id="donate">
+		<h3>Donate</h3>
+		After a lot of research (special thanks to alex$at$ntinternals{}org) I designed and developed GetHooks as free software. The program's estimated cost so far has exceeded $6000 as of October 13, 2011. If you find this program useful and it has saved you time or money then you are welcome to donate time or money.<br>
+		<br>
+		You can donate time by improving GetHooks via <a href="https://github.com/jay/gethooks">GitHub</a> or you can donate money in support of the work that I've already done by clicking the PayPal donate button below. Please do not donate based on future development.<br>
+		<br>
+		<!-- donate button -->
+		<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+			<input type="hidden" name="cmd" value="_s-xclick">
+			<input type="hidden" name="hosted_button_id" value="WVA5JTJJC3MGG">
+			<input type="image" src="btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal Donate Button">
+			<!-- <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1"> -->
+		</form>
+		</p>
+		
+	</body>
+</html>
