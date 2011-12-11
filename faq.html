@@ -111,7 +111,7 @@
 		
 		<p>
 		<h3>I'm monitoring a program that's not mine and I notice that hook(s) are continually created and destroyed, why?</h3>
-		I don't know, you'd have to ask the program's developers if that's the intended behavior before you start investigating. In the <a href="http://www.workrave.org">Workrave</a> program which I had worked on as a developer we used hooks to lock the keyboard and mouse during a user's break times. That is because the program is designed to assist in the prevention and recovery of repetitive strain injuries (RSI). So there are legitimate reasons for a hook being created and destroyed continually. Also, windows explorer will create a WH_KEYBOARD_LL hook in Windows 7 on a hover over a taskbar button/thumbnail and then unhook when not hovering. That is also legitimate.<br>
+		I don't know, you'd have to ask the program's developers if that's the intended behavior before you start investigating. In the <a href="http://www.workrave.org" onClick="_gaq.push([ '_trackEvent', 'GetHooks', 'GetHooks - Outgoing', 'http://www.workrave.org' ]);">Workrave</a> program which I had worked on as a developer we used hooks to lock the keyboard and mouse during a user's break times. That is because the program is designed to assist in the prevention and recovery of repetitive strain injuries (RSI). So there are legitimate reasons for a hook being created and destroyed continually. Also, windows explorer will create a WH_KEYBOARD_LL hook in Windows 7 on a hover over a taskbar button/thumbnail and then unhook when not hovering. That is also legitimate.<br>
 		<br>
 		<br>
 		</p>
@@ -125,7 +125,7 @@
 		
 		<p>
 		<h3>How do I get the DLL module name associated with a hook function?</h3>
-		You'll have to use another program. It is only possible to do that in kernel mode and I designed GetHooks so that it would operate entirely in user mode. Interestingly the kernel mode array containing the names can actually be accessed via user mode, but not their position in the array. Without that index number there's no way to be certain, although in theory I might be able to brute force all the atoms and make a best guess. For now it's not possible using GetHooks. You'll want to check out <a href="http://blog.airesoft.co.uk/2011/07/hookers-underneath-the-sheets/trackback/">MsgHookLister</a>.<br>
+		You'll have to use another program. It is only possible to do that in kernel mode and I designed GetHooks so that it would operate entirely in user mode. Interestingly the kernel mode array containing the names can actually be accessed via user mode, but not their position in the array. Without that index number there's no way to be certain, although in theory I might be able to brute force all the atoms and make a best guess. For now it's not possible using GetHooks. You'll want to check out <a href="http://blog.airesoft.co.uk/2011/07/hookers-underneath-the-sheets/trackback/" onClick="_gaq.push([ '_trackEvent', 'GetHooks', 'GetHooks - Outgoing', 'http://blog.airesoft.co.uk/2011/07/hookers-underneath-the-sheets/trackback/' ]);">MsgHookLister</a>.<br>
 		<br>
 		<br>
 		</p>
@@ -141,7 +141,7 @@
 		<h3>How do you license and can I have access to your source?</h3>
 		GetHooks is free software and it is licensed under the <a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License version 3 (GPLv3)</a>, a license that will keep it free. You may not remove my copyright or the copyright of any contributors under the license terms. The GetHooks source cannot be used in proprietary software, but you can for example execute the GetHooks program from a proprietary software application. <b>In any case please review the GPLv3 license, which is designed to protect freedom, not take it away.</b><br>
 		<br>
-		The source can be found on <a href="https://github.com/jay/gethooks">GitHub.</a><br>
+		The source can be found on <a href="https://github.com/jay/gethooks" onClick="_gaq.push([ '_trackEvent', 'GetHooks', 'GetHooks - Outgoing', 'https://github.com/jay/gethooks' ]);">GitHub.</a><br>
 		<br>
 		<br>
 		</p>
@@ -167,5 +167,21 @@
 		})();
 		</script>
 		<!-- Google Analytics END Part2 (Part1 at bottom of head, Part2 at bottom of body) -->
+		
+		<!-- Start of StatCounter Code for Default Guide -->
+		<script type="text/javascript">
+		var sc_project=7480735; 
+		var sc_invisible=1; 
+		var sc_security="6a6701a8"; 
+		</script>
+		<script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script>
+		<noscript>
+			<div class="statcounter">
+			<a title="counter on tumblr" href="http://statcounter.com/tumblr/" target="_blank">
+				<img class="statcounter" src="http://c.statcounter.com/7480735/0/6a6701a8/1/" alt="counter on tumblr">
+			</a>
+			</div>
+		</noscript>
+		<!-- End of StatCounter Code for Default Guide -->
 	</body>
 </html>
