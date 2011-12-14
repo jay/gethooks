@@ -41,6 +41,16 @@
 		</p>
 		
 		<p>
+		<h3>Error: ..\desktop.c line xxx, attach(): Failed to get a pointer to the DESKTOPINFO struct.</h3>
+		x64 support is not implemented. If you run GetHooks on Windows x64 it's likely it will fail. If you are running on Windows x86 and you see that error please run systeminfo and send me the output:<br>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		systeminfo | findstr &quot;^OS Locale Type&quot;<br>
+		</span>
+		<br>
+		<br>
+		</p>
+		
+		<p>
 		<h3>The snapshot store failed to initialize. (Duplicate pvWin32ThreadInfo)</h3>
 		GetHooks identifies the threads associated with a hook by matching each thread's kernel mode address with the kernel mode addresses stored in each HOOK structure. Rarely, for reasons I do not yet understand, two threads in user mode will have the same kernel mode address. This does not appear to be a bug in the program. I have witnessed this on Vista and 7 systems, and also once in a clean VM where I was running GetHooks for testing purposes.<br>
 		<br>
