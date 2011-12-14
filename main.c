@@ -34,6 +34,12 @@ Print the GPL license and copyright.
 -
 
 -
+warn_x64()
+
+Warn if this x86 program is run on Windows x64.
+-
+
+-
 gethooks()
 
 Initialize and process the snapshot store(s), and print the HOOK info to stdout.
@@ -64,7 +70,7 @@ Create and initialize the global stores, print the license and version and then 
 
 /* this program's version */
 #define VERSION_MAJOR   1
-#define VERSION_MINOR   0
+#define VERSION_MINOR   1
 
 /* print_version()
 Print the program version.
@@ -73,10 +79,10 @@ If you've made any modifications to this program add a line that says "Modificat
 */
 void print_version( void )
 {
-	printf( "\ngethooks v%u.%u", VERSION_MAJOR, VERSION_MINOR );
+	printf( "\ngethooks v%u.%.*u", VERSION_MAJOR, ( ( VERSION_MINOR ) ? 2 : 1 ), VERSION_MINOR );
 	printf( " - " );
 	printf( "Built on " __DATE__ " at " __TIME__ "\n" );
-	printf( "The original gethooks source can be found at http://jay.github.com/gethooks\n" );
+	printf( "The original gethooks source can be found at http://jay.github.com/gethooks/\n" );
 	printf( "For usage use --help\n" );
 	
 	/* Example modification notice. Leave this example intact. Copy it below to use as a template.
@@ -109,6 +115,36 @@ void print_license( void )
 		"There is NO WARRANTY, to the extent permitted by law. \n"
 	);
 	printf( "-\n" );
+	
+	return;
+}
+
+
+
+/* warn_x64()
+Warn if Windows x64 host.
+
+This x86 program has not been tested in 64-bit versions of Windows as of 12/12/2011.
+*/
+void warn_x64( void )
+{
+	USHORT x64_host = 0;
+	
+	
+	/* IsWow64Process() is not always available. alternative:
+	Windows x86 host GS register is 0, x64 GS register is not
+	*/
+#if defined( _MSC_VER )
+	__asm
+	{
+		mov x64_host, gs
+	}
+#else
+	asm( "mov %%gs, %0" : "=r" (x64_host) );
+#endif
+	
+	if( x64_host )
+		MSG_WARNING( "This program does not currently support 64-bit hosts." );
 	
 	return;
 }
@@ -297,6 +333,8 @@ int main( int argc, char **argv )
 	
 	print_license();
 	printf( "\n\n" );
+	
+	warn_x64();
 	
 	
 	/* Create the global store 'G' and its descendants or die.
