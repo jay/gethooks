@@ -45,7 +45,7 @@
 		<h3>Will GetHooks detect hooks set by malware?</h3>
 		Yes and no. GetHooks was not designed to detect malware and it has no self-protection. It is a monitoring tool intended for Windows developers that are using hooks in the applications they are developing. If you want to monitor malware hooks you should use a tool that monitors for them from the kernel. I've seen a few of those but their drivers are questionable and I'm not comfortable recommending them.<br>
 		<br>
-		Malware can change the name of its process(es) and inject into other processes. Although the hook will likely show in GetHooks it will show for example something like WH_KEYBOARD_LL originated by explorer.exe, which would be very hard to discern because the real explorer.exe can actually set WH_KEYBOARD_LL hooks momentarily.<br>
+		Malware can change the name of its process(es) and inject into other processes. Although the hook may show in GetHooks it will show for example something like WH_KEYBOARD_LL originated by explorer.exe, which would be very hard to discern because the real explorer.exe can actually set WH_KEYBOARD_LL hooks momentarily.<br>
 		<br>
 		<br>
 		</p>
@@ -96,7 +96,7 @@
 		
 		<p>
 		<h3>Why do I see so many unknown hooks when I run GetHooks as a limited user?</h3>
-		Although GetHooks can detect hooks as a limited user it may not be able to identify the associated processes. Almost all unknown hooks are the result of a lack of privilege. Mouseover the pic below to see the difference when running GetHooks as administrator.<br>
+		Although GetHooks can detect hooks as a limited user it may not be able to identify the associated processes. Almost all unknown hooks are the result of a lack of privilege. Mouseover the pic below (it takes a second to fetch) to see the difference when running GetHooks as administrator.<br>
 			<div> <a class="mousepic" href="#mousepic"></a> </div>
 		<br>
 		<br>

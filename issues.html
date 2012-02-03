@@ -27,7 +27,7 @@
 	<body>
 		<p>
 		<h1>GetHooks known issues for Windows x86 2k/XP/Vista/7/8</h1>
-		These are the known issues for gethooks v1.0 - Built on Dec&nbsp;&nbsp;5 2011 at 00:52:19.<br>
+		These are the known issues for gethooks v1.01 - Built on Dec 14 2011 at 00:48:09.<br>
 		If you are looking for the GetHooks homepage <a href="index.html">click here.</a><br>
 		<br>
 		<br>
@@ -76,6 +76,38 @@
 		</span>
 		<br>
 		You can ignore that warning.<br>
+		<br>
+		<br>
+		</p>
+		
+		<p>
+		<h3>Error: ..\test.c line 451, find_most_preceding_kernel_HOOK(): HOOK chain exceeded maximum supported length.</h3>
+		The 'chain' test function is experimental. When you pass in a HOOK address on the command line the function must determine whether or not the HOOK is part of a chain, and where in the forwardly linked list (ie the hook chain) it is located. Then it attempts to reverse its way back up to the chain's head -- if it is not there already -- by calling find_most_preceding_kernel_HOOK(). Currently in versions 1.0 and 1.01 that function has a hard limit of max 100 HOOKs per chain.<br>
+		<br>
+		I recently captured a WH_MOUSE hook chain owned/originated by Google Chrome 16.0.912.63 flashplayer thread that had hundreds of HOOKs chained together. I had never seen anything get that long that works. Future versions of GetHooks will have a limit of 65535 when tracing to the head of a HOOK chain (already fixed in the develop branch Jan 2012).<br>
+		<br>
+		As a workaround you can run the chain function multiple times and each time it will give you an address at most 100 closer to the head. Following the example from above I check the thread and dump its hooks (logfile <a href="chrome_hook_chain/gethooks_chrome_tid5716__verbosity_0.txt">here</a>. also available in verbosity <a href="chrome_hook_chain/gethooks_chrome_tid5716__verbosity_4.txt">4</a> <a href="chrome_hook_chain/gethooks_chrome_tid5716__verbosity_6.txt">6</a> and <a href="chrome_hook_chain/gethooks_chrome_tid5716__verbosity_7.txt">7</a>.). I notice the hooks are all very similar so I pick one address at random to see how long its chain is.<br>
+		<br>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		gethooks -v 4 -z chain 0xFE7E1AF0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		</span>
+		(result: max exceeded message and says first HOOK is at 0x00000000FE6827F0)
+		<br>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		gethooks -v 4 -z chain 0x00000000FE6827F0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		</span>
+		(result: max exceeded message and says first HOOK is at 0x00000000FE659FB8)
+		<br>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		gethooks -v 4 -z chain 0x00000000FE659FB8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		</span>
+		(result: no max exceeded message and says first HOOK is at 0x00000000FE7750F0)
+		<br>
+		<span style="font-family: 'lucida console', 'courier new', courier, monospace !important">
+		gethooks -v 4 -z chain 0x00000000FE7750F0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		</span>
+		(result: the full hook chain. logfile <a href="chrome_hook_chain/gethooks_chain_0x00000000FE7750F0__verbosity_0.txt">here</a>. also available in verbosity <a href="chrome_hook_chain/gethooks_chain_0x00000000FE7750F0__verbosity_4.txt">4</a> <a href="chrome_hook_chain/gethooks_chain_0x00000000FE7750F0__verbosity_6.txt">6</a> and <a href="chrome_hook_chain/gethooks_chain_0x00000000FE7750F0__verbosity_7.txt">7</a>.)
+		<br>
 		<br>
 		<br>
 		</p>

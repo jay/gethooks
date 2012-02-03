@@ -1,0 +1,44 @@
+rss
+{
+	display: block;
+	font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 80%;
+	margin: 25px 15px 25px 15px;
+}
+
+rss channel * { display: none }
+
+rss channel title
+{
+	display: block;
+	font-size: 200%;
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+
+rss channel link
+{
+	display: block;
+	margin-bottom: 25px;
+}
+
+rss channel item { display: block }
+
+rss channel item title
+{
+	display: block;
+	font-family: Helvetica, Geneva, Verdana, Arial, sans-serif;
+	font-size: 150%;
+	font-weight: bold;
+	margin-bottom: 2px;
+}
+
+rss channel item description
+{
+	display: block;
+	margin-bottom: 25px;
+}
+
+rss channel item description * { display: inline }
+
+rss channel item link { display: none }
