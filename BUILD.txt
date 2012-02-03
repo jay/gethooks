@@ -1,0 +1,11 @@
+Currently I'm only building with Visual Studio, but there's no reason GetHooks can't be built using mingw.
+I prefer Visual Studio for debugging. gdb is not as reliable or powerful in windows.
+I don't have a makefile nor have I tested a mingw build yet. If you make one send it to me.
+
+I use Visual Studio 2010 Professional and I use two configurations frequently.
+The first configuration is the debug configuration. This is the standard boilerplate debug configuration.
+The second configuration is the MSVCRT configuration. I wanted GetHooks to work without any external dependencies and so I set this configuration to link to MSVCRT which is present on Win2k and above. This way I have a universal binary for Windows 2k/XP/Vista/7/8 that does not need Visual Studio dependencies; all that's needed to run is GetHooks.exe and no DLL files. However to compile using this config you'll need WinDDK. I used Windows Driver Kit version 7.1.0.
+
+Currently GetHooks when compiled using the MSVCRT configuration has passed testing on Windows XP/Vista/7/8. Although I designed GetHooks for Win2k as well it failed for reasons I don't yet know. I probably got an offset wrong in the handle table. I'd have to set up remote debugging in Win2k which is proving to be a real chore with VS2010 (it might be impossible).
+
+If you have questions e-mail me Jay Satiro <raysatiro@yahoo.com>

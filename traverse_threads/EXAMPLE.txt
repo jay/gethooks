@@ -1,0 +1,6 @@
+traverse_threads() examples:
+
+example1 prints all thread ids
+example2 prints all process ids
+example3 prints thread ids depending on user specified parameters
+example4 prints thread state and additional information
