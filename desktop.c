@@ -612,9 +612,10 @@ cleanup:
 	{
 		/* some desktops attaching is expected to fail. if a desktop attach fails when it's 
 		expected then don't show a message unless verbose.
-		the only known failure right now is Winlogon (tested on Windows 7 x86 SP1).
+		Winlogon (tested on Windows 7 x86 SP1)
+		Disconnect (tested on Windows XP x86 SP3)
 		*/
-		if( _wcsicmp( name, L"Winlogon" ) ) 
+		if( _wcsicmp( name, L"Winlogon" ) && _wcsicmp( name, L"Disconnect" ) ) 
 			printf( "Failed to attach to desktop '%ls'.\n", name );
 		else if( G->config->verbose >= 1 )
 			printf( "Failed to attach to desktop '%ls'. (expected)\n", name );
