@@ -383,7 +383,7 @@ static int find_most_preceding_kernel_HOOK(
 	unsigned __int64 phk = 0;
 	
 	/* This function will search through a HOOK chain of maximum length 'chainmax' */
-	const unsigned chainmax = 100;
+	const unsigned chainmax = 65535;
 	
 	FAIL_IF( !out );
 	

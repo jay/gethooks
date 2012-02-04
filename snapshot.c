@@ -697,7 +697,7 @@ retry:
 			{
 				printf( "C000009A: STATUS_INSUFFICIENT_RESOURCES\n"
 					"\"Insufficient system resources exist to complete the API.\"\n"
-					"That usually means there's insufficient contigious available kernel space.\n"
+					"That usually means there's insufficient contiguous available kernel space.\n"
 					"Too many handles are open, a misbehaving driver, etc.\n"
 					"While I have tested ignoring this error I don't recommend it. There is \n"
 					"usually something seriously wrong with the state of your system if you are \n"
@@ -706,14 +706,14 @@ retry:
 			}
 			
 			printf( "You may attempt to force successful completion of NtQuerySystemInformation()\n"
-				"Please review advanced option 'f' by specifying the switch --advanced\n" 
+				"Please review option 'f' by specifying the switch --options\n"
 			);
 		}
 		else if( ret == TRAVERSE_ERROR_BUFFER_TOO_SMALL )
 		{
 			printf( 
 				"You may increase the maximum number of threads which increases the buffer size.\n" 
-				"Please review advanced option 't' by specifying the switch --advanced\n" 
+				"Please review option 't' by specifying the switch --options\n"
 			);
 		}
 		

@@ -321,7 +321,15 @@ int main( int argc, char **argv )
 			&& ( csbi.dwSize.X > 0 )
 			&& ( csbi.dwSize.Y > 0 )
 		)
+		{
+			// increase console buffer size to 10000 lines and pause before exit
+			
+			if( csbi.dwSize.Y < 10000 )
+				csbi.dwSize.Y = 10000;
+			
+			SetConsoleScreenBufferSize( hOutput, csbi.dwSize );
 			atexit( pause );
+		}
 	}
 	
 	//_set_printf_count_output( 1 ); // enable support for %n.
