@@ -610,6 +610,7 @@ int init_snapshot_store(
 )
 {
 	unsigned i = 0;
+	__int64 first_fail_time = 0;
 	int ret = 0;
 	LONG nt_status = 0;
 	DWORD flags = 0;
@@ -670,15 +671,43 @@ retry:
 	
 	if( ret != TRAVERSE_SUCCESS )
 	{
-		/* Troubleshooting: If we're ignoring failed queries wait a second and retry.
-		Although technically not necessary clear the memory before retrying.
+		__int64 now = 0;
+
+
+		GetSystemTimeAsFileTime( (FILETIME *)&now );
+
+		if( !first_fail_time )
+			first_fail_time = now;
+
+		/* retry for 1 second (10,000,000 100-nanosecond intervals),
+		or if ignoring failed queries retry indefinitely
 		*/
-		if( ( G->config->flags & CFG_IGNORE_FAILED_QUERIES )
-			&& ( ret == TRAVERSE_ERROR_QUERY ) 
-		)
+		if( ( ret == TRAVERSE_ERROR_QUERY ) 
+			&& ( ( ( now - first_fail_time ) <= 10000000 )
+				|| ( G->config->flags & CFG_IGNORE_FAILED_QUERIES ) )
+			)
 		{
-			ZeroMemory( store->spi, store->spi_max_bytes );
-			Sleep( 1000 );
+			if( ( G->config->verbose >= 1 )
+				&& !( G->config->flags & CFG_IGNORE_FAILED_QUERIES )
+				&& ( first_fail_time == now )
+				)
+			{
+				MSG_WARNING( "NtQuerySystemInformation() failed." );
+
+				printf( "nt_status: " );
+
+				if( nt_status == 0xC000009AL )
+					printf( "C000009A: STATUS_INSUFFICIENT_RESOURCES" );
+				else
+					printf( "0x%08lX", nt_status );
+
+				 printf( ". Retrying...\n" );
+				 fflush( stdout );
+			}
+
+			if( G->config->polling != 0 )
+				Sleep( 1 ); // so as not to suck up cpu
+
 			goto retry;
 		}
 		
