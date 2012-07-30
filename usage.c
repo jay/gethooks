@@ -167,8 +167,15 @@ void print_more_options_and_exit( void )
 	
 	
 	printf( "\n\n"
-		"   -f     force successful completion of NtQuerySystemInformation()\n"
+		"   -f     force successful completion of certain functions (continuous retry)\n"
 		"\n"
+		"Retrying handle table (HANDLEENTRY) read:\n"
+		"Rarely the handle table read may be invalid if a just destroyed HOOK has its \n"
+		"kernel address used by another created HOOK at exactly the moment this \n"
+		"program reads the HANDLEENTRYs. By default GetHooks will retry for a full \n"
+		"second, but you may use this option to retry indefinitely.\n"
+		"\n"
+		"Retrying NtQuerySystemInformation():\n"
 		"For each system snapshot this program uses a thread traversal library which \n"
 		"calls the API function NtQuerySystemInformation() to get a list of threads in \n"
 		"the system. If that call ever fails it is considered an indicator of system \n"
@@ -176,6 +183,8 @@ void print_more_options_and_exit( void )
 		"decide that the failure is indicative of something else entirely. Use this \n"
 		"option to silently retry on almost any failed NtQuerySystemInformation() call \n"
 		"every second until it succeeds.\n"
+		"\n"
+		"-Note that this option suppresses failure notices for functions it retries.\n"
 		"-Note that this option is only a workaround for intermittent failures. If you \n"
 		"enable this option and a failure *always* occurs then the code loops endlessly.\n"
 		"-Note that info length mismatch (buffer too small) failures are never retried. \n"
@@ -394,7 +403,7 @@ void print_more_examples_and_exit( void )
 	);
 	
 	printf( "\n"
-		"Level 1 shows additional statistics.\n"
+		"Level 1 shows additional statistics and warnings.\n"
 		"Level 2 is reserved for further development.\n"
 		"Level 3 is reserved for further development.\n"
 		"Level 4 is reserved for further development.\n"

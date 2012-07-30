@@ -497,6 +497,7 @@ int init_desktop_hook_store(
 )
 {
 	unsigned i = 0;
+	__int64 first_fail_time = 0;
 	struct desktop_hook_list *store = NULL;
 	struct desktop_hook_item *item = NULL;
 	
@@ -514,6 +515,8 @@ int init_desktop_hook_store(
 	FAIL_IF( GetCurrentThreadId() != G->prog->dwMainThreadId );   // main thread only
 	
 	
+retry:
+	item = NULL;
 	store = parent->desktop_hooks;
 	
 	/* this store is reused. do a soft reset */
@@ -644,7 +647,50 @@ int init_desktop_hook_store(
 		{
 			const struct hook *const a = &item->hook[ i  - 1 ];
 			const struct hook *const b = &item->hook[ i ];
-			
+			__int64 now = 0;
+
+
+			/* The HANDLEENTRY's pHead is the HOOK address in the kernel. Each HOOK address should be 
+			unique. If it is not then that means either multiple handles in the kernel are pointing to the 
+			same HOOK, or at the exact moments this program read the shared memory a HOOK was destroyed and 
+			its address was reused in those same moments. The former is suspect but the latter is not. 
+			Empirical testing on Vista x86 SP2 shows the latter can happen in rare cases. There's no way to 
+			be sure which situation we're in other than to retry. Retrying just once should be enough but 
+			here I'm making it a full second. If dupes persist then this store's initialization has failed.
+			*/
+
+			if( a->entry.pHead
+				&& b->entry.pHead
+				&& ( a->entry.pHead != b->entry.pHead )
+				)
+			{
+				// pHead is ok
+				continue;
+			}
+
+			GetSystemTimeAsFileTime( (FILETIME *)&now );
+
+			if( !first_fail_time )
+				first_fail_time = now;
+
+			/* retry for 1 second (10,000,000 100-nanosecond intervals),
+			or if ignoring failed queries retry indefinitely
+			*/
+			if( ( ( now - first_fail_time ) <= 10000000 )
+				|| ( G->config->flags & CFG_IGNORE_FAILED_QUERIES )
+				)
+			{
+				if( ( G->config->verbose >= 1 )
+					&& !( G->config->flags & CFG_IGNORE_FAILED_QUERIES )
+					&& ( first_fail_time == now )
+					)
+					MSG_WARNING( "Duplicate pHead detected. Retrying..." );
+
+				if( G->config->polling != 0 )
+					Sleep( 1 ); // so as not to suck up cpu
+
+				goto retry;
+			}
 			
 			if( a->entry.pHead == b->entry.pHead )
 			{
