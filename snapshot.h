@@ -55,6 +55,9 @@ struct gui
 	THREADINFO is unreachable from user mode, as far as I can tell.
 	*/
 	const void *pvWin32ThreadInfo;
+
+	// TRUE if this GUI thread's Win32ThreadInfo address is unique (not found in any other thread)
+	BOOL unique_w32thread;
 	
 	/* The address of the thread's TEB. The address is taken from either 
 	THREAD_BASIC_INFORMATION's TebBaseAddress (Win2k+), or

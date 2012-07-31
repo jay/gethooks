@@ -485,6 +485,8 @@ static int callback_add_gui(
 	/** add the GUI thread's info to the array of gui thread infos.
 	*/
 	ci->store->gui[ ci->store->gui_count ].pvWin32ThreadInfo = pvWin32ThreadInfo;
+	// assume that the Win32ThreadInfo is unique. the gui array is scanned for dupes after traversal.
+	ci->store->gui[ ci->store->gui_count ].unique_w32thread = TRUE;
 	ci->store->gui[ ci->store->gui_count ].pvTeb = pvTeb;
 	ci->store->gui[ ci->store->gui_count ].spi = spi;
 	ci->store->gui[ ci->store->gui_count ].sti = sti;
@@ -562,6 +564,7 @@ struct gui *find_Win32ThreadInfo(
 )
 {
 	struct gui findme;
+	struct gui *found = NULL;
 	
 	FAIL_IF( store->gui_count > store->gui_max );
 	
@@ -574,7 +577,7 @@ struct gui *find_Win32ThreadInfo(
 	/* only the pvWin32ThreadInfo member is compared */
 	findme.pvWin32ThreadInfo = pvWin32ThreadInfo;
 	
-	return 
+	found = 
 		bsearch( 
 			&findme, 
 			store->gui, 
@@ -582,6 +585,15 @@ struct gui *find_Win32ThreadInfo(
 			sizeof( *store->gui ), 
 			compare_gui 
 		);
+
+	if( found )
+	{
+		// Don't return the GUI thread if its Win32ThreadInfo is not unique
+		if( !found->unique_w32thread )
+			found = NULL;
+	}
+
+	return found;
 }
 
 
@@ -767,38 +779,14 @@ retry:
 	/* search for invalid or duplicate Win32ThreadInfo */
 	for( i = 1; i < store->gui_count; ++i )
 	{
-		const struct gui *const a = &store->gui[ i - 1 ];
-		const struct gui *const b = &store->gui[ i ];
+		struct gui *const a = &store->gui[ i - 1 ];
+		struct gui *const b = &store->gui[ i ];
 		
 		
 		if( a->pvWin32ThreadInfo == b->pvWin32ThreadInfo )
 		{
-			MSG_ERROR( "Duplicate pvWin32ThreadInfo." );
-			print_gui( a );
-			print_gui( b );
-			
-			if( G->config->flags & CFG_DEBUG )
-			{
-				if( a->spi && a->sti )
-				{
-					dump_teb( 
-						(DWORD)a->spi->UniqueProcessId, 
-						(DWORD)a->sti->ClientId.UniqueThread, 
-						flags 
-					);
-				}
-				
-				if( b->spi && b->sti )
-				{
-					dump_teb( 
-						(DWORD)b->spi->UniqueProcessId, 
-						(DWORD)b->sti->ClientId.UniqueThread, 
-						flags 
-					);
-				}
-			}
-			
-			return FALSE;
+			a->unique_w32thread = FALSE;
+			b->unique_w32thread = FALSE;
 		}
 		
 		if( !a->pvWin32ThreadInfo )
@@ -941,6 +929,7 @@ void print_gui(
 	PRINT_SEP_BEGIN( objname );
 	
 	PRINT_HEX( gui->pvWin32ThreadInfo );
+	printf( "gui->unique_w32thread: %s\n", ( gui->unique_w32thread ? "TRUE" : "FALSE" ) );
 	PRINT_HEX( gui->pvTeb );
 	
 	printf( "\n" );
