@@ -429,11 +429,21 @@ int traverse_threads(
 	else
 	{
 		retlen = 0;
+
+		if( buffer_bcount > ULONG_MAX )
+		{
+				dbg_printf( "Error: the buffer is too large.\n" );
+				dbg_printf( "buffer_bcount: %Iu\n", buffer_bcount );
+
+				error_code = TRAVERSE_ERROR_MEMORY;
+				goto quit;
+		}
+
 		dbg_printf( "Calling NtQuerySystemInformation() to get process info.\n" );
 		*status = (LONG)NtQuerySystemInformation( 
 			infotype, 
 			buffer, 
-			buffer_bcount, 
+			(ULONG)buffer_bcount,
 			&retlen 
 		);
 		dbg_printf( 

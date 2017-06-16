@@ -73,17 +73,24 @@ int dump_teb(
 	char *filename = NULL;
 	void *pvWin32ThreadInfo = NULL;
 	int return_code = 0;
+	SIZE_T buffer_size = 0;
 	
 	
 	if( !pid || !tid )
 		goto cleanup;
 	
-	buffer = copy_teb( pid, tid, flags );
+	buffer = copy_teb_from_thread( pid, tid, flags, &buffer_size );
 	if( !buffer )
 		goto cleanup;
 	
-	 /* x86 only for now. offsetof W32ThreadInfo: 0x40 TEB32, 0x78 TEB64 */
-	pvWin32ThreadInfo = *(void **)( (char *)buffer + 0x040 );
+/* offsetof W32ThreadInfo: 0x40 TEB32, 0x78 TEB64 */
+#ifdef _M_IX86
+#define OFFSET_OF_W32THREADINFO 0x040
+#else
+#define OFFSET_OF_W32THREADINFO 0x078
+#endif
+
+	pvWin32ThreadInfo = *(void **)( (char *)buffer + OFFSET_OF_W32THREADINFO );
 	
 	filename = must_calloc( filename_max, sizeof( *filename ) );
 	_snprintf( filename, filename_max, "pid%lu_tid%lu_%p.teb", pid, tid, pvWin32ThreadInfo );
@@ -106,19 +113,19 @@ int dump_teb(
 		goto cleanup;
 	
 	SetLastError( 0 ); // error code is evaluated on success
-	ret = fwrite( buffer, 1, SIZEOF_WIN7_TEB, fp );
+	ret = fwrite( buffer, 1, buffer_size, fp );
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
 		printf( "fwrite() %s. ret: %Iu, GLE: %lu, fp: 0x%p.\n", 
-			( ( ret == SIZEOF_WIN7_TEB ) ? "success" : "error" ), 
+			( ( ret == buffer_size ) ? "success" : "error" ),
 			ret, 
 			GetLastError(), 
 			fp 
 		);
 	}
 	
-	if( ret == SIZEOF_WIN7_TEB )
+	if( ret == buffer_size )
 	{
 		printf( "Dumped TEB to file %s\n", filename );
 		return_code = 1;

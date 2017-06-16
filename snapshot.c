@@ -292,7 +292,6 @@ struct callback_info
 If the passed in thread info is for a GUI thread add it to the passed in snapshot's gui array.
 
 traverse_threads() callback: this function is called for every SYSTEM_THREAD_INFORMATION.
-This function uses x86 offsets only, it will have to be fixed for x64.
 
 The behavior of a traverse_threads() callback is documented in traverse_threads.txt.
 */
@@ -431,10 +430,17 @@ static int callback_add_gui(
 	{
 		BOOL ret = 0;
 		
+/* offsetof W32ThreadInfo: 0x40 TEB32, 0x78 TEB64 */
+#ifdef _M_IX86
+#define OFFSET_OF_W32THREADINFO 0x040
+#else
+#define OFFSET_OF_W32THREADINFO 0x078
+#endif
+
 		SetLastError( 0 ); // error code is evaluated on success
 		ret = ReadProcessMemory( 
 			ci->process, 
-			(char *)pvTeb + 0x040, /* pvTeb + offsetof W32ThreadInfo. 0x40 TEB32, 0x78 TEB64 */
+			(char *)pvTeb + OFFSET_OF_W32THREADINFO,
 			&pvWin32ThreadInfo, 
 			sizeof( pvWin32ThreadInfo ), 
 			NULL 

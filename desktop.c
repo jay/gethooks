@@ -183,8 +183,6 @@ in d->pwszDesktopName (in). if the attachment is successful then the desktop ite
 populated with the associated thread info and the attached desktop's heap info.
 
 returns nonzero on success.
-
-x86 only. I'll have to fix some of the server client pointer offsets here and elsewhere for x64.
 */
 static int attach( 
 	struct desktop_item *d   // in, out
@@ -250,15 +248,26 @@ static int attach(
 	}
 	
 	
+/* offsetof CLIENTINFO: 0x6cc TEB32, 0x800 TEB64 */
+#ifdef _M_IX86
+#define OFFSET_OF_CLIENTINFO 0x6cc
+#else
+#define OFFSET_OF_CLIENTINFO 0x800
+#endif
+
 	/* Get the pointer to the CLIENTINFO struct. &TEB.Win32ClientInfo */
-	d->pvWin32ClientInfo = (void *)( (char *)d->pvTeb + 0x6cc );
+	d->pvWin32ClientInfo = (void *)( (char *)d->pvTeb + OFFSET_OF_CLIENTINFO );
 	
 	
 	/* offsetof( struct CLIENTINFO, pDeskInfo ) */
 	if( ( G->prog->dwOSMajorVersion == 5 ) && ( G->prog->dwOSMinorVersion == 0 ) ) // win2k
 		offsetof_pDeskInfo = 20;
 	else // XP+
+#ifdef _M_IX86
 		offsetof_pDeskInfo = 24;
+#else
+		offsetof_pDeskInfo = 32;
+#endif
 	
 	/* Get the pointer to the DESKTOPINFO struct.
 	(char *)&TEB.Win32ClientInfo + offsetof(struct CLIENTINFO, pDeskInfo ).
@@ -283,8 +292,6 @@ static int attach(
 	(char *)&TEB.Win32ClientInfo + offsetof(struct CLIENTINFO, ulClientDelta ), aka 
 	(char *)&TEB.Win32ClientInfo + offsetof(struct CLIENTINFO, pDeskInfo ) + sizeof( void * ).
 	The latter works because ulClientDelta is the next member after pDeskInfo.
-	
-	ulClientDelta is apparently declared as a ULONG but is it a ULONG_PTR for x64? hm
 	*/
 	d->pvClientDelta = *(void **)( (char *)d->pvWin32ClientInfo + offsetof_ulClientDelta );
 	

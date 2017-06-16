@@ -232,9 +232,7 @@ void print_hook_notice_begin(
 	
 	printf( "[%s]", diffname );
 	
-	printf( " [HOOK " );
-	PRINT_HEX_BARE( hook->object.head.h );
-	printf( " @ " );
+	printf( " [HOOK 0x%08I64X @ ", (UINT64)( *(UINT_PTR *)&hook->object.head.h ) );
 	if( hook->entry.pHead )
 		PRINT_HEX_BARE( hook->entry.pHead );
 	else

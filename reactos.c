@@ -375,7 +375,7 @@ void print_HOOK(
 	PRINT_SEP_BEGIN( objname );
 	
 	PRINT_HEX( object->head.h );
-	printf( "object->head.cLockObj: %lu\n", object->head.cLockObj );
+	printf( "object->head.cLockObj: %u\n", object->head.cLockObj );
 	
 	PRINT_HEX( object->pti );
 	PRINT_HEX( object->rpdesk1 );
@@ -386,9 +386,9 @@ void print_HOOK(
 	print_HOOK_id( object->iHook );
 	printf( ")\n" );
 	
-	printf( "object->offPfn: 0x%08lX\n", object->offPfn );
+	PRINT_HEX( object->offPfn );
 	
-	printf( "object->flags: 0x%08lX", object->flags );
+	printf( "object->flags: 0x%08X", object->flags );
 	if( object->flags )
 	{
 		printf( " ( " );

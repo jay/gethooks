@@ -115,11 +115,17 @@ typedef struct _SHAREDINFO
 {
 	void *psi; //PSERVERINFO
 	PHANDLEENTRY aheList;
+#if 0
+	/* The rest of the members vary depending on OS.
+	https://social.msdn.microsoft.com/Forums/vstudio/en-US/5f2df2d8-0ab4-4ab2-9d9d-ddb0673f37a2
+	*/
+	ULONG HeEntrySize; // >= Win7 only
 	void *pDisplayInfo; //PDISPLAYINFO
-	ULONG_PTR ulSharedDelta;
+	UINT_PTR ulSharedDelta;
 	WNDMSG awmControl[31];
 	WNDMSG DefWindowMsgs;
 	WNDMSG DefWindowSpecMsgs;
+#endif
 } SHAREDINFO, *PSHAREDINFO;
 
 
@@ -134,7 +140,7 @@ typedef struct _HOOK
 	void *pSelf;   // points to the kernel mode address
 	struct _HOOK *phkNext;
 	INT iHook;
-	DWORD offPfn;
+	UINT_PTR offPfn;
 	DWORD flags;
 	INT ihmod;
 	void *ptiHooked; //PTHREADINFO

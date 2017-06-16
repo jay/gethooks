@@ -87,12 +87,16 @@ void *get_teb(
 );
 
 // The size in bytes of Win7 x86 TEB struct
-#define SIZEOF_WIN7_TEB   4068
+#define SIZEOF_WIN7_X86_TEB32   4068
 
-void *copy_teb( 
+// The size in bytes of Win8 x64 TEB struct
+#define SIZEOF_WIN8_X64_TEB64   6176
+
+void *copy_teb_from_thread(
 	const DWORD pid,   // in
 	const DWORD tid,   // in
-	const DWORD flags   // in, optional
+	const DWORD flags,   // in, optional
+	SIZE_T *bytes_written   // out
 );
 
 int callback_print_thread_state( 

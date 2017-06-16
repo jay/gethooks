@@ -199,31 +199,36 @@ cleanup:
 
 
 
-/* copy_teb()
+/* copy_teb_from_thread()
 Copy the thread environment block of a thread in another process.
 
 'pid' is the process id of the thread
 'tid' is the thread id of the thread
 'flags' is the optional flags parameter that was passed to traverse_threads() or a callback
+'*bytes_written' is the number of bytes written to buffer returned by this function
 
-returns a pointer to a buffer the size of SIZEOF_WIN7_TEB on success. free() when done.
-if only part of the teb could be read it is still considered a success and above still applies.
+if the TEB size is unknown then the bytes written may be larger than the actual TEB, therefore the
+buffer may contain trailing bytes that have nothing to do with the TEB. and if only part of the TEB
+could be read then the bytes written is only those bytes. either case is considered a success.
+
+returns a pointer to a buffer containing TEB on success. free() when done.
 */
-void *copy_teb( 
+void *copy_teb_from_thread(
 	const DWORD pid,   // in
 	const DWORD tid,   // in
-	const DWORD flags   // in, optional
+	const DWORD flags,   // in, optional
+	SIZE_T *bytes_written   // out
 )
 {
 	BOOL ret = 0;
 	HANDLE process = NULL;
 	void *return_code = NULL;
 	void *buffer = NULL;
+	size_t buffer_size = 0;
 	void *teb = NULL;
-	DWORD bytes_read = 0;
 	
 	
-	if( !pid || !tid )
+	if( !pid || !tid || !bytes_written )
 		goto cleanup;
 	
 	SetLastError( 0 ); // error code is evaluated on success
@@ -245,14 +250,32 @@ void *copy_teb(
 	teb = get_teb( tid, flags );
 	if( !teb )
 		goto cleanup;
-	
-	buffer = calloc( 1, SIZEOF_WIN7_TEB );
+
+	/* Determine maximum TEB size */
+	{
+		DWORD dwOSVersion = GetVersion();
+		DWORD dwOSMajorVersion = (BYTE)dwOSVersion;
+		DWORD dwOSMinorVersion = (BYTE)( dwOSVersion >> 8 );
+#ifdef _M_IX86
+		buffer_size = SIZEOF_WIN7_X86_TEB32;
+
+		if( dwOSMajorVersion > 6 || ( dwOSMajorVersion == 6 && dwOSMinorVersion > 1 ) )
+			buffer_size *= 2; // size unknown, make a guess
+#else
+		buffer_size = SIZEOF_WIN8_X64_TEB64;
+
+		if( dwOSMajorVersion > 6 || ( dwOSMajorVersion == 6 && dwOSMinorVersion > 2 ) )
+			buffer_size *= 2; // size unknown, make a guess
+#endif
+	}
+
+	buffer = calloc( 1, buffer_size );
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
 		printf( "calloc() %s. bytes: %d\n", 
 			( buffer ? "success" : "error" ), 
-			SIZEOF_WIN7_TEB
+			buffer_size
 		);
 	}
 	
@@ -264,21 +287,21 @@ void *copy_teb(
 		process, 
 		teb,
 		buffer, 
-		SIZEOF_WIN7_TEB, 
-		&bytes_read 
+		buffer_size,
+		bytes_written
 	);
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "ReadProcessMemory() %s. GLE: %lu, bytes_read: %lu, Handle: 0x%p.\n", 
+		printf( "ReadProcessMemory() %s. GLE: %lu, bytes read: %Iu, Handle: 0x%p.\n",
 			( ret ? "success" : "error" ), 
 			GetLastError(), 
-			bytes_read, 
+			*bytes_written,
 			process 
 		);
 	}
 	
-	if( !bytes_read )
+	if( !*bytes_written )
 		goto cleanup;
 	
 	return_code = buffer;

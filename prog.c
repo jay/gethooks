@@ -112,9 +112,12 @@ void create_prog_store(
 
 /* get_SharedInfo()
 Return the address of Microsoft's SHAREDINFO structure (aka gSharedInfo) or die.
-
-x86 only, for now.
 */
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4054) /* function pointer cast as data pointer */
+#endif
+#ifdef _M_IX86
 SHAREDINFO *get_SharedInfo( void )
 {
 	static DWORD SharedInfo;
@@ -127,17 +130,8 @@ SHAREDINFO *get_SharedInfo( void )
 	if( SharedInfo )
 		return (SHAREDINFO *)SharedInfo;
 	
-#ifdef _MSC_VER
-#pragma warning(push)  
-#pragma warning(disable:4054) /* function pointer cast as data pointer */
-#endif
-	
 	User32InitializeImmEntryTable = 
 		(void *)GetProcAddress( LoadLibraryA( "user32" ), "User32InitializeImmEntryTable" );
-	
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 	
 	if( !User32InitializeImmEntryTable )
 	{
@@ -174,6 +168,30 @@ SHAREDINFO *get_SharedInfo( void )
 	
 	return (SHAREDINFO *)SharedInfo;
 }
+#else // x64
+SHAREDINFO *get_SharedInfo( void )
+{
+	static SHAREDINFO *SharedInfo;
+
+
+	if( SharedInfo )
+		return (SHAREDINFO *)SharedInfo;
+
+	/* I don't think this will work if <= Vista */
+	SharedInfo = (void *)GetProcAddress(GetModuleHandleA("user32"), "gSharedInfo");
+
+	if( !SharedInfo )
+	{
+		MSG_FATAL( "Failed to get address of SharedInfo. gSharedInfo not found in user32." );
+		exit( 1 );
+	}
+
+	return (SHAREDINFO *)SharedInfo;
+}
+#endif
+#ifdef _MSC_VER
+#pragma warning(pop) /* function pointer cast as data pointer */
+#endif
 
 
 
@@ -240,12 +258,17 @@ void init_global_prog_store(
 	}
 	
 	
-	/* Determine the offset of cHandleEntries in SERVERINFO.
-	In NT4 the offset is 4 but this program isn't for NT4 so ignore.
+	// Determine the offset of cHandleEntries in SERVERINFO.
+#ifdef _M_IX86
+	/* In NT4 the offset is 4 but this program isn't for NT4 so ignore.
 	In Win2k and XP the offset is 8.
 	In Vista and Win7 the offset is 4.
 	*/
 	offsetof_cHandleEntries = ( G->prog->dwOSMajorVersion >= 6 ) ? 4 : 8;
+#else
+	/* In Windows 8.1 x64 the offset is 8. */
+	offsetof_cHandleEntries = 8;
+#endif
 	
 	/* The first member of SHAREDINFO is pointer to SERVERINFO.
 	Add offsetof_cHandleEntries to the SERVERINFO pointer to get the address of cHandleEntries.
@@ -280,8 +303,10 @@ void print_SharedInfo(
 	
 	PRINT_HEX( pSharedInfo->psi );
 	PRINT_HEX( pSharedInfo->aheList );
+	/* These two have offsets that vary by OS and we currently don't account for that.
 	PRINT_HEX( pSharedInfo->pDisplayInfo );
 	PRINT_HEX( pSharedInfo->ulSharedDelta );
+	*/
 	
 	PRINT_SEP_END( objname );
 	
