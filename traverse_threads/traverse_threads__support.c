@@ -130,7 +130,7 @@ void *get_teb(
 		
 		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 		{
-			printf( "GetProcAddress() %s. GLE: %lu, NtQueryInformationThread: 0x%p.\n", 
+			printf( "GetProcAddress() %s. GLE: %u, NtQueryInformationThread: 0x%p.\n",
 				( NtQueryInformationThread ? "success" : "error" ), 
 				GetLastError(), 
 				NtQueryInformationThread 
@@ -146,7 +146,7 @@ void *get_teb(
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "OpenThread() %s. tid: %lu, GLE: %lu, Handle: 0x%p.\n", 
+		printf( "OpenThread() %s. tid: %u, GLE: %u, Handle: 0x%p.\n",
 			( thread ? "success" : "error" ), 
 			tid, 
 			GetLastError(), 
@@ -184,7 +184,7 @@ cleanup:
 		
 		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 		{
-			printf( "CloseHandle() %s. GLE: %lu, Handle: 0x%p\n", 
+			printf( "CloseHandle() %s. GLE: %u, Handle: 0x%p\n",
 				( ret ? "success" : "error" ), 
 				GetLastError(), 
 				thread
@@ -236,7 +236,7 @@ void *copy_teb_from_thread(
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "OpenProcess() %s. pid: %lu, GLE: %lu, Handle: 0x%p.\n", 
+		printf( "OpenProcess() %s. pid: %u, GLE: %u, Handle: 0x%p.\n",
 			( process ? "success" : "error" ), 
 			pid, 
 			GetLastError(), 
@@ -293,7 +293,7 @@ void *copy_teb_from_thread(
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "ReadProcessMemory() %s. GLE: %lu, bytes read: %Iu, Handle: 0x%p.\n",
+		printf( "ReadProcessMemory() %s. GLE: %u, bytes read: %Iu, Handle: 0x%p.\n",
 			( ret ? "success" : "error" ), 
 			GetLastError(), 
 			*bytes_written,
@@ -314,7 +314,7 @@ cleanup:
 		
 		if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 		{
-			printf( "CloseHandle() %s. GLE: %lu, Handle: 0x%p\n", 
+			printf( "CloseHandle() %s. GLE: %u, Handle: 0x%p\n",
 				( ret ? "success" : "error" ), 
 				GetLastError(), 
 				process

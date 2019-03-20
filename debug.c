@@ -93,7 +93,7 @@ int dump_teb(
 	pvWin32ThreadInfo = *(void **)( (char *)buffer + OFFSET_OF_W32THREADINFO );
 	
 	filename = must_calloc( filename_max, sizeof( *filename ) );
-	_snprintf( filename, filename_max, "pid%lu_tid%lu_%p.teb", pid, tid, pvWin32ThreadInfo );
+	_snprintf( filename, filename_max, "pid%u_tid%u_%p.teb", pid, tid, pvWin32ThreadInfo );
 	filename[ filename_max - 1 ] = 0;
 	
 	SetLastError( 0 ); // error code is evaluated on success
@@ -101,7 +101,7 @@ int dump_teb(
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "fopen() %s. filename: %s, GLE: %lu, fp: 0x%p.\n", 
+		printf( "fopen() %s. filename: %s, GLE: %u, fp: 0x%p.\n",
 			( fp ? "success" : "error" ), 
 			filename, 
 			GetLastError(), 
@@ -117,7 +117,7 @@ int dump_teb(
 	
 	if( ( flags & TRAVERSE_FLAG_DEBUG ) )
 	{
-		printf( "fwrite() %s. ret: %Iu, GLE: %lu, fp: 0x%p.\n", 
+		printf( "fwrite() %s. ret: %Iu, GLE: %u, fp: 0x%p.\n",
 			( ( ret == buffer_size ) ? "success" : "error" ),
 			ret, 
 			GetLastError(), 

@@ -71,7 +71,7 @@ __pragma(warning(pop))
 		DWORD gle = GetLastError(); \
 		 \
 		MSG_LOCATION( ( type ), ( msg ) ); \
-		printf( "GetLastError(): %lu\n", gle ); \
+		printf( "GetLastError(): %u\n", gle ); \
 		fflush( stdout ); \
 __pragma(warning(push)) \
 __pragma(warning(disable:4127)) \

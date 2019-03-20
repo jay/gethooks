@@ -367,7 +367,7 @@ static int callback_add_gui(
 		SetLastError( 0 ); // error code is evaluated on success
 		ci->process = OpenProcess( PROCESS_VM_READ, FALSE, (DWORD)spi->UniqueProcessId );
 		
-		dbg_printf( "OpenProcess() %s. pid: %lu, GLE: %lu, Handle: 0x%p.\n", 
+		dbg_printf( "OpenProcess() %s. pid: %u, GLE: %u, Handle: 0x%p.\n",
 			( ci->process ? "success" : "error" ), 
 			(DWORD)spi->UniqueProcessId, 
 			GetLastError(), 
@@ -446,7 +446,7 @@ static int callback_add_gui(
 			NULL 
 		);
 		
-		dbg_printf( "ReadProcessMemory() %s. GLE: %lu, Handle: 0x%p.\n", 
+		dbg_printf( "ReadProcessMemory() %s. GLE: %u, Handle: 0x%p.\n",
 			( ret ? "success" : "error" ), 
 			GetLastError(), 
 			ci->process 
@@ -516,7 +516,7 @@ cleanup:
 		SetLastError( 0 ); // error code is evaluated on success
 		ret = CloseHandle( ci->process ); // it's ok if the handle is already closed/invalid
 		
-		dbg_printf( "CloseHandle() %s. GLE: %lu, Handle: 0x%p\n", 
+		dbg_printf( "CloseHandle() %s. GLE: %u, Handle: 0x%p\n",
 			( ret ? "success" : "error" ), 
 			GetLastError(), 
 			ci->process

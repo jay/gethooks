@@ -660,11 +660,11 @@ unsigned __int64 dump_teb_wrapper(
 	
 	if( !ci.pid ) // the callback didn't find the pid associated with the tid
 	{
-		printf( "Couldn't find the pid associated with tid %lu.\n", ci.tid );
+		printf( "Couldn't find the pid associated with tid %u.\n", ci.tid );
 		return FALSE;
 	}
 	else
-		printf( "Found pid %lu associated with tid %lu.\n", ci.pid, ci.tid );
+		printf( "Found pid %u associated with tid %u.\n", ci.pid, ci.tid );
 	
 	if( !dump_teb( ci.pid, (DWORD)tid, flags ) )
 		return FALSE;

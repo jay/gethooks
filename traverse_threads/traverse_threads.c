@@ -247,7 +247,7 @@ int traverse_threads(
 		*(FARPROC *)&NtQuerySystemInformation = 
 			(FARPROC)GetProcAddress( GetModuleHandleA( "ntdll" ), "NtQuerySystemInformation" );
 		
-		dbg_printf( "GetProcAddress() %s. GLE: %lu, NtQuerySystemInformation: 0x%p.\n", 
+		dbg_printf( "GetProcAddress() %s. GLE: %u, NtQuerySystemInformation: 0x%p.\n",
 			( NtQuerySystemInformation ? "success" : "error" ), 
 			GetLastError(), 
 			NtQuerySystemInformation 

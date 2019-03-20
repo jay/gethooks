@@ -264,7 +264,7 @@ void print_hook_notice_begin(
 	}
 	
 	if( hook->object.head.cLockObj )
-		printf( "Lock count: %lu\n", hook->object.head.cLockObj );
+		printf( "Lock count: %u\n", hook->object.head.cLockObj );
 	
 	/* exactly what rpdesk2 does is unclear */
 	if( hook->object.rpdesk2 )
@@ -629,8 +629,8 @@ int print_diff_hook(
 		}
 		
 		printf( "\nThe HOOK's lock count has changed.\n" );
-		printf( "Old: %lu\n", a->object.head.cLockObj );
-		printf( "New: %lu\n", b->object.head.cLockObj );
+		printf( "Old: %u\n", a->object.head.cLockObj );
+		printf( "New: %u\n", b->object.head.cLockObj );
 	}
 	
 	/* compare object.pti

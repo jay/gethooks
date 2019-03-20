@@ -338,11 +338,11 @@ static void print_prog_store(
 		printf( "store->argv[ %d ]: %s\n", i, store->argv[ i ] );
 	
 	printf( "store->pszBasename: %s\n", store->pszBasename );
-	printf( "store->dwMainThreadId: %lu\n", store->dwMainThreadId );
-	printf( "store->dwOSVersion: %lu\n", store->dwOSVersion );
-	printf( "store->dwOSMajorVersion: %lu\n", store->dwOSMajorVersion );
-	printf( "store->dwOSMinorVersion: %lu\n", store->dwOSMinorVersion );
-	printf( "store->dwOSBuild: %lu\n", store->dwOSBuild );
+	printf( "store->dwMainThreadId: %u (0x%X)\n", store->dwMainThreadId, store->dwMainThreadId );
+	printf( "store->dwOSVersion: %u (0x%X)\n", store->dwOSVersion, store->dwOSVersion );
+	printf( "store->dwOSMajorVersion: %u\n", store->dwOSMajorVersion );
+	printf( "store->dwOSMinorVersion: %u\n", store->dwOSMinorVersion );
+	printf( "store->dwOSBuild: %u\n", store->dwOSBuild );
 	printf( "store->pwszWinstaName: %ls\n", store->pwszWinstaName );
 	print_SharedInfo( store->pSharedInfo );
 	printf( "\n" );

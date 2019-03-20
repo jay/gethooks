@@ -853,7 +853,7 @@ void print_desktop_item(
 	PRINT_HEX( item->hDesktop );
 	PRINT_HEX( item->hThread );
 	PRINT_HEX( item->hEventTerminate );
-	printf( "item->dwThreadId: %lu\n", item->dwThreadId );
+	printf( "item->dwThreadId: %u (0x%X)\n", item->dwThreadId, item->dwThreadId );
 	PRINT_HEX( item->pvTeb );
 	PRINT_HEX( item->pvWin32ClientInfo );
 	PRINT_HEX( item->pvClientDelta );
