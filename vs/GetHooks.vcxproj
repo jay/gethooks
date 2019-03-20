@@ -90,7 +90,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug MSVCRT|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>C:\WinDDK\7600.16385.1\lib\Crt\i386;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <LibraryPath>C:\WinDDK\7600.16385.1\lib\Crt\amd64;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\amd64;$(WindowsSdkDir)lib\x64;$(FrameworkSDKDir)\lib\amd64;$(FrameworkSDKDir)\lib\x64</LibraryPath>
     <IncludePath>C:\WinDDK\7600.16385.1\inc\crt;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
     <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
@@ -169,8 +169,8 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;msvcrt_win2000.obj;%(AdditionalDependencies)</AdditionalDependencies>
-      <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <MinimumRequiredVersion>5.2</MinimumRequiredVersion>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
