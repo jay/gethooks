@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /** 
@@ -205,8 +205,8 @@ static struct desktop_hook_item *add_desktop_hook_item(
 	/* the allocated/maximum number of elements in the array pointed to by hook.
 	
 	65535 is the maximum number of user objects
-	http://msdn.microsoft.com/en-us/library/ms725486%28VS.85%29.aspx
-	http://blogs.technet.com/b/markrussinovich/archive/2010/02/24/3315174.aspx
+	https://docs.microsoft.com/en-us/windows/win32/sysinfo/user-objects?redirectedfrom=MSDN
+	https://web.archive.org/web/20111211080445/http://blogs.technet.com/b/markrussinovich/archive/2010/02/24/3315174.aspx
 	*/
 	item->hook_max = 65535;
 	

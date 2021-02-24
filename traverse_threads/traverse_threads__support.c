@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /** 
@@ -403,7 +403,7 @@ int callback_print_thread_state(
 	printf( "state %s", ThreadState_to_cstr( sti->ThreadState ) );
 	
 	/* MS: "Thread Wait Reason is only applicable when the thread is in the Wait state."
-	http://support.microsoft.com/?kbid=837372
+	https://web.archive.org/web/20070322041640/http://support.microsoft.com/kb/837372
 	*/
 	if( (KTHREAD_STATE)sti->ThreadState == Waiting )
 	{
@@ -577,7 +577,7 @@ Return the ThreadState as its associated user-readable literal single byte strin
 
 if 'ThreadState' is unknown "Unknown" is returned.
 
-http://processhacker.sourceforge.net/doc/phlib_2include_2ntkeapi_8h.html#a89cf35e06b66523904596d9dbdd93af4
+https://github.com/processhacker/processhacker/blob/master/phnt/include/ntkeapi.h
 */
 char *ThreadState_to_cstr( 
 	const ULONG ThreadState   // in
@@ -604,11 +604,11 @@ char *ThreadState_to_cstr(
 Return the WaitReason as its associated user-readable literal single byte string.
 
 MS: "Thread Wait Reason is only applicable when the thread is in the Wait state."
-http://support.microsoft.com/?kbid=837372
+https://web.archive.org/web/20070322041640/http://support.microsoft.com/kb/837372
 
 if 'WaitReason' is unknown "Unknown" is returned.
 
-http://processhacker.sourceforge.net/doc/phlib_2include_2ntkeapi_8h.html#a32f8868bc010efa7da787526013b93fb
+https://github.com/processhacker/processhacker/blob/master/phnt/include/ntkeapi.h
 */
 char *WaitReason_to_cstr( 
 	const ULONG WaitReason   // in
@@ -670,8 +670,8 @@ OVERVIEW:
 test_memory()'s behavior is similar to IsBadWritePtr()/IsBadReadPtr().
 
 a function like this to catch bad pointers can make a program unreliable, and should not be used.
-http://blogs.msdn.com/b/larryosterman/archive/2004/05/18/134471.aspx
-http://blogs.msdn.com/b/oldnewthing/archive/2006/09/27/773741.aspx
+https://web.archive.org/web/20150114001122/http://blogs.msdn.com/b/larryosterman/archive/2004/05/18/134471.aspx
+https://web.archive.org/web/20100731104255/http://blogs.msdn.com/b/oldnewthing/archive/2006/09/27/773741.aspx
 
 in traverse_threads(), and its default callback callback_print_thread_state(), this function is 
 called to test pointers only in the special case of TRAVERSE_FLAG_TEST_MEMORY.

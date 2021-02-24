@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /**
@@ -82,7 +82,7 @@ void print_version( void )
 	/* Example modification notice. Leave this example intact. Copy it below to use as a template.
 	printf( "\n****This version has been modified by Your Name <your@email>\n" );
 	printf( "The modification made is super fast lightning if executed outside gravity.\n" );
-	printf( "Source code: http://your.website/yourgethooksmods\n" );
+	printf( "Source code: https://your.website/yourgethooksmods\n" );
 	*/
 	
 	return;
@@ -104,7 +104,7 @@ void print_license( void )
 	printf( 
 		"Copyright (C) 2011 Jay Satiro <raysatiro@yahoo.com> \n"
 		"All rights reserved. License GPLv3+: GNU GPL version 3 or later \n"
-		"<http://www.gnu.org/licenses/gpl.html>. \n"
+		"<https://www.gnu.org/licenses/gpl.html>. \n"
 		"This is free software: you are free to change and redistribute it. \n"
 		"There is NO WARRANTY, to the extent permitted by law. \n"
 	);

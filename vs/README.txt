@@ -38,5 +38,5 @@ DDK to be placed in this directory. Verify against msvcrt_win2000.sha.
 
 
 Please review the FAQ and known issues (either gh-pages dir or the website
-http://jay.github.io/gethooks/). If you still have questions email me:
+https://jay.github.io/gethooks/). If you still have questions email me:
 Jay Satiro <raysatiro$at$yahoo{}com> and put GetHooks in the subject.

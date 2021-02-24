@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /**
@@ -42,18 +42,18 @@ typedef LONG NTSTATUS, *PNTSTATUS;
 #endif
 
 
-//http://processhacker.sourceforge.net/doc/phlib_2include_2ntbasic_8h_source.html#l00047
+//https://github.com/processhacker/processhacker/blob/759de5e/phnt/include/phnt_ntdef.h#L73
 typedef LONG KPRIORITY;
 
 
-//http://msdn.microsoft.com/en-us/library/gg750647%28prot.10%29.aspx
+//https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tsts/a11e7129-685b-4535-8d37-21d4596ac057
 typedef struct {
 	HANDLE UniqueProcess;
 	HANDLE UniqueThread;
 } CLIENT_ID, *PCLIENT_ID;
 
 
-//http://msdn.microsoft.com/en-us/library/ff564879%28v=vs.85%29.aspx
+//https://docs.microsoft.com/en-us/windows/win32/api/ntdef/ns-ntdef-_unicode_string
 typedef struct _UNICODE_STRING {
 	USHORT Length;
 	USHORT MaximumLength;
@@ -65,7 +65,7 @@ typedef struct _UNICODE_STRING {
 re SystemProcessImageNameInformation aka SystemProcessIdInformation aka 88
 
 Get the image file name of any process from any user on Vista and above
-http://wj32.wordpress.com/2010/03/30/get-the-image-file-name-of-any-process-from-any-user-on-vista-and-above
+https://wj32.org/wp/2010/03/30/get-the-image-file-name-of-any-process-from-any-user-on-vista-and-above/
 */
 typedef struct _SYSTEM_PROCESS_IMAGE_NAME_INFORMATION
 {
@@ -74,7 +74,7 @@ typedef struct _SYSTEM_PROCESS_IMAGE_NAME_INFORMATION
 } SYSTEM_PROCESS_IMAGE_NAME_INFORMATION, *PSYSTEM_PROCESS_IMAGE_NAME_INFORMATION;
 
 
-//http://wj32.wordpress.com/2010/03/30/get-the-image-file-name-of-any-process-from-any-user-on-vista-and-above/#comment-395
+//https://wj32.org/wp/2010/03/30/get-the-image-file-name-of-any-process-from-any-user-on-vista-and-above/
 typedef enum _SYSTEM_INFORMATION_CLASS {
 	SystemBasicInformation = 0x0,
 	SystemProcessorInformation = 0x1,
@@ -187,7 +187,7 @@ typedef enum _SYSTEM_INFORMATION_CLASS {
 } SYSTEM_INFORMATION_CLASS, *PSYSTEM_INFORMATION_CLASS;
 
 
-//http://processhacker.sourceforge.net/doc/phlib_2include_2ntkeapi_8h.html#a89cf35e06b66523904596d9dbdd93af4
+//https://github.com/processhacker/processhacker/blob/master/phnt/include/ntkeapi.h
 typedef enum _KTHREAD_STATE
 {
 	Initialized,
@@ -203,7 +203,7 @@ typedef enum _KTHREAD_STATE
 } KTHREAD_STATE, *PKTHREAD_STATE;
 
 
-//http://processhacker.sourceforge.net/doc/phlib_2include_2ntkeapi_8h.html#a32f8868bc010efa7da787526013b93fb
+//https://github.com/processhacker/processhacker/blob/master/phnt/include/ntkeapi.h
 typedef enum _KWAIT_REASON
 {
 	Executive,

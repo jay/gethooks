@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /** 
@@ -693,7 +693,7 @@ static int add_all_desktops(
 	Remarkably, unless I fouled something up, calling EnumDesktopsW() with NULL for the station 
 	handle does not work properly, despite what Microsoft documentation says for hwinsta:
 	"If this parameter is NULL, the current window station is used."
-	http://msdn.microsoft.com/en-us/library/ms682614.aspx
+	https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdesktopsw
 	
 	In fact doing that enumerates not desktop names but workstation names instead.
 	When I call EnumDesktopsW() with hwinsta param as NULL the function will pass 

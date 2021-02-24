@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /** these are independent structs for 
@@ -42,7 +42,7 @@ extern "C" {
 #endif
 
 
-// http://msdn.microsoft.com/en-us/library/gg750724%28v=prot.10%29.aspx
+// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tsts/e82d73e4-cedb-4077-9099-d58f3459722f
 typedef struct _SYSTEM_THREAD_INFORMATION {
 	LARGE_INTEGER KernelTime;
 	LARGE_INTEGER UserTime;
@@ -63,8 +63,8 @@ typedef struct _SYSTEM_THREAD_INFORMATION {
 
 
 /*
-http://wj32.wordpress.com/2009/04/25/ntquerysysteminformation-a-simple-way-to-bypass-rootkits-which-hide-processes-by-hooking/
-http://processhacker.sourceforge.net/doc/struct___s_y_s_t_e_m___e_x_t_e_n_d_e_d___t_h_r_e_a_d___i_n_f_o_r_m_a_t_i_o_n.html
+https://wj32.org/wp/2009/04/25/ntquerysysteminformation-a-simple-way-to-bypass-rootkits-which-hide-processes-by-hooking/
+https://processhacker.sourceforge.io/doc/struct___s_y_s_t_e_m___e_x_t_e_n_d_e_d___t_h_r_e_a_d___i_n_f_o_r_m_a_t_i_o_n.html
 */
 typedef struct _SYSTEM_EXTENDED_THREAD_INFORMATION { 
 	SYSTEM_THREAD_INFORMATION ThreadInfo;
@@ -81,7 +81,7 @@ typedef struct _SYSTEM_EXTENDED_THREAD_INFORMATION {
 } SYSTEM_EXTENDED_THREAD_INFORMATION, *PSYSTEM_EXTENDED_THREAD_INFORMATION;
 
 
-//http://processhacker.sourceforge.net/doc/struct___s_y_s_t_e_m___p_r_o_c_e_s_s___i_n_f_o_r_m_a_t_i_o_n.html
+//https://processhacker.sourceforge.io/doc/struct___s_y_s_t_e_m___p_r_o_c_e_s_s___i_n_f_o_r_m_a_t_i_o_n.html
 typedef struct _SYSTEM_PROCESS_INFORMATION {
 	ULONG	 NextEntryOffset;
 	ULONG	 NumberOfThreads;

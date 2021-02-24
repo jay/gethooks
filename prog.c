@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /** 
@@ -142,7 +142,7 @@ SHAREDINFO *get_SharedInfo( void )
 	
 	/* This is my C implementation of the algorithm to find SharedInfo created by 
 	(alex ntinternals org), originally implemented in asm in EnumWindowsHooks.c
-	http://www.ntinternals.org/
+	https://web.archive.org/web/20120108040227/http://www.ntinternals.org/other/EnumWindowsHooks.zip
 	
 	This works on XP, Vista, Win7 x86. To be sure an alternate way would be to check the different 
 	win32k pdb files and find the addresses there.

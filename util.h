@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef _UTIL_H
@@ -34,7 +34,7 @@ extern "C" {
 
 /* __pragma keyword only exists in Visual Studio 2008 or better according to documentation. 
 however the keyword apparently exists undocumented in VS2005 and VS2003 as well
-http://code.google.com/p/dream-of-idle/source/browse/trunk/Dream/CELayoutEditor-0.7.1/inc/Config.h?spec=svn6&r=6#427
+https://github.com/yestein/dream-of-idle/blob/4e362ab/Dream/CELayoutEditor-0.7.1/inc/Config.h#L427-L431
 */
 #if !defined( _MSC_VER ) || ( _MSC_VER < 1300 ) // || ( _MSC_VER < 1500 )
 #define __pragma(x)

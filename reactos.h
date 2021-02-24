@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
-along with GetHooks.  If not, see <http://www.gnu.org/licenses/>.
+along with GetHooks.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /**
@@ -37,7 +37,7 @@ extern "C" {
 
 
 // 8/17/2011
-// http://www.reactos.org/wiki/Techwiki:Win32k/HEAD
+// https://reactos.org/wiki/Techwiki:Win32k/HEAD
 typedef struct _HEAD
 {
 	HANDLE h;
@@ -46,7 +46,7 @@ typedef struct _HEAD
 
 
 // 8/17/2011
-// http://www.reactos.org/wiki/Techwiki:Win32k/HANDLEENTRY
+// https://reactos.org/wiki/Techwiki:Win32k/HANDLEENTRY
 typedef struct _HANDLEENTRY
 {
 	PHEAD pHead;
@@ -58,7 +58,7 @@ typedef struct _HANDLEENTRY
 
 
 // 8/17/2011
-// http://www.reactos.org/wiki/Techwiki:Win32k/HANDLEENTRY
+// https://reactos.org/wiki/Techwiki:Win32k/HANDLEENTRY
 // HANDLEENTRY.bFlags
 #define HANDLEF_DESTROY        0x01
 #define HANDLEF_INDESTROY      0x02
@@ -71,7 +71,7 @@ typedef struct _HANDLEENTRY
 
 
 // 8/17/2011
-// http://www.reactos.org/wiki/Techwiki:Win32k/HANDLEENTRY
+// https://reactos.org/wiki/Techwiki:Win32k/HANDLEENTRY
 // HANDLEENTRY.bType
 enum HANDLE_TYPE{
 	TYPE_FREE = 0 ,        // 'must be zero!
@@ -101,7 +101,7 @@ enum HANDLE_TYPE{
 };
 
 // 8/18/2011
-// http://reactos.org/wiki/Techwiki:Win32k/SHAREDINFO
+// https://reactos.org/wiki/Techwiki:Win32k/SHAREDINFO
 typedef struct _WNDMSG
 {
   DWORD maxMsgs;
@@ -110,7 +110,7 @@ typedef struct _WNDMSG
 
 
 // 8/17/2011
-// http://www.reactos.org/wiki/Techwiki:Win32k/SHAREDINFO
+// https://reactos.org/wiki/Techwiki:Win32k/SHAREDINFO
 typedef struct _SHAREDINFO
 {
 	void *psi; //PSERVERINFO
@@ -130,8 +130,8 @@ typedef struct _SHAREDINFO
 
 
 // 8/17/2011
-// http://www.reactos.org/wiki/Techwiki:Win32k/HOOK
-// http://www.reactos.org/wiki/Techwiki:Win32k/HEAD
+// https://reactos.org/wiki/Techwiki:Win32k/HOOK
+// https://reactos.org/wiki/Techwiki:Win32k/HEAD
 typedef struct _HOOK
 {
 	HEAD head;
@@ -149,7 +149,7 @@ typedef struct _HOOK
 
 
 // 9/18/2011
-// http://forum.sysinternals.com/enumerate-windows-hooks_topic23877.html#122641
+// https://web.archive.org/web/20120628091644/http://forum.sysinternals.com/enumerate-windows-hooks_topic23877.html
 #define HF_GLOBAL   0x0001
 #define HF_ANSI   0x0002
 #define HF_NEEDHC_SKIP   0x0004
@@ -163,7 +163,7 @@ typedef struct _HOOK
 
 
 // 8/17/2011
-// http://reactos.org/wiki/Techwiki:Win32k/DESKTOP
+// https://reactos.org/wiki/Techwiki:Win32k/DESKTOP
 #define CWINHOOKS (WH_MAX - WH_MIN + 1)
 typedef struct WND *PWND;
 typedef struct _DESKTOPINFO
