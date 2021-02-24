@@ -76,7 +76,7 @@ void print_version( void )
 	printf( "\ngethooks v%u.%.*u", VERSION_MAJOR, ( ( VERSION_MINOR ) ? 2 : 1 ), VERSION_MINOR );
 	printf( " - " );
 	printf( "Built on " __DATE__ " at " __TIME__ "\n" );
-	printf( "The original gethooks source can be found at http://jay.github.com/gethooks/\n" );
+	printf( "The original gethooks source can be found at https://jay.github.io/gethooks/\n" );
 	printf( "For usage use --help\n" );
 	
 	/* Example modification notice. Leave this example intact. Copy it below to use as a template.

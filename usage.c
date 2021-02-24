@@ -115,7 +115,7 @@ void print_overview_and_exit( void )
 		"designed and developed GetHooks as free software. The program's estimated \n"
 		"cost so far has exceeded $6000 as of October 13, 2011. If you find this \n"
 		"program useful and it has saved you time or money then you are welcome to \n"
-		"donate time or money. http://jay.github.com/gethooks/index.html#donate\n"
+		"donate time or money. https://jay.github.io/gethooks/index.html#donate\n"
 	);
 	
 	
